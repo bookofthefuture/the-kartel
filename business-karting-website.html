@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Kartel - Where Business Meets the Track</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            overflow-x: hidden;
+            background: #f8f9fa;
+        }
+
+        .hero {
+            height: 100vh;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(231, 76, 60, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(52, 152, 219, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(241, 196, 15, 0.1) 0%, transparent 50%);
+            animation: pulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        .hero-content {
+            z-index: 2;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+
+        .logo {
+            font-size: 4.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            color: #ecf0f1;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .logo::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, #e74c3c, #f1c40f);
+        }
+
+        .tagline {
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            color: #bdc3c7;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-style: italic;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            color: #ecf0f1;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+            border-color: #f1c40f;
+        }
+
+        .section {
+            padding: 80px 0;
+            position: relative;
+        }
+
+        .about {
+            background: #ffffff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            margin-bottom: 60px;
+            font-style: italic;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            border: 2px solid #ecf0f1;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #e74c3c, #f1c40f);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: #e74c3c;
+            box-shadow: 0 15px 35px rgba(231, 76, 60, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 4rem;
+            margin-bottom: 25px;
+            color: #e74c3c;
+        }
+
+        .feature-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .feature-description {
+            font-size: 1.1rem;
+            color: #5d6d7e;
+            line-height: 1.7;
+        }
+
+        .event-format {
+            background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 50%, #ecf0f1 100%);
+        }
+
+        .timeline {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .timeline-item {
+            text-align: center;
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .timeline-item::after {
+            content: '→';
+            position: absolute;
+            right: -60px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2.5rem;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        .timeline-number {
+            width: 80px;
+            height: 80px;
+            border-radius: 5px;
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0 auto 25px;
+            color: #ffffff;
+            border: 3px solid #e74c3c;
+        }
+
+        .timeline-title {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .timeline-description {
+            color: #5d6d7e;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .contact {
+            background: #2c3e50;
+            color: #ecf0f1;
+        }
+
+        .contact .section-title {
+            color: #ecf0f1;
+        }
+
+        .contact .section-subtitle {
+            color: #bdc3c7;
+        }
+
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(236, 240, 241, 0.05);
+            padding: 50px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(231, 76, 60, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #f1c40f;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(236, 240, 241, 0.1);
+            border: 2px solid rgba(231, 76, 60, 0.3);
+            border-radius: 5px;
+            color: #ecf0f1;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f1c40f;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.3);
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(236, 240, 241, 0.6);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .racing-stripe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #e74c3c, #f1c40f, #e74c3c);
+            background-size: 200% 100%;
+            animation: stripe-move 3s linear infinite;
+            z-index: 1000;
+        }
+
+        @keyframes stripe-move {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .exclusive-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #f1c40f, #f39c12);
+            color: #2c3e50;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: pulse-badge 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 3rem;
+                letter-spacing: 4px;
+            }
+
+            .tagline {
+                font-size: 1.1rem;
+            }
+
+            .hero-description {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 2.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .timeline {
+                flex-direction: column;
+            }
+
+            .timeline-item::after {
+                content: '↓';
+                right: 50%;
+                top: 100%;
+                transform: translateX(50%);
+            }
+
+            .timeline-item:last-child::after {
+                display: none;
+            }
+
+            .contact-form {
+                margin: 0 20px;
+                padding: 30px 25px;
+            }
+
+            .exclusive-badge {
+                position: relative;
+                top: auto;
+                right: auto;
+                display: inline-block;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content {
+                padding: 0 15px;
+            }
+
+            .logo {
+                font-size: 2.5rem;
+                letter-spacing: 2px;
+            }
+
+            .section {
+                padding: 60px 0;
+            }
+
+            .feature-card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="racing-stripe"></div>
+    
+    <section class="hero">
+        <div class="exclusive-badge">Members Only</div>
+        <div class="hero-content">
+            <h1 class="logo">The Kartel</h1>
+            <p class="tagline">Where Business Meets the Track</p>
+            <p class="hero-description">
+                An exclusive networking collective for ambitious professionals. 
+                Connect, compete, and collaborate through the unique blend of high-speed karting and strategic business networking.
+            </p>
+            <a href="#contact" class="cta-button">Request Membership</a>
+        </div>
+    </section>
+
+    <section class="section about">
+        <div class="container">
+            <h2 class="section-title">The Experience</h2>
+            <p class="section-subtitle">Premium networking redefined through competition and connection</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏁</div>
+                    <h3 class="feature-title">Elite Competition</h3>
+                    <p class="feature-description">
+                        Experience the thrill of competitive karting while building meaningful professional relationships. 
+                        Our carefully curated events bring together industry leaders and ambitious professionals.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3 class="feature-title">Strategic Connections</h3>
+                    <p class="feature-description">
+                        Move beyond traditional networking. Build authentic relationships through shared experiences 
+                        and discover collaboration opportunities that drive real business results.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🥂</div>
+                    <h3 class="feature-title">Exclusive Access</h3>
+                    <p class="feature-description">
+                        Join an exclusive community of professionals who value innovation and results. 
+                        Access premium venues, curated experiences, and a network that opens doors.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section event-format">
+        <div class="container">
+            <h2 class="section-title">Event Structure</h2>
+            <p class="section-subtitle">A carefully designed experience for maximum impact</p>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-number">1</div>
+                    <h3 class="timeline-title">Opening Session</h3>
+                    <p class="timeline-description">15 minutes of competitive karting to break barriers and reveal character</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">2</div>
+                    <h3 class="timeline-title">Strategic Break</h3>
+                    <p class="timeline-description">Refreshments and initial connections while discussing the track experience</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">3</div>
+                    <h3 class="timeline-title">Championship Round</h3>
+                    <p class="timeline-description">Second 15-minute session with mixed teams for deeper collaboration</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-number">4</div>
+                    <h3 class="timeline-title">Executive Lounge</h3>
+                    <p class="timeline-description">Premium networking reception where partnerships are forged</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section contact">
+        <div class="container">
+            <h2 class="section-title">Join The Kartel</h2>
+            <p class="section-subtitle">Membership is selective. Applications are reviewed personally.</p>
+            <form class="contact-form" id="contactForm">
+                <div class="form-group">
+                    <label for="name">Full Name *</label>
+                    <input type="text" id="name" name="name" required placeholder="Your full name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required placeholder="Your professional email">
+                </div>
+                <div class="form-group">
+                    <label for="company">Company & Position</label>
+                    <input type="text" id="company" name="company" placeholder="Your company and role">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Mobile Number *</label>
+                    <input type="tel" id="phone" name="phone" required placeholder="For WhatsApp group access">
+                </div>
+                <div class="form-group">
+                    <label for="industry">Industry Sector</label>
+                    <input type="text" id="industry" name="industry" placeholder="Your primary industry focus">
+                </div>
+                <div class="form-group">
+                    <label for="message">Why The Kartel?</label>
+                    <textarea id="message" name="message" rows="4" placeholder="Tell us what you're looking to achieve through this exclusive network"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit Application</button>
+            </form>
+            <p style="text-align: center; margin-top: 30px; opacity: 0.8; font-style: italic;">
+                📱 <strong>Successful applicants</strong> receive exclusive access to our private WhatsApp community
+            </p>
+        </div>
+    </section>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Form submission handler
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Simple validation
+            if (!data.name || !data.email || !data.phone) {
+                alert('Please complete all required fields.');
+                return;
+            }
+            
+            // Simulate form submission
+            const submitBtn = document.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing Application...';
+            submitBtn.disabled = true;
+            
+            setTimeout(() => {
+                alert('Application submitted successfully! We\'ll review your membership request and contact you within 48 hours.');
+                this.reset();
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }, 2000);
+        });
+
+        // Parallax effect for hero section
+        window.addEventListener('scroll', function() {
+            const hero = document.querySelector('.hero');
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            hero.style.transform = `translateY(${rate}px)`;
+        });
+
+        // Animate elements on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .timeline-item').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+            observer.observe(card);
+        });
+
+        // Add dynamic background effect
+        document.addEventListener('mousemove', function(e) {
+            const hero = document.querySelector('.hero');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            hero.style.background = `
+                radial-gradient(circle at ${x * 100}% ${y * 100}%, 
+                rgba(231, 76, 60, 0.1) 0%, 
+                rgba(44, 62, 80, 0.95) 50%), 
+                linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%)
+            `;
+        });
+    </script>
+</body>
+</html>
