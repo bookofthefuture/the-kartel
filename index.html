@@ -393,21 +393,6 @@
             100% { background-position: 200% 50%; }
         }
 
-        .exclusive-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(45deg, #f1c40f, #f39c12);
-            color: #2c3e50;
-            padding: 8px 20px;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            animation: pulse-badge 2s ease-in-out infinite;
-        }
-
         @keyframes pulse-badge {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -457,15 +442,6 @@
                 padding: 30px 25px;
             }
 
-            .exclusive-badge {
-                position: relative;
-                top: auto;
-                right: auto;
-                display: inline-block;
-                margin-bottom: 20px;
-            }
-        }
-
         @media (max-width: 480px) {
             .hero-content {
                 padding: 0 15px;
@@ -490,12 +466,11 @@
     <div class="racing-stripe"></div>
     
     <section class="hero">
-        <div class="exclusive-badge">Members Only</div>
         <div class="hero-content">
             <h1 class="logo">The Kartel</h1>
             <p class="tagline">Where Business Meets the Track</p>
             <p class="hero-description">
-                An exclusive networking collective for ambitious professionals. 
+                An exclusive networking collective for ambitious professionals in Greater Manchester. 
                 Connect, compete, and collaborate through the unique blend of high-speed karting and strategic business networking.
             </p>
             <a href="#contact" class="cta-button">Request Membership</a>
@@ -547,18 +522,18 @@
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-number">2</div>
-                    <h3 class="timeline-title">Strategic Break</h3>
+                    <h3 class="timeline-title">Pit Stop</h3>
                     <p class="timeline-description">Refreshments and initial connections while discussing the track experience</p>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-number">3</div>
-                    <h3 class="timeline-title">Championship Round</h3>
-                    <p class="timeline-description">Second 15-minute session with mixed teams for deeper collaboration</p>
+                    <h3 class="timeline-title">Beat <br />the Clock</h3>
+                    <p class="timeline-description">Second 15-minute session to set your best lap</p>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-number">4</div>
-                    <h3 class="timeline-title">Executive Lounge</h3>
-                    <p class="timeline-description">Premium networking reception where partnerships are forged</p>
+                    <h3 class="timeline-title">Post Race Networking</h3>
+                    <p class="timeline-description">Relaxed post-race gathering where partnerships are forged</p>
                 </div>
             </div>
         </div>
@@ -684,6 +659,15 @@
                 linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%)
             `;
         });
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-V4HX7K4NX2"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-V4HX7K4NX2');
     </script>
 </body>
 </html>
