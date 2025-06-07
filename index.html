@@ -396,6 +396,69 @@
             z-index: 1000;
         }
 
+        .faq {
+            background: #ffffff; /* Consistent with 'about' section */
+        }
+
+        .faq-accordion {
+            max-width: 800px; /* Or adjust as needed */
+            margin: 0 auto;
+            margin-top: 40px;
+        }
+
+        .faq-item {
+            background: #ffffff;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden; /* Ensures smooth transition */
+        }
+
+        .faq-question {
+            background: #f8f9fa;
+            color: #2c3e50;
+            cursor: pointer;
+            padding: 20px 25px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-question:hover {
+            background-color: #e9ecef;
+        }
+
+        .faq-question::after {
+            content: '+'; /* Collapsed state icon */
+            font-size: 1.8rem;
+            color: #e74c3c;
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.active .faq-question::after {
+            content: '−'; /* Expanded state icon */
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 25px;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+            color: #5d6d7e;
+            line-height: 1.7;
+        }
+
         @keyframes stripe-move {
             0% { background-position: 0% 50%; }
             100% { background-position: 200% 50%; }
@@ -584,6 +647,50 @@
         </div>
     </section>
 
+    <section class="section faq">
+        <div class="container">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <p class="section-subtitle">Answers to common enquiries about The Kartel.</p>
+            <div class="faq-accordion">
+                <div class="faq-item">
+                    <button class="faq-question">How much does membership cost?</button>
+                    <div class="faq-answer">
+                        <p style="padding: 20px 0;">Membership is free right now. You just pay for your karting session and any food or drinks afterwards.</p>
+                        <p style="padding: 20px 0;">You can choose to pay for membership of TeamSport to reduce the cost of each karting session (see below). </p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">How much does a karting session cost?</button>
+                    <div class="faq-answer">
+                        <p style="padding: 20px 0;">This depends on which track we go to, and which type of race we do. But most often we will be going to TeamSport Victoria.</p>
+                        <p style="padding: 20px 0;">Headline costs for the Ultimate Race Experience here, including 2x15 minute sessions, is around £45, but you can reduce this cost in a number of ways.</p>
+                        <ol style="padding: 20px 0 0 20px;">
+                            <li>Use the code GET10 at checkout to take 10% of the cost.</li>
+                            <li>Join TeamSport as a member. The basic membership tier ('Social') costs £7.99 a year and reduces the cost of each session by 20%. </li>
+                            <li>The middle ('Club') and upper ('Elite) tiers cost £24.99 and £34.99 per year respectively and save you 25% on each booking, along with other benefits.</li>
+                            <li>Make sure you buy a Race Again voucher every time you go. This secures your next session at just £17.99. You can buy these at the track, or if you are a member, by clicking through the email you receive following the event titled "GRID Loyalty Update."  </li>
+                            <li>Every booking with TeamSport as a member accumulates 100 loyalty points. You get a free session every time you collect 600 points.</li>
+                            <li>Members also receive a free booking on their birthdays.</li>
+                        </ol>
+                        <p style="padding: 20px 0;">Follow these tips and go regularly, and the average cost per session can be under £25</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">Where do you operate?</button>
+                    <div class="faq-answer">
+                        <p style="padding: 20px 0;">Right now we only operate in Manchester, UK, but we are open to franchising the idea out to other cities around the UK, and internationally. Fill out the form to join and tell us about your interest in franchising in the message box, if you this is something you would like to discuss.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">How can I apply for membership?</button>
+                    <div class="faq-answer">
+                        <p style="padding: 20px 0;">You can apply for membership by submitting the application form on our website. Membership is selective, and all applications are personally reviewed to ensure a high-quality, engaged community. Successful applicants gain access to our private WhatsApp community.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <script>
         // Smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -647,11 +754,35 @@
             });
         }, observerOptions);
 
-        document.querySelectorAll('.feature-card, .timeline-item').forEach(card => {
+        document.querySelectorAll('.feature-card, .timeline-item, .faq-item').forEach(card => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(30px)';
             card.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
             observer.observe(card);
+        });
+
+        // FAQ Accordion
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const faqItem = button.closest('.faq-item');
+                const answer = faqItem.querySelector('.faq-answer');
+                const isActive = faqItem.classList.contains('active');
+
+                // Optional: Close other open items if you want only one open at a time
+                // document.querySelectorAll('.faq-item.active').forEach(item => {
+                //    if (item !== faqItem) {
+                //        item.classList.remove('active');
+                //        item.querySelector('.faq-answer').style.maxHeight = null;
+                //        item.querySelector('.faq-answer').style.paddingTop = '0';
+                //        item.querySelector('.faq-answer').style.paddingBottom = '0';
+                //    }
+                // });
+
+                faqItem.classList.toggle('active');
+                answer.style.maxHeight = faqItem.classList.contains('active') ? (answer.scrollHeight + 40) + "px" : null; // +40 for padding
+                answer.style.paddingTop = faqItem.classList.contains('active') ? '20px' : '0';
+                answer.style.paddingBottom = faqItem.classList.contains('active') ? '20px' : '0';
+            });
         });
 
         // Add dynamic background effect
