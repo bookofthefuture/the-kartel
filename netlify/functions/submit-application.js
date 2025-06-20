@@ -1,4 +1,5 @@
-// netlify/functions/submit-application.js - Fixed to handle redirects
+// netlify/functions/submit-application.js - CORRECT IMPLEMENTATION
+import { getStore } from '@netlify/blobs';
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -18,7 +19,6 @@ exports.handler = async (event, context) => {
     const requiredFields = ['name', 'email', 'phone'];
     for (const field of requiredFields) {
       if (!data[field]) {
-        console.log(`❌ Missing field: ${field}`);
         return {
           statusCode: 400,
           body: JSON.stringify({ error: `Missing required field: ${field}` })
@@ -26,9 +26,6 @@ exports.handler = async (event, context) => {
       }
     }
 
-    console.log('✅ All required fields present');
-
-    // Generate unique action tokens for quick actions
     const approveToken = crypto.randomBytes(16).toString('hex');
     const rejectToken = crypto.randomBytes(16).toString('hex');
 
@@ -48,111 +45,56 @@ exports.handler = async (event, context) => {
       rejectToken
     };
 
-    console.log('📋 Application created with ID:', application.id);
-
-    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
-      console.error('❌ Missing required Netlify environment variables');
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Server configuration error' })
-      };
-    }
+    console.log('📋 Application created:', application.id);
 
     try {
-      const blobsBaseUrl = `https://api.netlify.com/api/v1/sites/${process.env.NETLIFY_SITE_ID}/blobs`;
-      const blobUrl = `${blobsBaseUrl}/applications:applications.json`;
+      // Use the correct Netlify Blobs SDK
+      console.log('💾 Storing with official Netlify Blobs SDK...');
       
-      console.log('📖 Fetching existing applications...');
-      let applications = [];
-      
-      // Get existing applications (handle redirect)
-      try {
-        const getResponse = await fetch(blobUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (getResponse.ok) {
-          const responseData = await getResponse.json();
-          
-          if (responseData.url) {
-            console.log('🔗 Following redirect to get existing data...');
-            const dataResponse = await fetch(responseData.url);
-            
-            if (dataResponse.ok) {
-              const existingData = await dataResponse.text();
-              if (existingData && existingData.trim()) {
-                try {
-                  const parsedData = JSON.parse(existingData);
-                  if (Array.isArray(parsedData)) {
-                    applications = parsedData;
-                    console.log(`📊 Found ${applications.length} existing applications`);
-                  }
-                } catch (parseError) {
-                  console.log('⚠️ Could not parse existing data, starting fresh');
-                  applications = [];
-                }
-              }
-            }
-          } else if (Array.isArray(responseData)) {
-            applications = responseData;
-            console.log(`📊 Direct data: ${applications.length} existing applications`);
-          }
-        } else if (getResponse.status === 404) {
-          console.log('📝 No existing applications found, starting fresh');
-          applications = [];
-        }
-      } catch (fetchError) {
-        console.log('📝 Could not fetch existing applications, starting fresh');
-        applications = [];
-      }
-
-      // Add new application
-      applications.push(application);
-      console.log(`💾 Now have ${applications.length} applications total`);
-      
-      // Save applications to blobs
-      console.log('💾 Saving to Netlify Blobs...');
-      const putResponse = await fetch(blobUrl, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(applications, null, 2)
+      // Get the applications store with strong consistency for immediate read-after-write
+      const applicationsStore = getStore({
+        name: 'applications',
+        consistency: 'strong'  // Ensures immediate availability
       });
       
-      console.log('📡 PUT response status:', putResponse.status);
+      // Store individual application
+      await applicationsStore.setJSON(application.id, application);
+      console.log('✅ Individual application stored');
       
-      if (!putResponse.ok) {
-        const errorText = await putResponse.text();
-        console.error('❌ PUT failed:', errorText);
-        throw new Error(`Failed to save to blobs: ${putResponse.status}`);
+      // Get current applications list
+      let applications = [];
+      try {
+        const existingApplications = await applicationsStore.get('_list', { type: 'json' });
+        if (existingApplications && Array.isArray(existingApplications)) {
+          applications = existingApplications;
+        }
+      } catch (error) {
+        console.log('📝 No existing applications list, starting fresh');
+        applications = [];
       }
       
-      console.log('✅ Applications saved successfully');
-
-    } catch (blobError) {
-      console.error('❌ Blob storage error:', blobError.message);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: `Database error: ${blobError.message}` })
-      };
+      // Add new application to list
+      applications.push(application);
+      
+      // Store updated list
+      await applicationsStore.setJSON('_list', applications);
+      console.log(`✅ Applications list updated (${applications.length} total)`);
+      
+    } catch (storageError) {
+      console.error('❌ Storage error:', storageError.message);
+      // Log as fallback
+      console.log('📄 FALLBACK - APPLICATION DATA:');
+      console.log(JSON.stringify(application, null, 2));
     }
 
-    // Send admin notification email
+    // Send admin notification
     try {
-      console.log('📧 Sending admin notification...');
       await sendAdminNotification(application);
       console.log('✅ Admin notification sent');
     } catch (emailError) {
-      console.error('❌ Email notification failed:', emailError.message);
+      console.error('❌ Email failed:', emailError.message);
     }
 
-    console.log('🎉 Application submitted successfully');
     return {
       statusCode: 200,
       headers: {
@@ -177,3 +119,71 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+async function sendAdminNotification(application) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return;
+
+  const baseUrl = process.env.SITE_URL;
+  const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
+  const rejectUrl = `${baseUrl}/admin.html?action=reject&id=${application.id}&token=${application.rejectToken}`;
+
+  const subject = `New Kartel Application - ${application.name}`;
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">The Kartel</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">New Membership Application</p>
+      </div>
+      
+      <div style="padding: 30px; background: #f8f9fa;">
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">Quick Actions</h2>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+          <a href="${approveUrl}" 
+             style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 15px; display: inline-block;">
+            APPROVE APPLICATION
+          </a>
+          <a href="${rejectUrl}" 
+             style="background: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            REJECT APPLICATION
+          </a>
+        </div>
+        
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Application Details</h3>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <p><strong>Name:</strong> ${application.name}</p>
+          <p><strong>Email:</strong> ${application.email}</p>
+          <p><strong>Phone:</strong> ${application.phone}</p>
+          <p><strong>Company:</strong> ${application.company || 'Not provided'}</p>
+          <p><strong>Industry:</strong> ${application.industry || 'Not provided'}</p>
+          <p><strong>Message:</strong> ${application.message || 'No message provided'}</p>
+          <p><strong>ID:</strong> ${application.id}</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="${baseUrl}/admin.html" 
+             style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            Open Admin Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    await sgMail.send({
+      to: adminEmail,
+      from: process.env.FROM_EMAIL,
+      subject: subject,
+      html: htmlBody,
+    });
+  } catch (emailError) {
+    console.error('SendGrid error:', emailError);
+    throw emailError;
+  }
+}

@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "Membership management for The Kartel",
   "dependencies": {
+    "@netlify/blobs": "^8.1.0",
     "@sendgrid/mail": "^8.1.3"
   },
   "scripts": {
     "build": "echo 'No build process required'"
-  }
+  },
+  "type": "module"
 }

@@ -1,121 +1,72 @@
-// netlify/functions/get-applications.js - Fixed to handle redirects
+// netlify/functions/get-applications.js - CORRECT IMPLEMENTATION
+import { getStore } from '@netlify/blobs';
+
 exports.handler = async (event, context) => {
-  console.log('🔐 Admin function called - get-applications');
-  
-  // Check for authorization header
+  // Check authorization
   const authHeader = event.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('❌ No authorization header found');
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Unauthorized' })
     };
   }
 
-  // Simple token validation
   const token = authHeader.split(' ')[1];
   if (!token || token.length < 32) {
-    console.log('❌ Invalid token length');
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Invalid token' })
     };
   }
 
-  console.log('✅ Authorization passed');
-
   try {
-    console.log('📖 Getting applications from Netlify Blobs...');
+    console.log('📖 Getting applications with official SDK...');
     
-    // Check environment variables
-    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
-      console.error('❌ Missing required Netlify environment variables');
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Server configuration error' })
-      };
-    }
-
-    const blobsBaseUrl = `https://api.netlify.com/api/v1/sites/${process.env.NETLIFY_SITE_ID}/blobs`;
-    const blobUrl = `${blobsBaseUrl}/applications:applications.json`;
-    console.log('🌐 Blob URL:', blobUrl);
+    // Use strong consistency for admin reads
+    const applicationsStore = getStore({
+      name: 'applications',
+      consistency: 'strong'
+    });
     
     let applications = [];
     
     try {
-      console.log('📡 Making GET request to Netlify Blobs...');
-      const getResponse = await fetch(blobUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Try to get the applications list
+      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
       
-      console.log('📡 Response status:', getResponse.status);
-      
-      if (getResponse.ok) {
-        const responseData = await getResponse.json();
-        console.log('📄 Response type:', typeof responseData);
-        console.log('📄 Response keys:', Object.keys(responseData));
-        
-        // Check if we got a redirect URL
-        if (responseData.url) {
-          console.log('🔗 Got redirect URL, fetching actual data...');
-          
-          const dataResponse = await fetch(responseData.url);
-          console.log('📡 Data response status:', dataResponse.status);
-          
-          if (dataResponse.ok) {
-            const actualData = await dataResponse.text();
-            console.log('📄 Actual data length:', actualData ? actualData.length : 0);
-            
-            if (actualData && actualData.trim()) {
-              try {
-                const parsedData = JSON.parse(actualData);
-                if (Array.isArray(parsedData)) {
-                  applications = parsedData;
-                  console.log(`📊 Successfully loaded ${applications.length} applications`);
-                } else {
-                  console.log('⚠️ Data is not an array');
-                  applications = [];
-                }
-              } catch (parseError) {
-                console.log('⚠️ Could not parse data as JSON:', parseError.message);
-                applications = [];
-              }
-            } else {
-              console.log('📝 No actual data found');
-              applications = [];
-            }
-          } else {
-            console.log('❌ Failed to fetch actual data:', dataResponse.status);
-            applications = [];
-          }
-        } else {
-          // Direct data response (fallback)
-          console.log('📄 Direct data response');
-          if (Array.isArray(responseData)) {
-            applications = responseData;
-            console.log(`📊 Direct data: ${applications.length} applications`);
-          } else {
-            applications = [];
-          }
-        }
-      } else if (getResponse.status === 404) {
-        console.log('📝 No applications file found (404)');
-        applications = [];
+      if (applicationsList && Array.isArray(applicationsList)) {
+        applications = applicationsList;
+        console.log(`✅ Retrieved ${applications.length} applications from list`);
       } else {
-        console.log(`❓ Unexpected response: ${getResponse.status}`);
-        applications = [];
+        console.log('📝 No applications list found, checking individual entries...');
+        
+        // Fallback: list all entries and filter
+        const allEntries = await applicationsStore.list();
+        console.log(`📋 Found ${allEntries.blobs.length} total entries`);
+        
+        for (const entry of allEntries.blobs) {
+          if (entry.key !== '_list' && entry.key.startsWith('app_')) {
+            try {
+              const application = await applicationsStore.get(entry.key, { type: 'json' });
+              if (application && application.id) {
+                applications.push(application);
+              }
+            } catch (error) {
+              console.log(`⚠️ Failed to load ${entry.key}:`, error.message);
+            }
+          }
+        }
+        
+        console.log(`📊 Retrieved ${applications.length} individual applications`);
       }
-    } catch (fetchError) {
-      console.error('❌ Fetch error:', fetchError.message);
+    } catch (error) {
+      console.error('❌ Error retrieving applications:', error.message);
       applications = [];
     }
-
-    console.log(`🎯 Final result: Returning ${applications.length} applications`);
-
+    
+    // Sort by submission date (newest first)
+    applications.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    
     return {
       statusCode: 200,
       headers: {
@@ -126,7 +77,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('💥 Error fetching applications:', error.message);
+    console.error('💥 Error:', error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ 
