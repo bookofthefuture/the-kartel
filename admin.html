@@ -114,6 +114,104 @@
             letter-spacing: 1px;
         }
 
+        .admin-actions {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .admin-actions h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .import-section {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            margin-bottom: 20px;
+        }
+
+        .import-section.dragover {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .file-label:hover {
+            background: #2980b9;
+        }
+
+        .import-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .import-btn:hover {
+            background: #219a52;
+        }
+
+        .import-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .csv-preview {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 15px;
+            background: white;
+        }
+
+        .csv-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .csv-preview th,
+        .csv-preview td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .csv-preview th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
         .applications-section {
             background: white;
             border-radius: 10px;
@@ -231,6 +329,15 @@
 
         .reject-btn:hover {
             background: #c0392b;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
         }
 
         .details-btn {
@@ -387,6 +494,49 @@
             color: #5d6d7e;
         }
 
+        .import-results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .import-results h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .import-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .import-stat {
+            text-align: center;
+            padding: 10px;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .import-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .import-stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .imported { color: #28a745; }
+        .skipped { color: #ffc107; }
+        .errored { color: #dc3545; }
+
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -475,6 +625,25 @@
                 </div>
             </div>
 
+            <!-- Admin Actions Section -->
+            <div class="admin-actions">
+                <h3>🔧 Admin Actions</h3>
+                
+                <div class="import-section" id="importSection">
+                    <h4>📥 Import Existing Members from CSV</h4>
+                    <p style="margin: 10px 0; color: #6c757d;">
+                        Upload a CSV file with columns: firstName, lastName, email, company, position, phone, message (optional)
+                    </p>
+                    
+                    <input type="file" id="csvFile" class="file-input" accept=".csv" />
+                    <label for="csvFile" class="file-label">Choose CSV File</label>
+                    <button id="importBtn" class="import-btn" disabled>Import Members</button>
+                    
+                    <div id="csvPreview" class="csv-preview hidden"></div>
+                    <div id="importResults" class="import-results hidden"></div>
+                </div>
+            </div>
+
             <div class="applications-section">
                 <div class="section-header">
                     <h2 class="section-title">Membership Applications</h2>
@@ -510,6 +679,7 @@
     <script>
         let authToken = localStorage.getItem('kartel_admin_token');
         let applications = [];
+        let csvData = [];
 
         // Check for quick action parameters in URL
         function checkQuickAction() {
@@ -602,6 +772,146 @@
                 console.error('Quick action error:', error);
                 showError('Quick action failed. Please try again.');
             }
+        }
+
+        // CSV Import functionality
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'text/csv') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csvText = e.target.result;
+                    parseCSV(csvText);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            csvData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                    const row = {};
+                    
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+                    
+                    csvData.push(row);
+                }
+            }
+            
+            displayCSVPreview(headers, csvData);
+            document.getElementById('importBtn').disabled = csvData.length === 0;
+        }
+
+        function displayCSVPreview(headers, data) {
+            const preview = document.getElementById('csvPreview');
+            
+            if (data.length === 0) {
+                preview.innerHTML = '<p>No valid data found in CSV</p>';
+                preview.classList.remove('hidden');
+                return;
+            }
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Show first 5 rows
+            const previewData = data.slice(0, 5);
+            previewData.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    html += `<td>${row[header] || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            if (data.length > 5) {
+                html += `<tr><td colspan="${headers.length}"><em>... and ${data.length - 5} more rows</em></td></tr>`;
+            }
+            
+            html += '</tbody></table>';
+            
+            preview.innerHTML = html;
+            preview.classList.remove('hidden');
+        }
+
+        document.getElementById('importBtn').addEventListener('click', async function() {
+            if (csvData.length === 0) return;
+            
+            if (!confirm(`Import ${csvData.length} members from CSV? This will add them as approved members.`)) {
+                return;
+            }
+            
+            const importBtn = document.getElementById('importBtn');
+            const originalText = importBtn.textContent;
+            
+            importBtn.textContent = 'Importing...';
+            importBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/.netlify/functions/import-members', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ csvData })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showImportResults(result.results);
+                    showMessage(`Import completed! ${result.results.imported} members imported.`);
+                    loadApplications(); // Refresh the table
+                } else {
+                    showError(result.error || 'Import failed');
+                }
+                
+            } catch (error) {
+                console.error('Import error:', error);
+                showError('Import failed. Please try again.');
+            } finally {
+                importBtn.textContent = originalText;
+                importBtn.disabled = false;
+            }
+        });
+
+        function showImportResults(results) {
+            const resultsDiv = document.getElementById('importResults');
+            
+            const html = `
+                <h4>Import Results</h4>
+                <div class="import-summary">
+                    <div class="import-stat">
+                        <div class="import-stat-number imported">${results.imported}</div>
+                        <div class="import-stat-label">Imported</div>
+                    </div>
+                    <div class="import-stat">
+                        <div class="import-stat-number skipped">${results.skipped}</div>
+                        <div class="import-stat-label">Skipped</div>
+                    </div>
+                    <div class="import-stat">
+                        <div class="import-stat-number errored">${results.errors}</div>
+                        <div class="import-stat-label">Errors</div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.remove('hidden');
         }
 
         // Event listeners
@@ -709,6 +1019,7 @@
                 <tr>
                     <td>
                         <strong>${app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'N/A'}</strong>
+                        ${app.importedAt ? '<br><small style="color: #6c757d;">📥 Imported</small>' : ''}
                         ${app.status === 'pending' ? `
                             <div class="application-details">
                                 <div class="detail-row">
@@ -739,6 +1050,7 @@
                             <button class="action-btn reject-btn" onclick="updateApplication('${app.id}', 'rejected')">Reject</button>
                         ` : ''}
                         <button class="action-btn details-btn" onclick="showDetails('${app.id}')">Details</button>
+                        <button class="action-btn delete-btn" onclick="deleteApplication('${app.id}')">Delete</button>
                     </td>
                 </tr>
             `).join('');
@@ -818,6 +1130,46 @@
             }
         }
 
+        async function deleteApplication(applicationId) {
+            const app = applications.find(a => a.id === applicationId);
+            if (!app) return;
+
+            const fullName = app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'Unknown';
+            
+            if (!confirm(`Are you sure you want to permanently delete the application for ${fullName}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/delete-application', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ applicationId })
+                });
+
+                if (response.status === 401) {
+                    authToken = null;
+                    localStorage.removeItem('kartel_admin_token');
+                    showLogin();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete application');
+                }
+
+                showMessage(`Application for ${fullName} deleted successfully.`);
+                loadApplications();
+                
+            } catch (error) {
+                console.error('Error deleting application:', error);
+                showError('Failed to delete application. Please try again.');
+            }
+        }
+
         function showDetails(applicationId) {
             const app = applications.find(a => a.id === applicationId);
             if (!app) return;
@@ -840,6 +1192,7 @@ Status: ${app.status}
 Submitted: ${new Date(app.submittedAt).toLocaleString()}
 ${app.reviewedAt ? `Reviewed: ${new Date(app.reviewedAt).toLocaleString()}` : ''}
 ${app.reviewedBy ? `Reviewed by: ${app.reviewedBy}` : ''}
+${app.importedAt ? `Imported: ${new Date(app.importedAt).toLocaleString()}` : ''}
             `);
         }
 
