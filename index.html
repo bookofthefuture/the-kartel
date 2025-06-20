@@ -1008,7 +1008,209 @@
     </div>
 
     <script>
-        // NEW FORM HANDLING CODE - Replaces Netlify native form submission
+        // Enhanced debugging version of the form submission
+// Replace your form JavaScript with this temporarily to debug:
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Form debugging script loaded');
+    
+    const contactForm = document.getElementById('contactForm');
+    
+    if (!contactForm) {
+        console.error('❌ Contact form not found with ID "contactForm"');
+        return;
+    }
+    
+    console.log('✅ Contact form found');
+    
+    // Test if functions are deployed
+    testFunctionDeployment();
+    
+    contactForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('📝 Form submission started');
+        
+        const submitBtn = contactForm.querySelector('.submit-btn');
+        const originalText = submitBtn.textContent;
+        
+        // Show loading state
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+        
+        // Clear any existing messages
+        const existingMessage = document.querySelector('.form-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        try {
+            // Collect form data
+            const formData = new FormData(contactForm);
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                company: formData.get('company'),
+                phone: formData.get('phone'),
+                industry: formData.get('industry'),
+                message: formData.get('message')
+            };
+            
+            console.log('📊 Form data collected:', data);
+            
+            // Validate required fields
+            if (!data.name || !data.email || !data.phone) {
+                throw new Error('Missing required fields');
+            }
+            
+            console.log('🚀 Sending request to function...');
+            
+            // Submit to Netlify function
+            const response = await fetch('/.netlify/functions/submit-application', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            console.log('📡 Response received:');
+            console.log('  Status:', response.status);
+            console.log('  Status Text:', response.statusText);
+            console.log('  Headers:', Object.fromEntries(response.headers.entries()));
+            
+            let result;
+            const responseText = await response.text();
+            console.log('📄 Raw response text:', responseText);
+            
+            try {
+                result = JSON.parse(responseText);
+                console.log('📋 Parsed response:', result);
+            } catch (parseError) {
+                console.error('❌ Failed to parse JSON:', parseError);
+                throw new Error(`Server returned invalid JSON. Status: ${response.status}, Response: ${responseText.substring(0, 200)}...`);
+            }
+            
+            if (response.ok && result.success) {
+                console.log('✅ Submission successful!');
+                showFormMessage('Application submitted successfully! We will review your application and get back to you soon.', 'success');
+                contactForm.reset();
+            } else {
+                console.error('❌ Submission failed:', result);
+                throw new Error(result.error || `Server error: ${response.status}`);
+            }
+            
+        } catch (error) {
+            console.error('💥 Submission error:', error);
+            console.error('Error stack:', error.stack);
+            
+            // Show specific error messages
+            let errorMessage = 'An error occurred. ';
+            
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage += 'Network connection failed. Please check your internet and try again.';
+            } else if (error.message.includes('Invalid JSON')) {
+                errorMessage += 'Server configuration error. Check the console for details.';
+            } else if (error.message.includes('404')) {
+                errorMessage += 'Function not found. The submit-application function may not be deployed.';
+            } else if (error.message.includes('500')) {
+                errorMessage += 'Internal server error. Check Netlify function logs.';
+            } else {
+                errorMessage += error.message;
+            }
+            
+            showFormMessage(errorMessage, 'error');
+        } finally {
+            // Reset button state
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+});
+
+function showFormMessage(message, type) {
+    // Remove any existing message
+    const existingMessage = document.querySelector('.form-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create new message element
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `form-message form-message-${type}`;
+    messageDiv.textContent = message;
+    
+    // Insert message after the form
+    const contactForm = document.getElementById('contactForm');
+    contactForm.parentNode.insertBefore(messageDiv, contactForm.nextSibling);
+    
+    // Auto-remove success messages after 10 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.remove();
+            }
+        }, 10000);
+    }
+}
+
+// Test function deployment
+async function testFunctionDeployment() {
+    console.log('🧪 Testing function deployment...');
+    
+    try {
+        const response = await fetch('/.netlify/functions/submit-application', {
+            method: 'GET'  // This should return 405 Method Not Allowed
+        });
+        
+        if (response.status === 405) {
+            console.log('✅ Function is deployed correctly (405 Method Not Allowed as expected)');
+        } else if (response.status === 404) {
+            console.error('❌ Function not found (404) - Check if submit-application function is deployed');
+        } else {
+            console.log(`❓ Unexpected response: ${response.status} ${response.statusText}`);
+        }
+    } catch (error) {
+        console.error('❌ Function test failed:', error);
+    }
+}
+
+// Manual test function - run this in console if needed
+window.testFormSubmission = async function() {
+    console.log('🧪 Running manual form test...');
+    
+    const testData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        phone: '1234567890',
+        company: 'Test Company',
+        industry: 'Testing',
+        message: 'This is a test submission'
+    };
+    
+    try {
+        const response = await fetch('/.netlify/functions/submit-application', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(testData)
+        });
+        
+        const result = await response.text();
+        console.log('Manual test result:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: result
+        });
+        
+        return { response, result };
+    } catch (error) {
+        console.error('Manual test failed:', error);
+        return { error };
+    }
+};
+
+        /* NEW FORM HANDLING CODE - Replaces Netlify native form submission
         document.addEventListener('DOMContentLoaded', function() {
             const contactForm = document.getElementById('contactForm');
             
