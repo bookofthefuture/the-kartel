@@ -1,5 +1,5 @@
 // netlify/functions/submit-application.js
-const { createClient } = require('@netlify/blobs');
+// Fixed version with correct Netlify Blobs import
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -11,18 +11,25 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('📝 Function started');
+    
     const data = JSON.parse(event.body);
+    console.log('📊 Received data:', data);
+    
     const timestamp = new Date().toISOString();
     
     const requiredFields = ['name', 'email', 'phone'];
     for (const field of requiredFields) {
       if (!data[field]) {
+        console.log(`❌ Missing field: ${field}`);
         return {
           statusCode: 400,
           body: JSON.stringify({ error: `Missing required field: ${field}` })
         };
       }
     }
+
+    console.log('✅ All required fields present');
 
     // Generate unique action tokens for quick actions
     const approveToken = crypto.randomBytes(16).toString('hex');
@@ -44,31 +51,91 @@ exports.handler = async (event, context) => {
       rejectToken
     };
 
-    const blobs = createClient({
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_ACCESS_TOKEN
-    });
+    console.log('📋 Application object created:', application.id);
 
-    let applications = [];
-    try {
-      const existingData = await blobs.get('applications', 'applications.json');
-      if (existingData) {
-        applications = JSON.parse(existingData);
-      }
-    } catch (error) {
-      console.log('No existing applications found, creating new file');
+    // Check environment variables
+    console.log('🔧 Checking environment variables:');
+    console.log('  NETLIFY_SITE_ID:', process.env.NETLIFY_SITE_ID ? 'SET' : 'MISSING');
+    console.log('  NETLIFY_ACCESS_TOKEN:', process.env.NETLIFY_ACCESS_TOKEN ? 'SET' : 'MISSING');
+
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing required Netlify environment variables');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server configuration error - missing Netlify credentials' })
+      };
     }
 
-    applications.push(application);
-    await blobs.set('applications', 'applications.json', JSON.stringify(applications, null, 2));
+    try {
+      console.log('💾 Importing Netlify Blobs...');
+      
+      // Try different import methods for Netlify Blobs
+      let createClient;
+      try {
+        // Method 1: Try named import
+        const blobs = await import('@netlify/blobs');
+        createClient = blobs.createClient;
+        console.log('✅ Netlify Blobs imported via named import');
+      } catch (importError1) {
+        try {
+          // Method 2: Try require
+          const blobs = require('@netlify/blobs');
+          createClient = blobs.createClient;
+          console.log('✅ Netlify Blobs imported via require');
+        } catch (importError2) {
+          console.error('❌ Failed to import Netlify Blobs:', importError1, importError2);
+          throw new Error('Failed to import Netlify Blobs library');
+        }
+      }
+
+      if (!createClient) {
+        throw new Error('createClient function not found in @netlify/blobs');
+      }
+
+      console.log('💾 Creating Netlify Blobs client...');
+      const blobsClient = createClient({
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_ACCESS_TOKEN
+      });
+      console.log('✅ Blobs client created');
+
+      console.log('📖 Fetching existing applications...');
+      let applications = [];
+      try {
+        const existingData = await blobsClient.get('applications', 'applications.json');
+        if (existingData) {
+          applications = JSON.parse(existingData);
+          console.log(`📊 Found ${applications.length} existing applications`);
+        }
+      } catch (error) {
+        console.log('📝 No existing applications found, creating new file');
+      }
+
+      applications.push(application);
+      console.log(`💾 Saving ${applications.length} applications...`);
+      
+      await blobsClient.set('applications', 'applications.json', JSON.stringify(applications, null, 2));
+      console.log('✅ Applications saved successfully');
+
+    } catch (blobError) {
+      console.error('❌ Blob storage error:', blobError);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: `Database error: ${blobError.message}` })
+      };
+    }
 
     // Send admin notification email
     try {
+      console.log('📧 Attempting to send admin notification...');
       await sendAdminNotification(application);
+      console.log('✅ Admin notification sent');
     } catch (emailError) {
-      console.error('Email notification failed:', emailError);
+      console.error('❌ Email notification failed:', emailError);
+      // Don't fail the whole request if email fails
     }
 
+    console.log('🎉 Application submitted successfully');
     return {
       statusCode: 200,
       headers: {
@@ -83,17 +150,26 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Error processing application:', error);
+    console.error('💥 Function error:', error);
+    console.error('Error stack:', error.stack);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' })
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message
+      })
     };
   }
 };
 
 async function sendAdminNotification(application) {
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) return;
+  if (!adminEmail) {
+    console.log('📧 No admin email configured, skipping notification');
+    return;
+  }
+
+  console.log('📧 Preparing admin notification email...');
 
   const baseUrl = process.env.SITE_URL;
   const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
@@ -174,15 +250,23 @@ async function sendAdminNotification(application) {
 }
 
 async function sendEmail(to, subject, htmlBody) {
-  const sgMail = require('@sendgrid/mail');
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  try {
+    console.log('📧 Importing SendGrid...');
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  const msg = {
-    to: to,
-    from: process.env.FROM_EMAIL,
-    subject: subject,
-    html: htmlBody,
-  };
+    const msg = {
+      to: to,
+      from: process.env.FROM_EMAIL,
+      subject: subject,
+      html: htmlBody,
+    };
 
-  await sgMail.send(msg);
+    console.log('📤 Sending email via SendGrid...');
+    await sgMail.send(msg);
+    console.log('✅ Email sent successfully');
+  } catch (emailError) {
+    console.error('❌ SendGrid error:', emailError);
+    throw emailError;
+  }
 }
