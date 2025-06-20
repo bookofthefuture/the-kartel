@@ -1,3 +1,4 @@
+// netlify/functions/submit-application.js
 const { createClient } = require('@netlify/blobs');
 const crypto = require('crypto');
 
