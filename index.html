@@ -448,6 +448,32 @@
             box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
         }
 
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-message {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .form-message-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .form-message-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         .faq {
             background: #ffffff;
         }
@@ -835,7 +861,7 @@
         <div class="container">
             <h2 class="section-title">Join The Kartel</h2>
             <p class="section-subtitle">Membership is selective. Applications are reviewed personally.</p>
-            <form class="contact-form" id="contactForm" netlify>
+            <form class="contact-form" id="contactForm">
                 <div class="form-group">
                     <label for="name">Full Name *</label>
                     <input type="text" id="name" name="name" required placeholder="Your full name">
@@ -982,6 +1008,92 @@
     </div>
 
     <script>
+        // NEW FORM HANDLING CODE - Replaces Netlify native form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const contactForm = document.getElementById('contactForm');
+            
+            if (contactForm) {
+                contactForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const submitBtn = contactForm.querySelector('.submit-btn');
+                    const originalText = submitBtn.textContent;
+                    
+                    // Show loading state
+                    submitBtn.textContent = 'Submitting...';
+                    submitBtn.disabled = true;
+                    
+                    try {
+                        // Collect form data
+                        const formData = new FormData(contactForm);
+                        const data = {
+                            name: formData.get('name'),
+                            email: formData.get('email'),
+                            company: formData.get('company'),
+                            phone: formData.get('phone'),
+                            industry: formData.get('industry'),
+                            message: formData.get('message')
+                        };
+                        
+                        // Submit to Netlify function
+                        const response = await fetch('/.netlify/functions/submit-application', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok && result.success) {
+                            // Show success message
+                            showFormMessage('Application submitted successfully! We will review your application and get back to you soon.', 'success');
+                            contactForm.reset();
+                        } else {
+                            throw new Error(result.error || 'Submission failed');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Submission error:', error);
+                        showFormMessage('There was an error submitting your application. Please try again or contact us directly.', 'error');
+                    } finally {
+                        // Reset button state
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+        });
+
+        function showFormMessage(message, type) {
+            // Remove any existing message
+            const existingMessage = document.querySelector('.form-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // Create new message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `form-message form-message-${type}`;
+            messageDiv.textContent = message;
+            
+            // Insert message after the form
+            const contactForm = document.getElementById('contactForm');
+            contactForm.parentNode.insertBefore(messageDiv, contactForm.nextSibling);
+            
+            // Auto-remove success messages after 10 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 10000);
+            }
+        }
+
+        // EXISTING CODE - Keep all your original functionality
+        
         // Smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {

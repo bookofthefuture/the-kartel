@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Kartel - Admin Dashboard</title>
+    <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .dashboard-subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #e74c3c;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .applications-section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .refresh-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #c0392b;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .applications-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .applications-table th,
+        .applications-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .applications-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        .applications-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .approve-btn {
+            background: #27ae60;
+            color: white;
+        }
+
+        .approve-btn:hover {
+            background: #219a52;
+        }
+
+        .reject-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .reject-btn:hover {
+            background: #c0392b;
+        }
+
+        .details-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .details-btn:hover {
+            background: #2980b9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .login-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: #c0392b;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .dashboard-title {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .applications-table {
+                font-size: 0.9rem;
+            }
+
+            .applications-table th,
+            .applications-table td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">The Kartel Admin</h1>
+            <p style="margin-bottom: 30px; color: #7f8c8d;">Admin access required</p>
+            <button id="loginBtn" class="login-btn">Login with Netlify Identity</button>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="hidden">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">The Kartel Admin</div>
+                <div class="user-info">
+                    <span id="userEmail">Loading...</span>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Membership Dashboard</h1>
+                <p class="dashboard-subtitle">Manage applications and member access</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalApplications">0</div>
+                    <div class="stat-label">Total Applications</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pendingApplications">0</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="approvedApplications">0</div>
+                    <div class="stat-label">Approved Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="rejectedApplications">0</div>
+                    <div class="stat-label">Rejected Applications</div>
+                </div>
+            </div>
+
+            <div class="applications-section">
+                <div class="section-header">
+                    <h2 class="section-title">Membership Applications</h2>
+                    <button id="refreshBtn" class="refresh-btn">Refresh</button>
+                </div>
+
+                <div id="messageContainer"></div>
+
+                <div class="table-container">
+                    <table class="applications-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Company</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applicationsTableBody">
+                            <tr>
+                                <td colspan="7" class="loading">Loading applications...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Netlify Identity
+        netlifyIdentity.init();
+
+        let currentUser = null;
+        let applications = [];
+
+        // Check authentication status
+        function checkAuth() {
+            currentUser = netlifyIdentity.currentUser();
+            
+            if (currentUser) {
+                // Check if user has admin role
+                const roles = currentUser.app_metadata?.roles || [];
+                if (roles.includes('admin')) {
+                    showDashboard();
+                } else {
+                    showError('Access denied. Admin privileges required.');
+                    netlifyIdentity.logout();
+                }
+            } else {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = currentUser.email;
+            loadApplications();
+        }
+
+        function showMessage(message, type = 'success') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function showError(message) {
+            showMessage(message, 'error');
+        }
+
+        // Event listeners
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            netlifyIdentity.open();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            netlifyIdentity.logout();
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            loadApplications();
+        });
+
+        // Netlify Identity event listeners
+        netlifyIdentity.on('login', user => {
+            netlifyIdentity.close();
+            checkAuth();
+        });
+
+        netlifyIdentity.on('logout', () => {
+            showLogin();
+        });
+
+        // Load applications from API
+        async function loadApplications() {
+            try {
+                const token = currentUser.token.access_token;
+                const response = await fetch('/.netlify/functions/get-applications', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load applications');
+                }
+
+                const data = await response.json();
+                applications = data.applications || [];
+                
+                updateStats();
+                renderApplicationsTable();
+                
+            } catch (error) {
+                console.error('Error loading applications:', error);
+                showError('Failed to load applications. Please try again.');
+            }
+        }
+
+        function updateStats() {
+            const total = applications.length;
+            const pending = applications.filter(app => app.status === 'pending').length;
+            const approved = applications.filter(app => app.status === 'approved').length;
+            const rejected = applications.filter(app => app.status === 'rejected').length;
+
+            document.getElementById('totalApplications').textContent = total;
+            document.getElementById('pendingApplications').textContent = pending;
+            document.getElementById('approvedApplications').textContent = approved;
+            document.getElementById('rejectedApplications').textContent = rejected;
+        }
+
+        function renderApplicationsTable() {
+            const tbody = document.getElementById('applicationsTableBody');
+            
+            if (applications.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">No applications found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = applications.map(app => `
+                <tr>
+                    <td><strong>${app.name}</strong></td>
+                    <td>${app.email}</td>
+                    <td>${app.company || 'N/A'}</td>
+                    <td>${app.phone}</td>
+                    <td><span class="status-badge status-${app.status}">${app.status}</span></td>
+                    <td>${new Date(app.submittedAt).toLocaleDateString()}</td>
+                    <td>
+                        ${app.status === 'pending' ? `
+                            <button class="action-btn approve-btn" onclick="updateApplication('${app.id}', 'approved')">Approve</button>
+                            <button class="action-btn reject-btn" onclick="updateApplication('${app.id}', 'rejected')">Reject</button>
+                        ` : ''}
+                        <button class="action-btn details-btn" onclick="showDetails('${app.id}')">Details</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function updateApplication(applicationId, status) {
+            try {
+                const token = currentUser.token.access_token;
+                const response = await fetch('/.netlify/functions/update-application', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        applicationId,
+                        status
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update application');
+                }
+
+                showMessage(`Application ${status} successfully`);
+                loadApplications(); // Reload data
+                
+            } catch (error) {
+                console.error('Error updating application:', error);
+                showError('Failed to update application. Please try again.');
+            }
+        }
+
+        function showDetails(applicationId) {
+            const app = applications.find(a => a.id === applicationId);
+            if (!app) return;
+
+            alert(`
+Application Details:
+
+Name: ${app.name}
+Email: ${app.email}
+Company: ${app.company || 'N/A'}
+Phone: ${app.phone}
+Industry: ${app.industry || 'N/A'}
+Message: ${app.message || 'N/A'}
+Status: ${app.status}
+Submitted: ${new Date(app.submittedAt).toLocaleString()}
+${app.reviewedAt ? `Reviewed: ${new Date(app.reviewedAt).toLocaleString()}` : ''}
+${app.reviewedBy ? `Reviewed by: ${app.reviewedBy}` : ''}
+            `);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

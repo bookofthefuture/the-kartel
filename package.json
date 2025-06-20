@@ -1,0 +1,11 @@
+{
+  "name": "the-kartel-membership",
+  "version": "1.0.0",
+  "description": "Membership management for The Kartel",
+  "dependencies": {
+    "@netlify/blobs": "^7.0.0"
+  },
+  "scripts": {
+    "build": "echo 'No build process required'"
+  }
+}
