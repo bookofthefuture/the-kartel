@@ -1,5 +1,5 @@
-// netlify/functions/get-applications.js - CORRECT IMPLEMENTATION
-import { getStore } from '@netlify/blobs';
+// netlify/functions/get-applications.js
+const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
   // Check authorization
@@ -20,13 +20,45 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('📖 Getting applications with official SDK...');
+    console.log('📖 Getting applications with configured SDK...');
     
-    // Use strong consistency for admin reads
-    const applicationsStore = getStore({
+    // Check environment variables first
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing environment variables:');
+      console.error('NETLIFY_SITE_ID:', !!process.env.NETLIFY_SITE_ID);
+      console.error('NETLIFY_ACCESS_TOKEN:', !!process.env.NETLIFY_ACCESS_TOKEN);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ 
+          error: 'Server configuration error - missing credentials',
+          debug: {
+            hasSiteId: !!process.env.NETLIFY_SITE_ID,
+            hasToken: !!process.env.NETLIFY_ACCESS_TOKEN
+          }
+        })
+      };
+    }
+    
+    console.log('✅ Environment variables present');
+    console.log('🔧 Site ID prefix:', process.env.NETLIFY_SITE_ID.substring(0, 8) + '...');
+    console.log('🔧 Token length:', process.env.NETLIFY_ACCESS_TOKEN.length);
+    
+    // Manual configuration with explicit credentials
+    const storeConfig = {
       name: 'applications',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
+    };
+    
+    console.log('🏗️ Creating store with config:', {
+      name: storeConfig.name,
+      siteID: storeConfig.siteID.substring(0, 8) + '...',
+      tokenLength: storeConfig.token.length,
+      consistency: storeConfig.consistency
     });
+    
+    const applicationsStore = getStore(storeConfig);
     
     let applications = [];
     
@@ -78,6 +110,8 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('💥 Error:', error.message);
+    console.error('💥 Stack:', error.stack);
+    
     return {
       statusCode: 500,
       body: JSON.stringify({ 
