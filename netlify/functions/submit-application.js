@@ -86,17 +86,43 @@ exports.handler = async (event, context) => {
         
         if (getResponse.ok) {
           const existingData = await getResponse.text();
-          if (existingData) {
-            applications = JSON.parse(existingData);
-            console.log(`📊 Found ${applications.length} existing applications`);
+          console.log('📄 Raw data from blobs:', existingData ? existingData.substring(0, 100) + '...' : 'empty');
+          
+          if (existingData && existingData.trim()) {
+            try {
+              const parsedData = JSON.parse(existingData);
+              // Ensure we have an array
+              if (Array.isArray(parsedData)) {
+                applications = parsedData;
+                console.log(`📊 Found ${applications.length} existing applications`);
+              } else {
+                console.log('⚠️ Existing data is not an array, starting fresh');
+                applications = [];
+              }
+            } catch (parseError) {
+              console.log('⚠️ Could not parse existing data as JSON, starting fresh:', parseError.message);
+              applications = [];
+            }
+          } else {
+            console.log('📝 Empty data from blobs, starting fresh');
+            applications = [];
           }
         } else if (getResponse.status === 404) {
-          console.log('📝 No existing applications found, will create new file');
+          console.log('📝 No existing applications found (404), will create new file');
+          applications = [];
         } else {
           console.log(`❓ Unexpected response when fetching: ${getResponse.status}`);
+          applications = [];
         }
       } catch (fetchError) {
         console.log('📝 Could not fetch existing applications, starting fresh:', fetchError.message);
+        applications = [];
+      }
+
+      // Double-check that applications is an array before pushing
+      if (!Array.isArray(applications)) {
+        console.log('⚠️ Applications is not an array, resetting to empty array');
+        applications = [];
       }
 
       // Add new application
