@@ -211,6 +211,7 @@
             font-size: 0.8rem;
             font-weight: 600;
             margin-right: 5px;
+            margin-bottom: 5px;
             transition: all 0.3s ease;
         }
 
@@ -241,6 +242,17 @@
             background: #2980b9;
         }
 
+        .quick-approve-btn {
+            background: #f39c12;
+            color: white;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+        }
+
+        .quick-approve-btn:hover {
+            background: #e67e22;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -263,6 +275,16 @@
             border-radius: 4px;
             margin: 20px 0;
             border: 1px solid #c3e6cb;
+        }
+
+        .quick-action-notice {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border: 1px solid #bbdefb;
+            text-align: center;
         }
 
         .login-container {
@@ -343,6 +365,28 @@
             display: none;
         }
 
+        .application-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            width: 100px;
+            color: #2c3e50;
+        }
+
+        .detail-value {
+            color: #5d6d7e;
+        }
+
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -364,6 +408,11 @@
             .applications-table th,
             .applications-table td {
                 padding: 10px 8px;
+            }
+
+            .action-btn {
+                width: 100%;
+                margin-bottom: 5px;
             }
         }
     </style>
@@ -462,10 +511,36 @@
         let authToken = localStorage.getItem('kartel_admin_token');
         let applications = [];
 
+        // Check for quick action parameters in URL
+        function checkQuickAction() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            const appId = urlParams.get('id');
+            const token = urlParams.get('token');
+
+            if (action && appId && token) {
+                if (authToken) {
+                    performQuickAction(action, appId, token);
+                } else {
+                    // Store quick action for after login
+                    localStorage.setItem('pending_quick_action', JSON.stringify({action, appId, token}));
+                }
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
         // Check authentication status
         function checkAuth() {
             if (authToken) {
                 showDashboard();
+                // Check for pending quick action
+                const pendingAction = localStorage.getItem('pending_quick_action');
+                if (pendingAction) {
+                    const {action, appId, token} = JSON.parse(pendingAction);
+                    localStorage.removeItem('pending_quick_action');
+                    performQuickAction(action, appId, token);
+                }
             } else {
                 showLogin();
             }
@@ -498,6 +573,35 @@
             const errorDiv = document.getElementById('loginError');
             errorDiv.textContent = message;
             errorDiv.classList.remove('hidden');
+        }
+
+        async function performQuickAction(action, appId, token) {
+            try {
+                const response = await fetch('/.netlify/functions/quick-action', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action,
+                        applicationId: appId,
+                        actionToken: token
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showMessage(`Application ${action}ed successfully! Confirmation email sent to applicant.`, 'quick-action-notice');
+                    loadApplications();
+                } else {
+                    showError(result.error || 'Quick action failed');
+                }
+            } catch (error) {
+                console.error('Quick action error:', error);
+                showError('Quick action failed. Please try again.');
+            }
         }
 
         // Event listeners
@@ -559,7 +663,6 @@
                 });
 
                 if (response.status === 401) {
-                    // Token expired or invalid
                     authToken = null;
                     localStorage.removeItem('kartel_admin_token');
                     showLogin();
@@ -604,7 +707,21 @@
 
             tbody.innerHTML = applications.map(app => `
                 <tr>
-                    <td><strong>${app.name}</strong></td>
+                    <td>
+                        <strong>${app.name}</strong>
+                        ${app.status === 'pending' ? `
+                            <div class="application-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Industry:</span>
+                                    <span class="detail-value">${app.industry || 'N/A'}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Message:</span>
+                                    <span class="detail-value">${app.message ? app.message.substring(0, 100) + (app.message.length > 100 ? '...' : '') : 'N/A'}</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </td>
                     <td>${app.email}</td>
                     <td>${app.company || 'N/A'}</td>
                     <td>${app.phone}</td>
@@ -612,6 +729,9 @@
                     <td>${new Date(app.submittedAt).toLocaleDateString()}</td>
                     <td>
                         ${app.status === 'pending' ? `
+                            <button class="action-btn quick-approve-btn" onclick="quickAction('${app.id}', 'approve')">
+                                ✓ Quick Approve
+                            </button>
                             <button class="action-btn approve-btn" onclick="updateApplication('${app.id}', 'approved')">Approve</button>
                             <button class="action-btn reject-btn" onclick="updateApplication('${app.id}', 'rejected')">Reject</button>
                         ` : ''}
@@ -621,7 +741,11 @@
             `).join('');
         }
 
-        async function updateApplication(applicationId, status) {
+        async function quickAction(applicationId, action) {
+            if (!confirm(`Are you sure you want to ${action} this application? An email will be sent automatically.`)) {
+                return;
+            }
+
             try {
                 const response = await fetch('/.netlify/functions/update-application', {
                     method: 'POST',
@@ -631,7 +755,8 @@
                     },
                     body: JSON.stringify({
                         applicationId,
-                        status
+                        status: action + 'd',
+                        sendEmail: true
                     })
                 });
 
@@ -646,8 +771,43 @@
                     throw new Error('Failed to update application');
                 }
 
-                showMessage(`Application ${status} successfully`);
-                loadApplications(); // Reload data
+                showMessage(`Application ${action}d successfully! Email sent to applicant.`);
+                loadApplications();
+                
+            } catch (error) {
+                console.error('Error updating application:', error);
+                showError('Failed to update application. Please try again.');
+            }
+        }
+
+        async function updateApplication(applicationId, status) {
+            try {
+                const response = await fetch('/.netlify/functions/update-application', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        applicationId,
+                        status,
+                        sendEmail: true
+                    })
+                });
+
+                if (response.status === 401) {
+                    authToken = null;
+                    localStorage.removeItem('kartel_admin_token');
+                    showLogin();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to update application');
+                }
+
+                showMessage(`Application ${status} successfully! Email sent to applicant.`);
+                loadApplications();
                 
             } catch (error) {
                 console.error('Error updating application:', error);
@@ -677,6 +837,7 @@ ${app.reviewedBy ? `Reviewed by: ${app.reviewedBy}` : ''}
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
+            checkQuickAction();
             checkAuth();
         });
     </script>

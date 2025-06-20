@@ -1190,6 +1190,14 @@
             }
         });
     </script>
+    <!-- Hidden form for Netlify email notifications -->
+    <form name="admin-notifications" netlify netlify-honeypot="bot-field" hidden>
+        <input type="hidden" name="form-name" value="admin-notifications" />
+        <input type="text" name="to" />
+        <input type="text" name="subject" />
+        <textarea name="html-body"></textarea>
+        <textarea name="text-body"></textarea>
+    </form>
 
 </body>
 </html>
