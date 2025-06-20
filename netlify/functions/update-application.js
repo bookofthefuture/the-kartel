@@ -1,5 +1,3 @@
-
-// netlify/functions/update-application.js
 const { createClient } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
@@ -10,13 +8,21 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Check if user is authenticated and is admin
-  const { user } = context.clientContext || {};
-  
-  if (!user || !user.app_metadata?.roles?.includes('admin')) {
+  // Check for authorization header
+  const authHeader = event.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return {
-      statusCode: 403,
-      body: JSON.stringify({ error: 'Forbidden - Admin access required' })
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Unauthorized' })
+    };
+  }
+
+  // Simple token validation
+  const token = authHeader.split(' ')[1];
+  if (!token || token.length < 32) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Invalid token' })
     };
   }
 
@@ -53,7 +59,7 @@ exports.handler = async (event, context) => {
 
     applications[appIndex].status = status;
     applications[appIndex].reviewedAt = new Date().toISOString();
-    applications[appIndex].reviewedBy = user.email;
+    applications[appIndex].reviewedBy = 'Admin';
     if (notes) {
       applications[appIndex].notes = notes;
     }

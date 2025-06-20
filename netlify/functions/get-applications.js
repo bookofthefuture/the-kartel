@@ -1,24 +1,21 @@
-
-// netlify/functions/get-applications.js
 const { createClient } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
-  // Check if user is authenticated and is admin
-  const { user } = context.clientContext || {};
-  
-  if (!user) {
+  // Check for authorization header
+  const authHeader = event.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Unauthorized' })
     };
   }
 
-  // Check if user has admin role
-  const userRoles = user.app_metadata?.roles || [];
-  if (!userRoles.includes('admin')) {
+  // Simple token validation (in production, verify JWT)
+  const token = authHeader.split(' ')[1];
+  if (!token || token.length < 32) {
     return {
-      statusCode: 403,
-      body: JSON.stringify({ error: 'Forbidden - Admin access required' })
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Invalid token' })
     };
   }
 
@@ -56,3 +53,4 @@ exports.handler = async (event, context) => {
     };
   }
 };
+

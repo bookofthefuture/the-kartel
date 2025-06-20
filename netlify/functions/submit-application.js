@@ -1,4 +1,3 @@
-// netlify/functions/submit-application.js
 const { createClient } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
