@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Kartel - Admin Dashboard</title>
-    <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <style>
         * {
             margin: 0;
@@ -292,6 +291,32 @@
             font-weight: 800;
         }
 
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
         .login-btn {
             background: #e74c3c;
             color: white;
@@ -302,10 +327,16 @@
             font-size: 1rem;
             font-weight: 600;
             transition: background 0.3s ease;
+            width: 100%;
         }
 
         .login-btn:hover {
             background: #c0392b;
+        }
+
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         .hidden {
@@ -343,7 +374,18 @@
         <div class="login-card">
             <h1 class="login-title">The Kartel Admin</h1>
             <p style="margin-bottom: 30px; color: #7f8c8d;">Admin access required</p>
-            <button id="loginBtn" class="login-btn">Login with Netlify Identity</button>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" id="loginBtn" class="login-btn">Login</button>
+            </form>
+            <div id="loginError" class="error hidden"></div>
         </div>
     </div>
 
@@ -353,7 +395,7 @@
             <div class="header-content">
                 <div class="logo">The Kartel Admin</div>
                 <div class="user-info">
-                    <span id="userEmail">Loading...</span>
+                    <span id="userEmail">Admin</span>
                     <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
             </div>
@@ -417,25 +459,13 @@
     </div>
 
     <script>
-        // Initialize Netlify Identity
-        netlifyIdentity.init();
-
-        let currentUser = null;
+        let authToken = localStorage.getItem('kartel_admin_token');
         let applications = [];
 
         // Check authentication status
         function checkAuth() {
-            currentUser = netlifyIdentity.currentUser();
-            
-            if (currentUser) {
-                // Check if user has admin role
-                const roles = currentUser.app_metadata?.roles || [];
-                if (roles.includes('admin')) {
-                    showDashboard();
-                } else {
-                    showError('Access denied. Admin privileges required.');
-                    netlifyIdentity.logout();
-                }
+            if (authToken) {
+                showDashboard();
             } else {
                 showLogin();
             }
@@ -449,7 +479,6 @@
         function showDashboard() {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
-            document.getElementById('userEmail').textContent = currentUser.email;
             loadApplications();
         }
 
@@ -465,38 +494,77 @@
             showMessage(message, 'error');
         }
 
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
         // Event listeners
-        document.getElementById('loginBtn').addEventListener('click', () => {
-            netlifyIdentity.open();
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/admin-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    authToken = result.token;
+                    localStorage.setItem('kartel_admin_token', authToken);
+                    showDashboard();
+                } else {
+                    showLoginError(result.error || 'Invalid credentials');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Login failed. Please try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
         });
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            netlifyIdentity.logout();
+            authToken = null;
+            localStorage.removeItem('kartel_admin_token');
+            showLogin();
         });
 
         document.getElementById('refreshBtn').addEventListener('click', () => {
             loadApplications();
         });
 
-        // Netlify Identity event listeners
-        netlifyIdentity.on('login', user => {
-            netlifyIdentity.close();
-            checkAuth();
-        });
-
-        netlifyIdentity.on('logout', () => {
-            showLogin();
-        });
-
         // Load applications from API
         async function loadApplications() {
             try {
-                const token = currentUser.token.access_token;
                 const response = await fetch('/.netlify/functions/get-applications', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${authToken}`
                     }
                 });
+
+                if (response.status === 401) {
+                    // Token expired or invalid
+                    authToken = null;
+                    localStorage.removeItem('kartel_admin_token');
+                    showLogin();
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error('Failed to load applications');
@@ -555,11 +623,10 @@
 
         async function updateApplication(applicationId, status) {
             try {
-                const token = currentUser.token.access_token;
                 const response = await fetch('/.netlify/functions/update-application', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -567,6 +634,13 @@
                         status
                     })
                 });
+
+                if (response.status === 401) {
+                    authToken = null;
+                    localStorage.removeItem('kartel_admin_token');
+                    showLogin();
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error('Failed to update application');
