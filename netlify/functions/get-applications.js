@@ -1,4 +1,4 @@
-// netlify/functions/get-applications.js - Debug Version
+// netlify/functions/get-applications.js - Fixed to handle redirects
 exports.handler = async (event, context) => {
   console.log('🔐 Admin function called - get-applications');
   
@@ -28,10 +28,6 @@ exports.handler = async (event, context) => {
     console.log('📖 Getting applications from Netlify Blobs...');
     
     // Check environment variables
-    console.log('🔧 Environment check:');
-    console.log('  NETLIFY_SITE_ID:', process.env.NETLIFY_SITE_ID ? 'SET' : 'MISSING');
-    console.log('  NETLIFY_ACCESS_TOKEN:', process.env.NETLIFY_ACCESS_TOKEN ? 'SET (length: ' + process.env.NETLIFY_ACCESS_TOKEN.length + ')' : 'MISSING');
-    
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
       console.error('❌ Missing required Netlify environment variables');
       return {
@@ -57,61 +53,64 @@ exports.handler = async (event, context) => {
       });
       
       console.log('📡 Response status:', getResponse.status);
-      console.log('📡 Response headers:', Object.fromEntries(getResponse.headers.entries()));
       
       if (getResponse.ok) {
-        const existingData = await getResponse.text();
-        console.log('📄 Raw data received:');
-        console.log('  Length:', existingData ? existingData.length : 0);
-        console.log('  First 200 chars:', existingData ? existingData.substring(0, 200) : 'N/A');
-        console.log('  Last 100 chars:', existingData && existingData.length > 100 ? existingData.substring(existingData.length - 100) : 'N/A');
+        const responseData = await getResponse.json();
+        console.log('📄 Response type:', typeof responseData);
+        console.log('📄 Response keys:', Object.keys(responseData));
         
-        if (existingData && existingData.trim()) {
-          try {
-            const parsedData = JSON.parse(existingData);
-            console.log('📊 Parsed data type:', typeof parsedData);
-            console.log('📊 Is array:', Array.isArray(parsedData));
+        // Check if we got a redirect URL
+        if (responseData.url) {
+          console.log('🔗 Got redirect URL, fetching actual data...');
+          
+          const dataResponse = await fetch(responseData.url);
+          console.log('📡 Data response status:', dataResponse.status);
+          
+          if (dataResponse.ok) {
+            const actualData = await dataResponse.text();
+            console.log('📄 Actual data length:', actualData ? actualData.length : 0);
             
-            if (Array.isArray(parsedData)) {
-              applications = parsedData;
-              console.log(`📊 Successfully loaded ${applications.length} applications`);
-              
-              // Log first application for debugging
-              if (applications.length > 0) {
-                console.log('📋 First application sample:', {
-                  id: applications[0].id,
-                  name: applications[0].name,
-                  email: applications[0].email,
-                  status: applications[0].status,
-                  submittedAt: applications[0].submittedAt
-                });
+            if (actualData && actualData.trim()) {
+              try {
+                const parsedData = JSON.parse(actualData);
+                if (Array.isArray(parsedData)) {
+                  applications = parsedData;
+                  console.log(`📊 Successfully loaded ${applications.length} applications`);
+                } else {
+                  console.log('⚠️ Data is not an array');
+                  applications = [];
+                }
+              } catch (parseError) {
+                console.log('⚠️ Could not parse data as JSON:', parseError.message);
+                applications = [];
               }
             } else {
-              console.log('⚠️ Data is not an array, type:', typeof parsedData);
-              console.log('⚠️ Data content:', parsedData);
+              console.log('📝 No actual data found');
               applications = [];
             }
-          } catch (parseError) {
-            console.log('⚠️ Could not parse data as JSON:', parseError.message);
-            console.log('⚠️ Raw data that failed to parse:', existingData.substring(0, 500));
+          } else {
+            console.log('❌ Failed to fetch actual data:', dataResponse.status);
             applications = [];
           }
         } else {
-          console.log('📝 No data found or empty data');
-          applications = [];
+          // Direct data response (fallback)
+          console.log('📄 Direct data response');
+          if (Array.isArray(responseData)) {
+            applications = responseData;
+            console.log(`📊 Direct data: ${applications.length} applications`);
+          } else {
+            applications = [];
+          }
         }
       } else if (getResponse.status === 404) {
-        console.log('📝 No applications file found (404) - this is normal for first time');
+        console.log('📝 No applications file found (404)');
         applications = [];
       } else {
-        console.log(`❓ Unexpected response: ${getResponse.status} ${getResponse.statusText}`);
-        const errorText = await getResponse.text();
-        console.log('Error response body:', errorText);
+        console.log(`❓ Unexpected response: ${getResponse.status}`);
         applications = [];
       }
     } catch (fetchError) {
       console.error('❌ Fetch error:', fetchError.message);
-      console.error('❌ Fetch stack:', fetchError.stack);
       applications = [];
     }
 
@@ -123,18 +122,11 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ 
-        applications,
-        debug: {
-          count: applications.length,
-          timestamp: new Date().toISOString()
-        }
-      })
+      body: JSON.stringify({ applications })
     };
 
   } catch (error) {
     console.error('💥 Error fetching applications:', error.message);
-    console.error('💥 Error stack:', error.stack);
     return {
       statusCode: 500,
       body: JSON.stringify({ 

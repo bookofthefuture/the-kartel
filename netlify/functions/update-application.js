@@ -1,4 +1,4 @@
-// netlify/functions/update-application.js
+// netlify/functions/update-application.js - Fixed to handle redirects
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -28,7 +28,6 @@ exports.handler = async (event, context) => {
     
     console.log(`🔄 Updating application ${applicationId} to ${status}`);
 
-    // Check environment variables
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
       console.error('❌ Missing required Netlify environment variables');
       return {
@@ -38,12 +37,13 @@ exports.handler = async (event, context) => {
     }
 
     const blobsBaseUrl = `https://api.netlify.com/api/v1/sites/${process.env.NETLIFY_SITE_ID}/blobs`;
+    const blobUrl = `${blobsBaseUrl}/applications:applications.json`;
     
     let applications = [];
     
-    // Get existing applications
+    // Get existing applications (handle redirect)
     try {
-      const getResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+      const getResponse = await fetch(blobUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
@@ -52,17 +52,29 @@ exports.handler = async (event, context) => {
       });
       
       if (getResponse.ok) {
-        const existingData = await getResponse.text();
-        if (existingData && existingData.trim()) {
-          try {
-            const parsedData = JSON.parse(existingData);
-            if (Array.isArray(parsedData)) {
-              applications = parsedData;
-              console.log(`📊 Loaded ${applications.length} applications for update`);
+        const responseData = await getResponse.json();
+        
+        if (responseData.url) {
+          console.log('🔗 Following redirect to get data for update...');
+          const dataResponse = await fetch(responseData.url);
+          
+          if (dataResponse.ok) {
+            const existingData = await dataResponse.text();
+            if (existingData && existingData.trim()) {
+              try {
+                const parsedData = JSON.parse(existingData);
+                if (Array.isArray(parsedData)) {
+                  applications = parsedData;
+                  console.log(`📊 Loaded ${applications.length} applications for update`);
+                }
+              } catch (parseError) {
+                console.log('⚠️ Could not parse existing data for update');
+              }
             }
-          } catch (parseError) {
-            console.log('⚠️ Could not parse existing data:', parseError.message);
           }
+        } else if (Array.isArray(responseData)) {
+          applications = responseData;
+          console.log(`📊 Direct data for update: ${applications.length} applications`);
         }
       }
     } catch (fetchError) {
@@ -92,7 +104,7 @@ exports.handler = async (event, context) => {
 
     // Save updated applications
     try {
-      const putResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+      const putResponse = await fetch(blobUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
@@ -102,8 +114,7 @@ exports.handler = async (event, context) => {
       });
       
       if (!putResponse.ok) {
-        const errorText = await putResponse.text();
-        throw new Error(`Failed to save updated applications: ${putResponse.status} - ${errorText}`);
+        throw new Error(`Failed to save updated applications: ${putResponse.status}`);
       }
       
       console.log('✅ Applications updated successfully');
@@ -146,6 +157,80 @@ exports.handler = async (event, context) => {
   }
 };
 
+// Email functions (same as before)
+async function sendAdminNotification(application) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    console.log('📧 No admin email configured, skipping notification');
+    return;
+  }
+
+  const baseUrl = process.env.SITE_URL;
+  const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
+  const rejectUrl = `${baseUrl}/admin.html?action=reject&id=${application.id}&token=${application.rejectToken}`;
+
+  const subject = `New Kartel Application - ${application.name}`;
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">The Kartel</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">New Membership Application</p>
+      </div>
+      
+      <div style="padding: 30px; background: #f8f9fa;">
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">Quick Actions</h2>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+          <a href="${approveUrl}" 
+             style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 15px; display: inline-block;">
+            APPROVE APPLICATION
+          </a>
+          <a href="${rejectUrl}" 
+             style="background: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            REJECT APPLICATION
+          </a>
+        </div>
+        
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Application Details</h3>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #ecf0f1;">
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50; width: 30%;">Name:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.name}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ecf0f1;">
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Email:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.email}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ecf0f1;">
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Phone:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.phone}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ecf0f1;">
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Company:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.company || 'Not provided'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50; vertical-align: top;">Message:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.message || 'No message provided'}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="${process.env.SITE_URL}/admin.html" 
+             style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            Open Admin Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await sendEmail(adminEmail, subject, htmlBody);
+}
+
 async function sendApplicantEmail(application, status) {
   if (status === 'approved') {
     await sendApprovalEmail(application);
@@ -159,43 +244,13 @@ async function sendApprovalEmail(application) {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 50%, #27ae60 100%); color: white; padding: 30px; text-align: center;">
-        <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">Welcome to The Kartel!</h1>
-        <p style="margin: 15px 0 0 0; font-size: 18px; opacity: 0.9;">Your application has been approved</p>
+        <h1 style="margin: 0; font-size: 28px;">Welcome to The Kartel!</h1>
+        <p style="margin: 15px 0 0 0; font-size: 18px;">Your application has been approved</p>
       </div>
       
       <div style="padding: 40px; background: #f8f9fa;">
         <h2 style="color: #2c3e50; margin-bottom: 20px;">Congratulations, ${application.name}!</h2>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 25px;">
-          <p style="margin: 0 0 15px 0; color: #2c3e50; font-size: 16px; line-height: 1.6;">
-            We're thrilled to welcome you to <strong>The Kartel</strong> - Manchester's most exclusive business networking collective where deals are made at 40mph!
-          </p>
-          
-          <p style="margin: 0; color: #5d6d7e; font-size: 14px; line-height: 1.6;">
-            You're now part of an elite community of ambitious professionals who believe that the best connections are forged through shared adrenaline and authentic competition.
-          </p>
-        </div>
-        
-        <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60; margin-bottom: 25px;">
-          <h3 style="margin: 0 0 10px 0; color: #27ae60;">What Happens Next?</h3>
-          <ul style="margin: 0; padding-left: 20px; color: #2c3e50;">
-            <li style="margin-bottom: 8px;">You'll receive an invitation to our private WhatsApp group within 24 hours</li>
-            <li style="margin-bottom: 8px;">Get exclusive access to upcoming karting events and networking sessions</li>
-            <li style="margin-bottom: 8px;">Connect with fellow members before the next track day</li>
-            <li>Start building relationships that accelerate your business</li>
-          </ul>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px;">
-          <p style="margin: 0; color: #2c3e50; font-weight: bold;">
-            Welcome to the fast lane of business networking!
-          </p>
-        </div>
-      </div>
-      
-      <div style="background: #2c3e50; color: #bdc3c7; padding: 20px; text-align: center;">
-        <p style="margin: 0 0 10px 0; font-weight: bold;">The Kartel Team</p>
-        <p style="margin: 0; font-size: 12px;">Where Business Meets the Track</p>
+        <p style="color: #2c3e50;">We're thrilled to welcome you to The Kartel - Manchester's most exclusive business networking collective!</p>
       </div>
     </div>
   `;
@@ -208,31 +263,12 @@ async function sendRejectionEmail(application) {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 30px; text-align: center;">
-        <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">The Kartel</h1>
-        <p style="margin: 15px 0 0 0; opacity: 0.9;">Thank you for your application</p>
+        <h1 style="margin: 0; font-size: 24px;">The Kartel</h1>
       </div>
       
       <div style="padding: 40px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50; margin-bottom: 20px;">Dear ${application.name},</h2>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 25px;">
-          <p style="margin: 0 0 15px 0; color: #2c3e50; font-size: 16px; line-height: 1.6;">
-            Thank you for your interest in joining <strong>The Kartel</strong>. We appreciate the time you took to apply to our exclusive networking collective.
-          </p>
-          
-          <p style="margin: 0 0 15px 0; color: #5d6d7e; font-size: 14px; line-height: 1.6;">
-            After careful consideration, we've decided not to move forward with your application at this time. This decision reflects our current membership composition and the specific expertise we're seeking to balance our community.
-          </p>
-          
-          <p style="margin: 0; color: #5d6d7e; font-size: 14px; line-height: 1.6;">
-            We encourage you to reapply in the future as our membership needs evolve. We wish you all the best in your professional endeavors.
-          </p>
-        </div>
-      </div>
-      
-      <div style="background: #2c3e50; color: #bdc3c7; padding: 20px; text-align: center;">
-        <p style="margin: 0 0 10px 0; font-weight: bold;">The Kartel Team</p>
-        <p style="margin: 0; font-size: 12px;">Where Business Meets the Track</p>
+        <h2 style="color: #2c3e50;">Dear ${application.name},</h2>
+        <p style="color: #2c3e50;">Thank you for your interest in The Kartel. After careful consideration, we've decided not to move forward with your application at this time.</p>
       </div>
     </div>
   `;
@@ -243,11 +279,6 @@ async function sendRejectionEmail(application) {
 async function sendEmail(to, subject, htmlBody) {
   try {
     const sgMail = require('@sendgrid/mail');
-    
-    if (!process.env.SENDGRID_API_KEY) {
-      throw new Error('SendGrid API key not configured');
-    }
-    
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     const msg = {
