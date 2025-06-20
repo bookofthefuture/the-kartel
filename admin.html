@@ -84,6 +84,56 @@
             font-size: 1.1rem;
         }
 
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            background: white;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 20px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom-color: #e74c3c;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+        }
+
+        .tab-button.active:hover {
+            background: white;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -115,25 +165,27 @@
         }
 
         .admin-actions {
-            background: white;
+            background: #f8f9fa;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 25px;
             margin-bottom: 30px;
+            border: 1px solid #dee2e6;
         }
 
         .admin-actions h3 {
             color: #2c3e50;
             margin-bottom: 20px;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .import-section {
+        .import-section, .event-form {
             border: 2px dashed #bdc3c7;
             border-radius: 8px;
             padding: 20px;
-            text-align: center;
-            background: #f8f9fa;
+            background: white;
             margin-bottom: 20px;
         }
 
@@ -146,7 +198,7 @@
             display: none;
         }
 
-        .file-label {
+        .file-label, .btn {
             background: #3498db;
             color: white;
             padding: 10px 20px;
@@ -156,31 +208,69 @@
             margin-bottom: 15px;
             font-weight: 600;
             transition: background 0.3s ease;
+            border: none;
+            text-decoration: none;
         }
 
-        .file-label:hover {
+        .file-label:hover, .btn:hover {
             background: #2980b9;
         }
 
-        .import-btn {
+        .btn-success {
             background: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-left: 10px;
-            transition: background 0.3s ease;
         }
 
-        .import-btn:hover {
+        .btn-success:hover {
             background: #219a52;
         }
 
-        .import-btn:disabled {
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e74c3c;
         }
 
         .csv-preview {
@@ -192,27 +282,38 @@
             background: white;
         }
 
-        .csv-preview table {
+        .csv-preview table, .events-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
         }
 
         .csv-preview th,
-        .csv-preview td {
-            padding: 8px;
+        .csv-preview td,
+        .events-table th,
+        .events-table td {
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
 
-        .csv-preview th {
+        .csv-preview th,
+        .events-table th {
             background: #f8f9fa;
             font-weight: 600;
             position: sticky;
             top: 0;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
         }
 
-        .applications-section {
+        .events-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .applications-section, .events-section {
             background: white;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -250,6 +351,7 @@
 
         .table-container {
             overflow-x: auto;
+            max-height: 600px;
         }
 
         .applications-table {
@@ -301,6 +403,21 @@
             color: #721c24;
         }
 
+        .status-upcoming {
+            background: #cce5ff;
+            color: #0056b3;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .action-btn {
             padding: 6px 12px;
             border: none;
@@ -347,6 +464,15 @@
 
         .details-btn:hover {
             background: #2980b9;
+        }
+
+        .edit-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background: #e67e22;
         }
 
         .quick-approve-btn {
@@ -418,32 +544,6 @@
             color: #2c3e50;
             margin-bottom: 20px;
             font-weight: 800;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-weight: 600;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ecf0f1;
-            border-radius: 4px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #e74c3c;
         }
 
         .login-btn {
@@ -537,6 +637,24 @@
         .skipped { color: #ffc107; }
         .errored { color: #dc3545; }
 
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -547,17 +665,20 @@
                 font-size: 2rem;
             }
 
+            .tab-navigation {
+                flex-direction: column;
+            }
+
             .stats-grid {
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             }
 
-            .applications-table {
-                font-size: 0.9rem;
+            .form-row {
+                grid-template-columns: 1fr;
             }
 
-            .applications-table th,
-            .applications-table td {
-                padding: 10px 8px;
+            .applications-table, .events-table {
+                font-size: 0.9rem;
             }
 
             .action-btn {
@@ -602,75 +723,187 @@
 
         <div class="container">
             <div class="dashboard-header">
-                <h1 class="dashboard-title">Membership Dashboard</h1>
-                <p class="dashboard-subtitle">Manage applications and member access</p>
+                <h1 class="dashboard-title">Admin Dashboard</h1>
+                <p class="dashboard-subtitle">Manage applications, events, and content</p>
             </div>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalApplications">0</div>
-                    <div class="stat-label">Total Applications</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="pendingApplications">0</div>
-                    <div class="stat-label">Pending Review</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="approvedApplications">0</div>
-                    <div class="stat-label">Approved Members</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="rejectedApplications">0</div>
-                    <div class="stat-label">Rejected Applications</div>
-                </div>
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-button active" onclick="switchTab('applications')">
+                    👥 Applications
+                </button>
+                <button class="tab-button" onclick="switchTab('events')">
+                    📅 Events
+                </button>
             </div>
 
-            <!-- Admin Actions Section -->
-            <div class="admin-actions">
-                <h3>🔧 Admin Actions</h3>
-                
-                <div class="import-section" id="importSection">
-                    <h4>📥 Import Existing Members from CSV</h4>
-                    <p style="margin: 10px 0; color: #6c757d;">
-                        Upload a CSV file with columns: firstName, lastName, email, company, position, phone, message (optional)
-                    </p>
+            <!-- Applications Tab -->
+            <div id="applicationsTab" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalApplications">0</div>
+                        <div class="stat-label">Total Applications</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pendingApplications">0</div>
+                        <div class="stat-label">Pending Review</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="approvedApplications">0</div>
+                        <div class="stat-label">Approved Members</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="rejectedApplications">0</div>
+                        <div class="stat-label">Rejected Applications</div>
+                    </div>
+                </div>
+
+                <!-- Admin Actions Section -->
+                <div class="admin-actions">
+                    <h3>🔧 Admin Actions</h3>
                     
-                    <input type="file" id="csvFile" class="file-input" accept=".csv" />
-                    <label for="csvFile" class="file-label">Choose CSV File</label>
-                    <button id="importBtn" class="import-btn" disabled>Import Members</button>
-                    
-                    <div id="csvPreview" class="csv-preview hidden"></div>
-                    <div id="importResults" class="import-results hidden"></div>
+                    <div class="import-section" id="importSection">
+                        <h4>📥 Import Existing Members from CSV</h4>
+                        <p style="margin: 10px 0; color: #6c757d;">
+                            Upload a CSV file with columns: firstName, lastName, email, company, position, phone, message (optional)
+                        </p>
+                        
+                        <input type="file" id="csvFile" class="file-input" accept=".csv" />
+                        <label for="csvFile" class="file-label">Choose CSV File</label>
+                        <button id="importBtn" class="btn btn-success" disabled>Import Members</button>
+                        
+                        <div id="csvPreview" class="csv-preview hidden"></div>
+                        <div id="importResults" class="import-results hidden"></div>
+                    </div>
+                </div>
+
+                <div class="applications-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Membership Applications</h2>
+                        <button id="refreshBtn" class="refresh-btn">Refresh</button>
+                    </div>
+
+                    <div id="messageContainer"></div>
+
+                    <div class="table-container">
+                        <table class="applications-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Company & Position</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicationsTableBody">
+                                <tr>
+                                    <td colspan="7" class="loading">Loading applications...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="applications-section">
-                <div class="section-header">
-                    <h2 class="section-title">Membership Applications</h2>
-                    <button id="refreshBtn" class="refresh-btn">Refresh</button>
+            <!-- Events Tab -->
+            <div id="eventsTab" class="tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalEvents">0</div>
+                        <div class="stat-label">Total Events</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="upcomingEvents">0</div>
+                        <div class="stat-label">Upcoming Events</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completedEvents">0</div>
+                        <div class="stat-label">Completed Events</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPhotos">0</div>
+                        <div class="stat-label">Total Photos</div>
+                    </div>
                 </div>
 
-                <div id="messageContainer"></div>
+                <!-- Create Event Section -->
+                <div class="admin-actions">
+                    <h3>📅 Create New Event</h3>
+                    
+                    <div class="event-form">
+                        <form id="eventForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="eventName">Event Name *</label>
+                                    <input type="text" id="eventName" name="eventName" required placeholder="Monthly Karting Championship">
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventDate">Date *</label>
+                                    <input type="date" id="eventDate" name="eventDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventTime">Time</label>
+                                    <input type="time" id="eventTime" name="eventTime" placeholder="18:00">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="eventVenue">Venue *</label>
+                                    <input type="text" id="eventVenue" name="eventVenue" required placeholder="TeamSport Victoria">
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventMaxAttendees">Max Attendees</label>
+                                    <input type="number" id="eventMaxAttendees" name="eventMaxAttendees" placeholder="20" min="1">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="eventVenueAddress">Venue Address</label>
+                                <input type="text" id="eventVenueAddress" name="eventVenueAddress" placeholder="123 Racing Street, Manchester">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="eventDescription">Description</label>
+                                <textarea id="eventDescription" name="eventDescription" rows="3" placeholder="Monthly championship round with prizes for fastest lap..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success">Create Event</button>
+                        </form>
+                    </div>
+                </div>
 
-                <div class="table-container">
-                    <table class="applications-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Company & Position</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Submitted</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="applicationsTableBody">
-                            <tr>
-                                <td colspan="7" class="loading">Loading applications...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="events-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Events</h2>
+                        <button id="refreshEventsBtn" class="refresh-btn">Refresh</button>
+                    </div>
+
+                    <div id="eventsMessageContainer"></div>
+
+                    <div class="table-container">
+                        <table class="events-table">
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Date & Time</th>
+                                    <th>Venue</th>
+                                    <th>Attendees</th>
+                                    <th>Photos</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventsTableBody">
+                                <tr>
+                                    <td colspan="7" class="loading">Loading events...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -679,7 +912,34 @@
     <script>
         let authToken = localStorage.getItem('kartel_admin_token');
         let applications = [];
+        let events = [];
+        let approvedMembers = [];
         let csvData = [];
+        let currentTab = 'applications';
+
+        // Tab Management
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            currentTab = tabName;
+
+            // Load data for the tab
+            if (tabName === 'applications') {
+                loadApplications();
+            } else if (tabName === 'events') {
+                loadEvents();
+            }
+        }
 
         // Check for quick action parameters in URL
         function checkQuickAction() {
@@ -692,10 +952,8 @@
                 if (authToken) {
                     performQuickAction(action, appId, token);
                 } else {
-                    // Store quick action for after login
                     localStorage.setItem('pending_quick_action', JSON.stringify({action, appId, token}));
                 }
-                // Clean up URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
@@ -704,7 +962,6 @@
         function checkAuth() {
             if (authToken) {
                 showDashboard();
-                // Check for pending quick action
                 const pendingAction = localStorage.getItem('pending_quick_action');
                 if (pendingAction) {
                     const {action, appId, token} = JSON.parse(pendingAction);
@@ -727,16 +984,16 @@
             loadApplications();
         }
 
-        function showMessage(message, type = 'success') {
-            const container = document.getElementById('messageContainer');
-            container.innerHTML = `<div class="${type}">${message}</div>`;
+        function showMessage(message, type = 'success', container = 'messageContainer') {
+            const messageContainer = document.getElementById(container);
+            messageContainer.innerHTML = `<div class="${type}">${message}</div>`;
             setTimeout(() => {
-                container.innerHTML = '';
+                messageContainer.innerHTML = '';
             }, 5000);
         }
 
-        function showError(message) {
-            showMessage(message, 'error');
+        function showError(message, container = 'messageContainer') {
+            showMessage(message, 'error', container);
         }
 
         function showLoginError(message) {
@@ -773,6 +1030,59 @@
                 showError('Quick action failed. Please try again.');
             }
         }
+
+        // Event listeners
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/admin-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    authToken = result.token;
+                    localStorage.setItem('kartel_admin_token', authToken);
+                    showDashboard();
+                } else {
+                    showLoginError(result.error || 'Invalid credentials');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Login failed. Please try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            authToken = null;
+            localStorage.removeItem('kartel_admin_token');
+            showLogin();
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            loadApplications();
+        });
+
+        document.getElementById('refreshEventsBtn').addEventListener('click', () => {
+            loadEvents();
+        });
 
         // CSV Import functionality
         document.getElementById('csvFile').addEventListener('change', function(e) {
@@ -827,7 +1137,6 @@
                     <tbody>
             `;
             
-            // Show first 5 rows
             const previewData = data.slice(0, 5);
             previewData.forEach(row => {
                 html += '<tr>';
@@ -875,7 +1184,7 @@
                 if (response.ok && result.success) {
                     showImportResults(result.results);
                     showMessage(`Import completed! ${result.results.imported} members imported.`);
-                    loadApplications(); // Refresh the table
+                    loadApplications();
                 } else {
                     showError(result.error || 'Import failed');
                 }
@@ -914,53 +1223,45 @@
             resultsDiv.classList.remove('hidden');
         }
 
-        // Event listeners
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        // Event Form Handler
+        document.getElementById('eventForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Logging in...';
+            const formData = new FormData(e.target);
+            const eventData = {
+                name: formData.get('eventName'),
+                date: formData.get('eventDate'),
+                time: formData.get('eventTime'),
+                venue: formData.get('eventVenue'),
+                venueAddress: formData.get('eventVenueAddress'),
+                maxAttendees: formData.get('eventMaxAttendees'),
+                description: formData.get('eventDescription')
+            };
             
             try {
-                const response = await fetch('/.netlify/functions/admin-login', {
+                const response = await fetch('/.netlify/functions/create-event', {
                     method: 'POST',
                     headers: {
+                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify(eventData)
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
-                    authToken = result.token;
-                    localStorage.setItem('kartel_admin_token', authToken);
-                    showDashboard();
+                    showMessage('Event created successfully!', 'success', 'eventsMessageContainer');
+                    document.getElementById('eventForm').reset();
+                    loadEvents();
                 } else {
-                    showLoginError(result.error || 'Invalid credentials');
+                    showError(result.error || 'Failed to create event', 'eventsMessageContainer');
                 }
                 
             } catch (error) {
-                console.error('Login error:', error);
-                showLoginError('Login failed. Please try again.');
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Login';
+                console.error('Event creation error:', error);
+                showError('Failed to create event. Please try again.', 'eventsMessageContainer');
             }
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            authToken = null;
-            localStorage.removeItem('kartel_admin_token');
-            showLogin();
-        });
-
-        document.getElementById('refreshBtn').addEventListener('click', () => {
-            loadApplications();
         });
 
         // Load applications from API
@@ -986,12 +1287,47 @@
                 const data = await response.json();
                 applications = data.applications || [];
                 
+                // Get approved members for events
+                approvedMembers = applications.filter(app => app.status === 'approved');
+                
                 updateStats();
                 renderApplicationsTable();
                 
             } catch (error) {
                 console.error('Error loading applications:', error);
                 showError('Failed to load applications. Please try again.');
+            }
+        }
+
+        // Load events from API
+        async function loadEvents() {
+            try {
+                const response = await fetch('/.netlify/functions/get-events', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    authToken = null;
+                    localStorage.removeItem('kartel_admin_token');
+                    showLogin();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to load events');
+                }
+
+                const data = await response.json();
+                events = data.events || [];
+                
+                updateEventStats();
+                renderEventsTable();
+                
+            } catch (error) {
+                console.error('Error loading events:', error);
+                showError('Failed to load events. Please try again.', 'eventsMessageContainer');
             }
         }
 
@@ -1005,6 +1341,18 @@
             document.getElementById('pendingApplications').textContent = pending;
             document.getElementById('approvedApplications').textContent = approved;
             document.getElementById('rejectedApplications').textContent = rejected;
+        }
+
+        function updateEventStats() {
+            const total = events.length;
+            const upcoming = events.filter(evt => evt.status === 'upcoming').length;
+            const completed = events.filter(evt => evt.status === 'completed').length;
+            const totalPhotos = events.reduce((sum, evt) => sum + (evt.photos ? evt.photos.length : 0), 0);
+
+            document.getElementById('totalEvents').textContent = total;
+            document.getElementById('upcomingEvents').textContent = upcoming;
+            document.getElementById('completedEvents').textContent = completed;
+            document.getElementById('totalPhotos').textContent = totalPhotos;
         }
 
         function renderApplicationsTable() {
@@ -1056,6 +1404,51 @@
             `).join('');
         }
 
+        function renderEventsTable() {
+            const tbody = document.getElementById('eventsTableBody');
+            
+            if (events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">No events found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = events.map(evt => `
+                <tr>
+                    <td>
+                        <strong>${evt.name}</strong>
+                        ${evt.description ? `<br><small style="color: #6c757d;">${evt.description.substring(0, 80)}${evt.description.length > 80 ? '...' : ''}</small>` : ''}
+                    </td>
+                    <td>
+                        ${new Date(evt.date).toLocaleDateString()}
+                        ${evt.time ? `<br><small>${evt.time}</small>` : ''}
+                    </td>
+                    <td>
+                        <strong>${evt.venue}</strong>
+                        ${evt.venueAddress ? `<br><small style="color: #6c757d;">${evt.venueAddress}</small>` : ''}
+                    </td>
+                    <td>
+                        <span class="status-badge status-approved">${evt.attendees ? evt.attendees.length : 0}</span>
+                        ${evt.maxAttendees ? ` / ${evt.maxAttendees}` : ''}
+                    </td>
+                    <td>
+                        <span class="status-badge status-approved">${evt.photos ? evt.photos.length : 0}</span>
+                    </td>
+                    <td><span class="status-badge status-${evt.status}">${evt.status}</span></td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="editEvent('${evt.id}')">Edit</button>
+                        <button class="action-btn details-btn" onclick="showEventDetails('${evt.id}')">Details</button>
+                        ${evt.status !== 'completed' ? `
+                            <button class="action-btn btn-success" onclick="markEventCompleted('${evt.id}')">Complete</button>
+                        ` : `
+                            <button class="action-btn details-btn" onclick="uploadPhotos('${evt.id}')">Photos</button>
+                        `}
+                        <button class="action-btn delete-btn" onclick="deleteEvent('${evt.id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Application functions
         async function quickAction(applicationId, action) {
             if (!confirm(`Are you sure you want to ${action} this application? An email will be sent automatically.`)) {
                 return;
@@ -1174,7 +1567,6 @@
             const app = applications.find(a => a.id === applicationId);
             if (!app) return;
 
-            // Handle both old and new data structures
             const fullName = app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'N/A';
             const company = app.company || 'N/A';
             const position = app.position || 'N/A';
@@ -1196,11 +1588,247 @@ ${app.importedAt ? `Imported: ${new Date(app.importedAt).toLocaleString()}` : ''
             `);
         }
 
+        // Event functions
+        function editEvent(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+            
+            // Create edit modal/form
+            showEventEditModal(event);
+        }
+
+        function showEventDetails(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+
+            const attendeesText = event.attendees && event.attendees.length > 0 
+                ? event.attendees.map(a => a.name).join(', ')
+                : 'No attendees yet';
+
+            alert(`
+Event Details:
+
+Name: ${event.name}
+Date: ${new Date(event.date).toLocaleDateString()}
+Time: ${event.time || 'Not specified'}
+Venue: ${event.venue}
+Address: ${event.venueAddress || 'Not specified'}
+Max Attendees: ${event.maxAttendees || 'Unlimited'}
+Current Attendees: ${event.attendees ? event.attendees.length : 0}
+Photos: ${event.photos ? event.photos.length : 0}
+Status: ${event.status}
+Description: ${event.description || 'No description'}
+
+Attendees: ${attendeesText}
+
+Created: ${new Date(event.createdAt).toLocaleString()}
+            `);
+        }
+
+        async function markEventCompleted(eventId) {
+            if (!confirm('Mark this event as completed? You will then be able to upload photos.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/update-event', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        eventId,
+                        updates: { status: 'completed' }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update event');
+                }
+
+                showMessage('Event marked as completed!', 'success', 'eventsMessageContainer');
+                loadEvents();
+                
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showError('Failed to update event. Please try again.', 'eventsMessageContainer');
+            }
+        }
+
+        function uploadPhotos(eventId) {
+            showPhotoUploadModal(eventId);
+        }
+
+        function showEventEditModal(event) {
+            // Simple prompt-based editing for now
+            const updates = {};
+            
+            const newName = prompt('Event name:', event.name);
+            if (newName !== null && newName !== event.name) {
+                updates.name = newName;
+            }
+            
+            const newDate = prompt('Event date (YYYY-MM-DD):', event.date);
+            if (newDate !== null && newDate !== event.date) {
+                updates.date = newDate;
+            }
+            
+            if (Object.keys(updates).length > 0) {
+                updateEvent(event.id, updates);
+            }
+        }
+
+        function showPhotoUploadModal(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+            
+            // Create photo upload interface
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); z-index: 1000; display: flex;
+                justify-content: center; align-items: center;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
+                    <h3>Upload Photos for ${event.name}</h3>
+                    <div style="margin: 20px 0;">
+                        <input type="file" id="photoInput" accept="image/*" multiple style="margin-bottom: 15px;">
+                        <div>
+                            <label for="photoCaption">Caption (optional):</label>
+                            <input type="text" id="photoCaption" placeholder="Describe this photo..." style="width: 100%; padding: 8px; margin-top: 5px;">
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="margin-right: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px;">Cancel</button>
+                        <button onclick="handlePhotoUpload('${eventId}')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px;">Upload</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        async function handlePhotoUpload(eventId) {
+            const fileInput = document.getElementById('photoInput');
+            const caption = document.getElementById('photoCaption').value;
+            
+            if (!fileInput.files.length) {
+                alert('Please select at least one photo.');
+                return;
+            }
+            
+            for (const file of fileInput.files) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const response = await fetch('/.netlify/functions/upload-photo', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                eventId,
+                                photoData: e.target.result,
+                                fileName: file.name,
+                                caption: caption
+                            })
+                        });
+
+                        if (response.ok) {
+                            showMessage('Photo uploaded successfully!', 'success', 'eventsMessageContainer');
+                        } else {
+                            throw new Error('Upload failed');
+                        }
+                    } catch (error) {
+                        console.error('Photo upload error:', error);
+                        showError('Failed to upload photo. Please try again.', 'eventsMessageContainer');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Close modal
+            document.querySelector('[style*="position: fixed"]').remove();
+            loadEvents();
+        }
+
+        async function updateEvent(eventId, updates) {
+            try {
+                const response = await fetch('/.netlify/functions/update-event', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ eventId, updates })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update event');
+                }
+
+                showMessage('Event updated successfully!', 'success', 'eventsMessageContainer');
+                loadEvents();
+                
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showError('Failed to update event. Please try again.', 'eventsMessageContainer');
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+
+            if (!confirm(`Are you sure you want to permanently delete the event "${event.name}"? This action cannot be undone and will delete all photos.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/delete-event', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ eventId })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete event');
+                }
+
+                showMessage(`Event "${event.name}" deleted successfully.`, 'success', 'eventsMessageContainer');
+                loadEvents();
+                
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showError('Failed to delete event. Please try again.', 'eventsMessageContainer');
+            }
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             checkQuickAction();
             checkAuth();
         });
+
+        // Make functions global for onclick handlers
+        window.quickAction = quickAction;
+        window.updateApplication = updateApplication;
+        window.deleteApplication = deleteApplication;
+        window.showDetails = showDetails;
+        window.editEvent = editEvent;
+        window.showEventDetails = showEventDetails;
+        window.markEventCompleted = markEventCompleted;
+        window.uploadPhotos = uploadPhotos;
+        window.deleteEvent = deleteEvent;
+        window.handlePhotoUpload = handlePhotoUpload;
+        window.switchTab = switchTab;
     </script>
 </body>
 </html>
