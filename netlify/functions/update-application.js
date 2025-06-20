@@ -1,5 +1,4 @@
-const { createClient } = require('@netlify/blobs');
-
+// netlify/functions/update-application.js
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -26,25 +25,55 @@ exports.handler = async (event, context) => {
 
   try {
     const { applicationId, status, notes, sendEmail: shouldSendEmail } = JSON.parse(event.body);
+    
+    console.log(`🔄 Updating application ${applicationId} to ${status}`);
 
-    const blobs = createClient({
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_ACCESS_TOKEN
-    });
-
-    let applications = [];
-    try {
-      const data = await blobs.get('applications', 'applications.json');
-      if (data) {
-        applications = JSON.parse(data);
-      }
-    } catch (error) {
+    // Check environment variables
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing required Netlify environment variables');
       return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'Applications not found' })
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server configuration error' })
       };
     }
 
+    const blobsBaseUrl = `https://api.netlify.com/api/v1/sites/${process.env.NETLIFY_SITE_ID}/blobs`;
+    
+    let applications = [];
+    
+    // Get existing applications
+    try {
+      const getResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (getResponse.ok) {
+        const existingData = await getResponse.text();
+        if (existingData && existingData.trim()) {
+          try {
+            const parsedData = JSON.parse(existingData);
+            if (Array.isArray(parsedData)) {
+              applications = parsedData;
+              console.log(`📊 Loaded ${applications.length} applications for update`);
+            }
+          } catch (parseError) {
+            console.log('⚠️ Could not parse existing data:', parseError.message);
+          }
+        }
+      }
+    } catch (fetchError) {
+      console.error('❌ Error fetching applications for update:', fetchError);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Could not load applications' })
+      };
+    }
+
+    // Find and update application
     const appIndex = applications.findIndex(app => app.id === applicationId);
     if (appIndex === -1) {
       return {
@@ -61,14 +90,38 @@ exports.handler = async (event, context) => {
       applications[appIndex].notes = notes;
     }
 
-    await blobs.set('applications', 'applications.json', JSON.stringify(applications, null, 2));
+    // Save updated applications
+    try {
+      const putResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(applications, null, 2)
+      });
+      
+      if (!putResponse.ok) {
+        const errorText = await putResponse.text();
+        throw new Error(`Failed to save updated applications: ${putResponse.status} - ${errorText}`);
+      }
+      
+      console.log('✅ Applications updated successfully');
+    } catch (saveError) {
+      console.error('❌ Error saving updated applications:', saveError);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Failed to save updated application' })
+      };
+    }
 
     // Send email to applicant if requested
     if (shouldSendEmail) {
       try {
         await sendApplicantEmail(application, status);
+        console.log('✅ Applicant email sent');
       } catch (emailError) {
-        console.error('Failed to send applicant email:', emailError);
+        console.error('❌ Failed to send applicant email:', emailError);
       }
     }
 
@@ -85,7 +138,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Error updating application:', error);
+    console.error('💥 Error updating application:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Internal server error' })
@@ -188,15 +241,25 @@ async function sendRejectionEmail(application) {
 }
 
 async function sendEmail(to, subject, htmlBody) {
-  const sgMail = require('@sendgrid/mail');
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  try {
+    const sgMail = require('@sendgrid/mail');
+    
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error('SendGrid API key not configured');
+    }
+    
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  const msg = {
-    to: to,
-    from: process.env.FROM_EMAIL,
-    subject: subject,
-    html: htmlBody,
-  };
+    const msg = {
+      to: to,
+      from: process.env.FROM_EMAIL,
+      subject: subject,
+      html: htmlBody,
+    };
 
-  await sgMail.send(msg);
+    await sgMail.send(msg);
+  } catch (emailError) {
+    console.error('SendGrid error:', emailError);
+    throw emailError;
+  }
 }
