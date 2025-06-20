@@ -94,7 +94,7 @@ async function sendAdminNotification(application) {
   const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) return;
 
-  const baseUrl = process.env.URL;
+  const baseUrl = process.env.SITE_URL;
   const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
   const rejectUrl = `${baseUrl}/admin.html?action=reject&id=${application.id}&token=${application.rejectToken}`;
 
@@ -156,7 +156,7 @@ async function sendAdminNotification(application) {
         </div>
         
         <div style="text-align: center; margin-top: 20px;">
-          <a href="${process.env.URL}/admin.html" 
+          <a href="${process.env.SITE_URL}/admin.html" 
              style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
             Open Admin Dashboard
           </a>
