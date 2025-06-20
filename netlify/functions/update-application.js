@@ -1,4 +1,4 @@
-// netlify/functions/update-application.js
+// netlify/functions/update-application.js - Updated for new field structure
 const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {

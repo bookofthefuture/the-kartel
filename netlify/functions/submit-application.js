@@ -1,4 +1,4 @@
-// netlify/functions/submit-application.js
+// netlify/functions/submit-application.js - Updated for new field structure
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 

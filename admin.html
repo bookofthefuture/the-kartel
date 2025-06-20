@@ -489,7 +489,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
-                                <th>Company</th>
+                                <th>Company & Position</th>
                                 <th>Phone</th>
                                 <th>Status</th>
                                 <th>Submitted</th>
@@ -708,12 +708,12 @@
             tbody.innerHTML = applications.map(app => `
                 <tr>
                     <td>
-                        <strong>${app.name}</strong>
+                        <strong>${app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'N/A'}</strong>
                         ${app.status === 'pending' ? `
                             <div class="application-details">
                                 <div class="detail-row">
-                                    <span class="detail-label">Industry:</span>
-                                    <span class="detail-value">${app.industry || 'N/A'}</span>
+                                    <span class="detail-label">Position:</span>
+                                    <span class="detail-value">${app.position || 'N/A'}</span>
                                 </div>
                                 <div class="detail-row">
                                     <span class="detail-label">Message:</span>
@@ -723,7 +723,10 @@
                         ` : ''}
                     </td>
                     <td>${app.email}</td>
-                    <td>${app.company || 'N/A'}</td>
+                    <td>
+                        <strong>${app.company || 'N/A'}</strong>
+                        ${app.position ? `<br><small>${app.position}</small>` : ''}
+                    </td>
                     <td>${app.phone}</td>
                     <td><span class="status-badge status-${app.status}">${app.status}</span></td>
                     <td>${new Date(app.submittedAt).toLocaleDateString()}</td>
@@ -819,14 +822,19 @@
             const app = applications.find(a => a.id === applicationId);
             if (!app) return;
 
+            // Handle both old and new data structures
+            const fullName = app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'N/A';
+            const company = app.company || 'N/A';
+            const position = app.position || 'N/A';
+
             alert(`
 Application Details:
 
-Name: ${app.name}
+Name: ${fullName}
 Email: ${app.email}
-Company: ${app.company || 'N/A'}
+Company: ${company}
+Position: ${position}
 Phone: ${app.phone}
-Industry: ${app.industry || 'N/A'}
 Message: ${app.message || 'N/A'}
 Status: ${app.status}
 Submitted: ${new Date(app.submittedAt).toLocaleString()}
