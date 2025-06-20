@@ -10,7 +10,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Simple token validation (in production, verify JWT)
+  // Simple token validation
   const token = authHeader.split(' ')[1];
   if (!token || token.length < 32) {
     return {
@@ -53,4 +53,3 @@ exports.handler = async (event, context) => {
     };
   }
 };
-

@@ -1,7 +1,7 @@
 const { createClient } = require('@netlify/blobs');
+const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -13,7 +13,6 @@ exports.handler = async (event, context) => {
     const data = JSON.parse(event.body);
     const timestamp = new Date().toISOString();
     
-    // Validate required fields
     const requiredFields = ['name', 'email', 'phone'];
     for (const field of requiredFields) {
       if (!data[field]) {
@@ -24,7 +23,10 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // Create application record
+    // Generate unique action tokens for quick actions
+    const approveToken = crypto.randomBytes(16).toString('hex');
+    const rejectToken = crypto.randomBytes(16).toString('hex');
+
     const application = {
       id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: data.name,
@@ -36,16 +38,16 @@ exports.handler = async (event, context) => {
       status: 'pending',
       submittedAt: timestamp,
       reviewedAt: null,
-      reviewedBy: null
+      reviewedBy: null,
+      approveToken,
+      rejectToken
     };
 
-    // Store in Netlify Blobs
     const blobs = createClient({
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN
     });
 
-    // Get existing applications
     let applications = [];
     try {
       const existingData = await blobs.get('applications', 'applications.json');
@@ -56,18 +58,14 @@ exports.handler = async (event, context) => {
       console.log('No existing applications found, creating new file');
     }
 
-    // Add new application
     applications.push(application);
-
-    // Save back to blob storage
     await blobs.set('applications', 'applications.json', JSON.stringify(applications, null, 2));
 
-    // Send email notification (don't let email failure block the application)
+    // Send admin notification email
     try {
-      await sendEmailNotification(application);
+      await sendAdminNotification(application);
     } catch (emailError) {
       console.error('Email notification failed:', emailError);
-      // Continue anyway - the application was saved successfully
     }
 
     return {
@@ -92,16 +90,15 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function sendEmailNotification(application) {
+async function sendAdminNotification(application) {
   const adminEmail = process.env.ADMIN_EMAIL;
-  const emailService = process.env.EMAIL_SERVICE || 'netlify'; // 'netlify' or 'sendgrid'
-  
-  if (!adminEmail) {
-    console.log('No admin email configured, skipping notification');
-    return;
-  }
+  if (!adminEmail) return;
 
-  const subject = `New Kartel Membership Application - ${application.name}`;
+  const baseUrl = process.env.URL;
+  const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
+  const rejectUrl = `${baseUrl}/admin.html?action=reject&id=${application.id}&token=${application.rejectToken}`;
+
+  const subject = `New Kartel Application - ${application.name}`;
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 20px; text-align: center;">
@@ -110,45 +107,58 @@ async function sendEmailNotification(application) {
       </div>
       
       <div style="padding: 30px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50; margin-bottom: 20px;">Application Details</h2>
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">Quick Actions</h2>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+          <a href="${approveUrl}" 
+             style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 15px; display: inline-block;">
+            APPROVE APPLICATION
+          </a>
+          <a href="${rejectUrl}" 
+             style="background: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            REJECT APPLICATION
+          </a>
+        </div>
+        
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Application Details</h3>
         
         <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <table style="width: 100%; border-collapse: collapse;">
             <tr style="border-bottom: 1px solid #ecf0f1;">
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50; width: 30%;">Name:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${application.name}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50; width: 30%;">Name:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.name}</td>
             </tr>
             <tr style="border-bottom: 1px solid #ecf0f1;">
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Email:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${application.email}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Email:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.email}</td>
             </tr>
             <tr style="border-bottom: 1px solid #ecf0f1;">
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Phone:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${application.phone}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Phone:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.phone}</td>
             </tr>
             <tr style="border-bottom: 1px solid #ecf0f1;">
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Company:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${application.company || 'Not provided'}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Company:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.company || 'Not provided'}</td>
             </tr>
             <tr style="border-bottom: 1px solid #ecf0f1;">
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Industry:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${application.industry || 'Not provided'}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Industry:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.industry || 'Not provided'}</td>
             </tr>
             <tr style="border-bottom: 1px solid #ecf0f1;">
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Submitted:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${new Date(application.submittedAt).toLocaleString()}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50;">Submitted:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${new Date(application.submittedAt).toLocaleString()}</td>
             </tr>
             <tr>
-              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50; vertical-align: top;">Message:</td>
-              <td style="padding: 10px 0; color: #5d6d7e;">${application.message || 'No message provided'}</td>
+              <td style="padding: 12px 0; font-weight: bold; color: #2c3e50; vertical-align: top;">Message:</td>
+              <td style="padding: 12px 0; color: #5d6d7e;">${application.message || 'No message provided'}</td>
             </tr>
           </table>
         </div>
         
-        <div style="text-align: center; margin-top: 30px;">
+        <div style="text-align: center; margin-top: 20px;">
           <a href="${process.env.URL}/admin.html" 
-             style="background: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
-            Review Application
+             style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            Open Admin Dashboard
           </a>
         </div>
       </div>
@@ -159,58 +169,17 @@ async function sendEmailNotification(application) {
     </div>
   `;
 
-  const textBody = `
-New Kartel Membership Application
-
-Name: ${application.name}
-Email: ${application.email}
-Phone: ${application.phone}
-Company: ${application.company || 'Not provided'}
-Industry: ${application.industry || 'Not provided'}
-Submitted: ${new Date(application.submittedAt).toLocaleString()}
-
-Message: ${application.message || 'No message provided'}
-
-Review this application at: ${process.env.URL}/admin.html
-
-Application ID: ${application.id}
-  `;
-
-  if (emailService === 'sendgrid') {
-    await sendViaSendGrid(adminEmail, subject, htmlBody, textBody);
-  } else {
-    await sendViaNetlify(adminEmail, subject, htmlBody, textBody);
-  }
+  await sendEmail(adminEmail, subject, htmlBody);
 }
 
-async function sendViaNetlify(to, subject, htmlBody, textBody) {
-  // Use Netlify's built-in form submission to trigger email
-  const formData = new FormData();
-  formData.append('form-name', 'admin-notifications');
-  formData.append('to', to);
-  formData.append('subject', subject);
-  formData.append('html-body', htmlBody);
-  formData.append('text-body', textBody);
-
-  const response = await fetch(`${process.env.URL}/`, {
-    method: 'POST',
-    body: formData
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to send Netlify notification');
-  }
-}
-
-async function sendViaSendGrid(to, subject, htmlBody, textBody) {
+async function sendEmail(to, subject, htmlBody) {
   const sgMail = require('@sendgrid/mail');
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
   const msg = {
     to: to,
-    from: process.env.FROM_EMAIL || 'noreply@the-kartel.com',
+    from: process.env.FROM_EMAIL,
     subject: subject,
-    text: textBody,
     html: htmlBody,
   };
 

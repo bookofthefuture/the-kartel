@@ -12,10 +12,10 @@ exports.handler = async (event, context) => {
     const { username, password } = JSON.parse(event.body);
     
     // Get credentials from environment variables
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminUsername = process.env.ADMIN_USERNAME;
     const adminPassword = process.env.ADMIN_PASSWORD;
     
-    if (!adminPassword) {
+    if (!adminPassword || !adminUsername) {
       return {
         statusCode: 500,
         body: JSON.stringify({ error: 'Server configuration error' })
@@ -24,7 +24,7 @@ exports.handler = async (event, context) => {
     
     // Simple credential check
     if (username === adminUsername && password === adminPassword) {
-      // Generate a simple token (in production, use JWT)
+      // Generate a simple token
       const token = crypto.randomBytes(32).toString('hex');
       
       return {
