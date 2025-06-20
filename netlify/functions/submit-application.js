@@ -1,5 +1,4 @@
 // netlify/functions/submit-application.js
-// Fixed version with correct Netlify Blobs import
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -67,55 +66,59 @@ exports.handler = async (event, context) => {
     }
 
     try {
-      console.log('💾 Importing Netlify Blobs...');
+      console.log('💾 Setting up Netlify Blobs storage...');
       
-      // Try different import methods for Netlify Blobs
-      let createClient;
-      try {
-        // Method 1: Try named import
-        const blobs = await import('@netlify/blobs');
-        createClient = blobs.createClient;
-        console.log('✅ Netlify Blobs imported via named import');
-      } catch (importError1) {
-        try {
-          // Method 2: Try require
-          const blobs = require('@netlify/blobs');
-          createClient = blobs.createClient;
-          console.log('✅ Netlify Blobs imported via require');
-        } catch (importError2) {
-          console.error('❌ Failed to import Netlify Blobs:', importError1, importError2);
-          throw new Error('Failed to import Netlify Blobs library');
-        }
-      }
-
-      if (!createClient) {
-        throw new Error('createClient function not found in @netlify/blobs');
-      }
-
-      console.log('💾 Creating Netlify Blobs client...');
-      const blobsClient = createClient({
-        siteID: process.env.NETLIFY_SITE_ID,
-        token: process.env.NETLIFY_ACCESS_TOKEN
-      });
-      console.log('✅ Blobs client created');
-
+      // Use Netlify's built-in blobs API through fetch
+      const blobsBaseUrl = `https://api.netlify.com/api/v1/sites/${process.env.NETLIFY_SITE_ID}/blobs`;
+      
       console.log('📖 Fetching existing applications...');
       let applications = [];
+      
+      // Try to get existing applications
       try {
-        const existingData = await blobsClient.get('applications', 'applications.json');
-        if (existingData) {
-          applications = JSON.parse(existingData);
-          console.log(`📊 Found ${applications.length} existing applications`);
+        const getResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (getResponse.ok) {
+          const existingData = await getResponse.text();
+          if (existingData) {
+            applications = JSON.parse(existingData);
+            console.log(`📊 Found ${applications.length} existing applications`);
+          }
+        } else if (getResponse.status === 404) {
+          console.log('📝 No existing applications found, will create new file');
+        } else {
+          console.log(`❓ Unexpected response when fetching: ${getResponse.status}`);
         }
-      } catch (error) {
-        console.log('📝 No existing applications found, creating new file');
+      } catch (fetchError) {
+        console.log('📝 Could not fetch existing applications, starting fresh:', fetchError.message);
       }
 
+      // Add new application
       applications.push(application);
       console.log(`💾 Saving ${applications.length} applications...`);
       
-      await blobsClient.set('applications', 'applications.json', JSON.stringify(applications, null, 2));
-      console.log('✅ Applications saved successfully');
+      // Save applications to blobs
+      const putResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(applications, null, 2)
+      });
+      
+      if (!putResponse.ok) {
+        const errorText = await putResponse.text();
+        throw new Error(`Failed to save to blobs: ${putResponse.status} - ${errorText}`);
+      }
+      
+      console.log('✅ Applications saved successfully to Netlify Blobs');
 
     } catch (blobError) {
       console.error('❌ Blob storage error:', blobError);
@@ -253,6 +256,11 @@ async function sendEmail(to, subject, htmlBody) {
   try {
     console.log('📧 Importing SendGrid...');
     const sgMail = require('@sendgrid/mail');
+    
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error('SendGrid API key not configured');
+    }
+    
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     const msg = {
