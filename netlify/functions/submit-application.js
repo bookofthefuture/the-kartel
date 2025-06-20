@@ -1,4 +1,4 @@
-// netlify/functions/submit-application.js
+// netlify/functions/submit-application.js - Enhanced Debug Version
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -10,10 +10,15 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('📝 Function started');
+    console.log('📝 Form submission started');
     
     const data = JSON.parse(event.body);
-    console.log('📊 Received data:', data);
+    console.log('📊 Form data received:', {
+      name: data.name,
+      email: data.email,
+      hasPhone: !!data.phone,
+      hasCompany: !!data.company
+    });
     
     const timestamp = new Date().toISOString();
     
@@ -50,12 +55,12 @@ exports.handler = async (event, context) => {
       rejectToken
     };
 
-    console.log('📋 Application object created:', application.id);
+    console.log('📋 Application created with ID:', application.id);
 
     // Check environment variables
-    console.log('🔧 Checking environment variables:');
+    console.log('🔧 Environment check:');
     console.log('  NETLIFY_SITE_ID:', process.env.NETLIFY_SITE_ID ? 'SET' : 'MISSING');
-    console.log('  NETLIFY_ACCESS_TOKEN:', process.env.NETLIFY_ACCESS_TOKEN ? 'SET' : 'MISSING');
+    console.log('  NETLIFY_ACCESS_TOKEN:', process.env.NETLIFY_ACCESS_TOKEN ? 'SET (length: ' + process.env.NETLIFY_ACCESS_TOKEN.length + ')' : 'MISSING');
 
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
       console.error('❌ Missing required Netlify environment variables');
@@ -68,15 +73,16 @@ exports.handler = async (event, context) => {
     try {
       console.log('💾 Setting up Netlify Blobs storage...');
       
-      // Use Netlify's built-in blobs API through fetch
       const blobsBaseUrl = `https://api.netlify.com/api/v1/sites/${process.env.NETLIFY_SITE_ID}/blobs`;
+      const blobUrl = `${blobsBaseUrl}/applications:applications.json`;
+      console.log('🌐 Using blob URL:', blobUrl);
       
       console.log('📖 Fetching existing applications...');
       let applications = [];
       
       // Try to get existing applications
       try {
-        const getResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+        const getResponse = await fetch(blobUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
@@ -84,14 +90,15 @@ exports.handler = async (event, context) => {
           }
         });
         
+        console.log('📡 GET response status:', getResponse.status);
+        
         if (getResponse.ok) {
           const existingData = await getResponse.text();
-          console.log('📄 Raw data from blobs:', existingData ? existingData.substring(0, 100) + '...' : 'empty');
+          console.log('📄 Existing data length:', existingData ? existingData.length : 0);
           
           if (existingData && existingData.trim()) {
             try {
               const parsedData = JSON.parse(existingData);
-              // Ensure we have an array
               if (Array.isArray(parsedData)) {
                 applications = parsedData;
                 console.log(`📊 Found ${applications.length} existing applications`);
@@ -127,27 +134,60 @@ exports.handler = async (event, context) => {
 
       // Add new application
       applications.push(application);
-      console.log(`💾 Saving ${applications.length} applications...`);
+      console.log(`💾 Now have ${applications.length} applications total`);
       
       // Save applications to blobs
-      const putResponse = await fetch(`${blobsBaseUrl}/applications:applications.json`, {
+      console.log('💾 Saving to Netlify Blobs...');
+      const applicationData = JSON.stringify(applications, null, 2);
+      console.log('📄 Data to save length:', applicationData.length);
+      console.log('📄 First application in array:', applications[0] ? applications[0].id : 'N/A');
+      console.log('📄 Last application in array:', applications[applications.length - 1] ? applications[applications.length - 1].id : 'N/A');
+      
+      const putResponse = await fetch(blobUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(applications, null, 2)
+        body: applicationData
       });
+      
+      console.log('📡 PUT response status:', putResponse.status);
+      console.log('📡 PUT response headers:', Object.fromEntries(putResponse.headers.entries()));
       
       if (!putResponse.ok) {
         const errorText = await putResponse.text();
+        console.error('❌ PUT failed with body:', errorText);
         throw new Error(`Failed to save to blobs: ${putResponse.status} - ${errorText}`);
       }
       
       console.log('✅ Applications saved successfully to Netlify Blobs');
 
+      // Verify the save by reading it back
+      console.log('🔍 Verifying save by reading back...');
+      try {
+        const verifyResponse = await fetch(blobUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.NETLIFY_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (verifyResponse.ok) {
+          const verifyData = await verifyResponse.text();
+          const verifyParsed = JSON.parse(verifyData);
+          console.log('✅ Verification successful - found', verifyParsed.length, 'applications');
+        } else {
+          console.log('⚠️ Verification failed with status:', verifyResponse.status);
+        }
+      } catch (verifyError) {
+        console.log('⚠️ Verification error:', verifyError.message);
+      }
+
     } catch (blobError) {
-      console.error('❌ Blob storage error:', blobError);
+      console.error('❌ Blob storage error:', blobError.message);
+      console.error('❌ Blob error stack:', blobError.stack);
       return {
         statusCode: 500,
         body: JSON.stringify({ error: `Database error: ${blobError.message}` })
@@ -160,7 +200,7 @@ exports.handler = async (event, context) => {
       await sendAdminNotification(application);
       console.log('✅ Admin notification sent');
     } catch (emailError) {
-      console.error('❌ Email notification failed:', emailError);
+      console.error('❌ Email notification failed:', emailError.message);
       // Don't fail the whole request if email fails
     }
 
@@ -174,13 +214,17 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ 
         success: true, 
         message: 'Application submitted successfully',
-        applicationId: application.id
+        applicationId: application.id,
+        debug: {
+          saved: true,
+          timestamp: new Date().toISOString()
+        }
       })
     };
 
   } catch (error) {
-    console.error('💥 Function error:', error);
-    console.error('Error stack:', error.stack);
+    console.error('💥 Function error:', error.message);
+    console.error('💥 Error stack:', error.stack);
     return {
       statusCode: 500,
       body: JSON.stringify({ 
@@ -300,7 +344,7 @@ async function sendEmail(to, subject, htmlBody) {
     await sgMail.send(msg);
     console.log('✅ Email sent successfully');
   } catch (emailError) {
-    console.error('❌ SendGrid error:', emailError);
+    console.error('❌ SendGrid error:', emailError.message);
     throw emailError;
   }
 }
