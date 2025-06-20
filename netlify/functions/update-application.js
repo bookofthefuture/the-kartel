@@ -1,4 +1,4 @@
-// netlify/functions/update-application.js - CORRECT IMPLEMENTATION  
+// netlify/functions/update-application.js - FIXED IMPLEMENTATION  
 import { getStore } from '@netlify/blobs';
 
 exports.handler = async (event, context) => {
@@ -30,9 +30,11 @@ exports.handler = async (event, context) => {
     
     console.log(`🔄 Updating application ${applicationId} to ${status}`);
 
-    // Use strong consistency for updates
+    // Provide credentials manually
     const applicationsStore = getStore({
       name: 'applications',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
     });
     

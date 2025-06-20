@@ -1,4 +1,4 @@
-// netlify/functions/submit-application.js - CORRECT IMPLEMENTATION
+// netlify/functions/submit-application.js - FIXED IMPLEMENTATION
 import { getStore } from '@netlify/blobs';
 const crypto = require('crypto');
 
@@ -48,12 +48,13 @@ exports.handler = async (event, context) => {
     console.log('📋 Application created:', application.id);
 
     try {
-      // Use the correct Netlify Blobs SDK
+      // Provide credentials manually since environment isn't auto-configured
       console.log('💾 Storing with official Netlify Blobs SDK...');
       
-      // Get the applications store with strong consistency for immediate read-after-write
       const applicationsStore = getStore({
         name: 'applications',
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_ACCESS_TOKEN,
         consistency: 'strong'  // Ensures immediate availability
       });
       
