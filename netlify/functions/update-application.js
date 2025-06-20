@@ -1,5 +1,5 @@
-// netlify/functions/update-application.js - FIXED IMPLEMENTATION  
-import { getStore } from '@netlify/blobs';
+// netlify/functions/update-application.js
+const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -30,7 +30,7 @@ exports.handler = async (event, context) => {
     
     console.log(`🔄 Updating application ${applicationId} to ${status}`);
 
-    // Provide credentials manually
+    // Manual configuration with explicit credentials
     const applicationsStore = getStore({
       name: 'applications',
       siteID: process.env.NETLIFY_SITE_ID,
@@ -101,7 +101,10 @@ exports.handler = async (event, context) => {
     console.error('💥 Error updating application:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' })
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message
+      })
     };
   }
 };
@@ -126,6 +129,7 @@ async function sendApprovalEmail(application) {
       <div style="padding: 40px; background: #f8f9fa;">
         <h2 style="color: #2c3e50; margin-bottom: 20px;">Congratulations, ${application.name}!</h2>
         <p style="color: #2c3e50;">We're thrilled to welcome you to The Kartel - Manchester's most exclusive business networking collective!</p>
+        <p style="color: #2c3e50;">You'll receive details about upcoming events and access to our private WhatsApp community shortly.</p>
       </div>
     </div>
   `;
@@ -144,6 +148,7 @@ async function sendRejectionEmail(application) {
       <div style="padding: 40px; background: #f8f9fa;">
         <h2 style="color: #2c3e50;">Dear ${application.name},</h2>
         <p style="color: #2c3e50;">Thank you for your interest in The Kartel. After careful consideration, we've decided not to move forward with your application at this time.</p>
+        <p style="color: #2c3e50;">We appreciate your interest and wish you well in your professional endeavors.</p>
       </div>
     </div>
   `;
@@ -152,6 +157,11 @@ async function sendRejectionEmail(application) {
 }
 
 async function sendEmail(to, subject, htmlBody) {
+  if (!process.env.SENDGRID_API_KEY || !process.env.FROM_EMAIL) {
+    console.log('SendGrid not configured, skipping email');
+    return;
+  }
+
   try {
     const sgMail = require('@sendgrid/mail');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);

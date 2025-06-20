@@ -1,5 +1,5 @@
-// netlify/functions/submit-application.js - FIXED IMPLEMENTATION
-import { getStore } from '@netlify/blobs';
+// netlify/functions/submit-application.js
+const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -48,21 +48,21 @@ exports.handler = async (event, context) => {
     console.log('📋 Application created:', application.id);
 
     try {
-      // Provide credentials manually since environment isn't auto-configured
-      console.log('💾 Storing with official Netlify Blobs SDK...');
-      
+      // Manual configuration with explicit credentials
       const applicationsStore = getStore({
         name: 'applications',
         siteID: process.env.NETLIFY_SITE_ID,
         token: process.env.NETLIFY_ACCESS_TOKEN,
-        consistency: 'strong'  // Ensures immediate availability
+        consistency: 'strong'
       });
+      
+      console.log('💾 Storing with configured SDK...');
       
       // Store individual application
       await applicationsStore.setJSON(application.id, application);
       console.log('✅ Individual application stored');
       
-      // Get current applications list
+      // Get current applications list and update it
       let applications = [];
       try {
         const existingApplications = await applicationsStore.get('_list', { type: 'json' });
@@ -83,9 +83,19 @@ exports.handler = async (event, context) => {
       
     } catch (storageError) {
       console.error('❌ Storage error:', storageError.message);
-      // Log as fallback
+      console.error('❌ Storage stack:', storageError.stack);
+      
+      // Log as fallback for debugging
       console.log('📄 FALLBACK - APPLICATION DATA:');
       console.log(JSON.stringify(application, null, 2));
+      
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ 
+          error: `Database error: ${storageError.message}`,
+          applicationId: application.id
+        })
+      };
     }
 
     // Send admin notification
@@ -111,6 +121,8 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('💥 Function error:', error.message);
+    console.error('💥 Function stack:', error.stack);
+    
     return {
       statusCode: 500,
       body: JSON.stringify({ 
@@ -123,9 +135,12 @@ exports.handler = async (event, context) => {
 
 async function sendAdminNotification(application) {
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) return;
+  if (!adminEmail) {
+    console.log('No admin email configured, skipping notification');
+    return;
+  }
 
-  const baseUrl = process.env.SITE_URL;
+  const baseUrl = process.env.SITE_URL || 'https://your-site.netlify.app';
   const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
   const rejectUrl = `${baseUrl}/admin.html?action=reject&id=${application.id}&token=${application.rejectToken}`;
 
@@ -174,6 +189,11 @@ async function sendAdminNotification(application) {
   `;
 
   try {
+    if (!process.env.SENDGRID_API_KEY || !process.env.FROM_EMAIL) {
+      console.log('SendGrid not configured, skipping email');
+      return;
+    }
+
     const sgMail = require('@sendgrid/mail');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
