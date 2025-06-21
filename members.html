@@ -320,9 +320,9 @@
                         </div>
                         <div class="event-actions">
                             ${type === 'upcoming' ? `
-                                <button class="btn btn-primary" onclick="signUpForEvent(event, '${event.id}')">Sign Up</button>
+                                <button class="btn btn-primary" onclick="signUpForEvent(this, '${event.id}')">Sign Up</button>
                             ` : `
-                                <button class="btn btn-secondary" onclick="cancelSignUp(event, '${event.id}')">Cancel Sign-up</button>
+                                <button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>
                                 ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
                             `}
                         </div>
@@ -333,14 +333,15 @@
         }
 
         // --- Event Sign-up/Cancel Logic ---
-        async function signUpForEvent(eventObj, eventId) { // Swapped parameter order
+        // Changed parameter name from eventObj to buttonElement for clarity
+        async function signUpForEvent(buttonElement, eventId) { 
             console.log("Sign-up button clicked for event:", eventId); // Diagnostic log
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to sign up for events.', 'error');
                 return;
             }
 
-            const btn = eventObj.target; // Use eventObj.target to get the clicked button
+            const btn = buttonElement; // 'this' from onclick directly references the button
             btn.disabled = true;
             const originalText = btn.textContent;
             btn.textContent = 'Signing up...';
@@ -357,7 +358,7 @@
                         memberId: currentMember.id,
                         memberName: currentMember.fullName,
                         memberEmail: currentMember.email,
-                        memberCompany: currentMember.company || '' // Add company if available in currentMember object
+                        memberCompany: currentMember.company || '' 
                     })
                 });
 
@@ -371,8 +372,9 @@
 
                 if (response.ok && result.success) {
                     showMessage('Successfully signed up for the event!', 'success');
-                    loadEvents('upcoming'); // Refresh upcoming events
-                    loadEvents('my');       // Refresh my events
+                    // Reload events to reflect the sign-up status immediately
+                    loadEvents('upcoming'); 
+                    loadEvents('my');       
                 } else {
                     showMessage(result.error || 'Failed to sign up for event.', 'error');
                 }
@@ -385,7 +387,8 @@
             }
         }
 
-        async function cancelSignUp(eventObj, eventId) { // Swapped parameter order
+        // Changed parameter name from eventObj to buttonElement for clarity
+        async function cancelSignUp(buttonElement, eventId) { 
             console.log("Cancel sign-up button clicked for event:", eventId); // Diagnostic log
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to cancel event sign-ups.', 'error');
@@ -396,7 +399,7 @@
             // A custom modal UI would be ideal for a real confirmation.
             showMessage('Cancelling your sign-up...', 'success'); 
             
-            const btn = eventObj.target; // Use eventObj.target to get the clicked button
+            const btn = buttonElement; // 'this' from onclick directly references the button
             btn.disabled = true;
             const originalText = btn.textContent;
             btn.textContent = 'Cancelling...';
@@ -424,8 +427,9 @@
 
                 if (response.ok && result.success) {
                     showMessage('Successfully cancelled sign-up.', 'success');
-                    loadEvents('upcoming'); // Refresh upcoming events
-                    loadEvents('my');       // Refresh my events
+                    // Reload events to reflect the sign-up status immediately
+                    loadEvents('upcoming'); 
+                    loadEvents('my');       
                 } else {
                     showMessage(result.error || 'Failed to cancel sign-up.', 'error');
                 }
