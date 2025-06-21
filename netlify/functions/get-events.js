@@ -73,6 +73,20 @@ exports.handler = async (event, context) => {
       events = [];
     }
 
+    // --- NEW: Ensure attendees and photos arrays exist for each event ---
+    events = events.map(event => {
+        // Ensure attendees is an array
+        if (!Array.isArray(event.attendees)) {
+            event.attendees = [];
+        }
+        // Ensure photos is an array
+        if (!Array.isArray(event.photos)) {
+            event.photos = [];
+        }
+        return event;
+    });
+    // --- END NEW ---
+
     // Sort by date (newest first)
     events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
