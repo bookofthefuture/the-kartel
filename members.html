@@ -302,6 +302,9 @@
             }
 
             const eventsHTML = eventsToDisplay.map(event => {
+                // Log the event object to the console for debugging
+                console.log('Event being rendered:', event);
+
                 const currentAttendeesCount = event.attendees ? event.attendees.length : 0;
                 const isSignedUp = event.attendees && event.attendees.some(a => a.memberId === currentMember.id);
                 return `
