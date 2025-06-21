@@ -41,6 +41,25 @@
 
 ## Technical Conventions
 
+### CSS Formatting Standards
+**All CSS should be formatted in compact single-line format for consistency and easier maintenance:**
+
+```css
+.example-class { property: value; another-property: value; display: flex; }
+.another-class { background: #fff; color: #000; padding: 10px; }
+```
+
+**Not the expanded format:**
+```css
+.example-class {
+    property: value;
+    another-property: value;
+    display: flex;
+}
+```
+
+This compact format makes CSS easier to copy/paste, reduces file size, and maintains consistency across the project.
+
 ### Netlify Functions Pattern
 All functions follow this consistent structure:
 
@@ -171,6 +190,8 @@ const id = `prefix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   submittedAt: "2024-01-01T12:00:00.000Z",
   reviewedAt: "2024-01-02T10:00:00.000Z", // if reviewed
   reviewedBy: "Admin",
+  approveToken: "abc123def456ghi",
+  rejectToken: "xyz987uvw654rst",
   importedAt: "2024-01-01T12:00:00.000Z" // if bulk imported
 }
 ```
@@ -188,10 +209,25 @@ const id = `prefix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   venueAddress: "Great Ducie Street, Manchester M3 1PR",
   maxAttendees: 20,
   attendees: [
-    { id: "member123", name: "John Smith", registeredAt: "2024-01-01T12:00:00.000Z" }
+    { 
+      memberId: "app_1703123456789_abc123def", 
+      name: "John Smith", 
+      email: "john@company.com",
+      company: "Tech Corp",
+      registeredAt: "2024-01-01T12:00:00.000Z",
+      attended: true,
+      statusUpdatedAt: "2024-02-15T20:00:00.000Z"
+    }
   ],
   photos: [
-    { path: "event-photos/photo123.jpg", caption: "Winner's podium" }
+    { 
+      id: "photo_123",
+      path: "events/evt_123/photo_123.jpg", 
+      caption: "Winner's podium",
+      fileName: "podium.jpg",
+      uploadedAt: "2024-02-15T21:00:00.000Z",
+      uploadedBy: "Admin"
+    }
   ],
   status: "upcoming|completed|cancelled",
   createdAt: "2024-01-01T12:00:00.000Z",
@@ -227,9 +263,10 @@ const id = `prefix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 ### Admin Dashboard (admin.html)
 - **Authentication**: JWT-based login system
 - **Applications Management**: Review, approve, reject, bulk import
-- **Events Management**: Create events with venue selection
+- **Events Management**: Create events with venue selection, attendee tracking
 - **Venues Management**: CRUD operations for karting venues
 - **Photo Management**: Upload and organize event photos
+- **Attendee Management**: Track registrations and attendance for events
 - **Stats Dashboard**: Real-time metrics for each section
 
 ### Gallery System
@@ -237,6 +274,12 @@ const id = `prefix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 - **Dynamic Photos**: Loaded via API when available
 - **Fallback Strategy**: Graceful degradation to static content
 - **Modal View**: Click to enlarge with captions
+
+### Event Management Features
+- **Photo Upload**: Add photos to completed events
+- **Attendee Tracking**: Select approved members and track attendance
+- **Registration Status**: Toggle between registered/attended
+- **Statistics**: Real-time counts of attendees, attendance rates
 
 ## Environment Setup
 
@@ -265,9 +308,10 @@ JWT_SECRET=your-jwt-secret
 
 ### Event Workflow
 1. Admin creates event selecting from available venues
-2. Event appears in admin dashboard
-3. Admin can mark as completed and upload photos
-4. Photos automatically appear in public gallery
+2. Admin can add approved members as attendees
+3. Admin can upload photos after event completion
+4. Admin tracks attendance and manages registrations
+5. Photos automatically appear in public gallery
 
 ### Venue Management
 1. Admin adds venues with full details
@@ -312,11 +356,10 @@ console.error('💥 Error occurred:', error);   // Error
 ## Future Development Areas
 
 ### Planned Features
-- Member attendance tracking for events
-- Enhanced venue management with photos and capacity
-- Event registration system for members
-- Analytics dashboard with engagement metrics
+- Enhanced analytics dashboard with engagement metrics
 - Integration with payment systems for event fees
+- Automated email sequences for member onboarding
+- Mobile app for members
 
 ### Technical Debt
 - Consider migrating to React for complex UI interactions
