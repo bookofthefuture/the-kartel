@@ -345,6 +345,33 @@
                         <label for="venueNotes">Notes</label>
                         <textarea id="venueNotes" name="venueNotes" placeholder="Additional information about the venue..."></textarea>
                     </div>
+                    
+                    <!-- New Track Information Fields -->
+                    <div class="form-group">
+                        <label for="venueTrackMap">Track Map</label>
+                        <input type="file" id="venueTrackMap" name="venueTrackMap" accept="image/*" class="file-input">
+                        <label for="venueTrackMap" class="file-label">Choose Track Map Image</label>
+                        <div id="trackMapPreview" style="display: none; margin-top: 10px;">
+                            <img id="trackMapImage" style="max-width: 200px; max-height: 150px; border-radius: 4px; border: 2px solid #ecf0f1;">
+                        </div>
+                        <small style="color: #7f8c8d;">Upload a track layout image (PNG, JPG, GIF)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="venueDrivingTips">Driving Tips</label>
+                        <textarea id="venueDrivingTips" name="venueDrivingTips" placeholder="Share driving tips for this track: turn techniques, overtaking spots, racing lines, etc." rows="4"></textarea>
+                        <small style="color: #7f8c8d;">Tips to help members improve their lap times at this venue</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="venueVimeoId">Vimeo Video ID</label>
+                        <input type="text" id="venueVimeoId" name="venueVimeoId" placeholder="1092055210">
+                        <small style="color: #7f8c8d;">Enter just the video ID from Vimeo URL (e.g., for vimeo.com/1092055210, enter: 1092055210)</small>
+                        <div id="vimeoPreview" style="display: none; margin-top: 10px;">
+                            <iframe width="300" height="169" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    
                     <div class="form-actions">
                         <button type="submit" class="btn btn-success">Save Venue</button>
                         <button type="button" class="btn btn-secondary" onclick="closeVenueModal()">Cancel</button>
@@ -573,6 +600,9 @@
                         ${venue.phone ? `<div class="venue-detail"><strong>Phone:</strong> ${venue.phone}</div>` : ''}
                         ${venue.website ? `<div class="venue-detail"><strong>Website:</strong> <a href="${venue.website}" target="_blank" style="color: #e74c3c;">Visit Site</a></div>` : ''}
                         ${venue.notes ? `<div class="venue-detail"><strong>Notes:</strong> ${venue.notes}</div>` : ''}
+                        ${venue.drivingTips ? `<div class="venue-detail"><strong>Driving Tips:</strong> ${venue.drivingTips.substring(0, 100)}${venue.drivingTips.length > 100 ? '...' : ''}</div>` : ''}
+                        ${venue.vimeoId ? `<div class="venue-detail"><strong>Video:</strong> <a href="https://vimeo.com/${venue.vimeoId}" target="_blank" style="color: #e74c3c;">Watch on Vimeo</a></div>` : ''}
+                        ${venue.trackMapPath ? `<div class="venue-detail"><strong>Track Map:</strong> <span style="color: #27ae60;">✓ Available</span></div>` : ''}
                         <div class="venue-detail"><strong>Added:</strong> ${new Date(venue.createdAt).toLocaleDateString()}</div>
                     </div>
                     <div class="venue-actions">
@@ -595,7 +625,8 @@
             const filteredVenues = venues.filter(venue => 
                 venue.name.toLowerCase().includes(searchTerm) ||
                 venue.address.toLowerCase().includes(searchTerm) ||
-                (venue.notes && venue.notes.toLowerCase().includes(searchTerm))
+                (venue.notes && venue.notes.toLowerCase().includes(searchTerm)) ||
+                (venue.drivingTips && venue.drivingTips.toLowerCase().includes(searchTerm))
             );
             renderVenues(filteredVenues);
         }
@@ -604,6 +635,12 @@
             editingVenueId = null;
             document.getElementById('modalTitle').textContent = 'Add New Venue';
             document.getElementById('venueForm').reset();
+            
+            // Clear preview elements
+            document.getElementById('trackMapPreview').style.display = 'none';
+            document.getElementById('vimeoPreview').style.display = 'none';
+            document.getElementById('vimeoPreview').querySelector('iframe').src = '';
+            
             document.getElementById('venueModal').style.display = 'block';
         }
 
@@ -618,6 +655,32 @@
             document.getElementById('venuePhone').value = venue.phone || '';
             document.getElementById('venueWebsite').value = venue.website || '';
             document.getElementById('venueNotes').value = venue.notes || '';
+            
+            // New fields for track information
+            document.getElementById('venueDrivingTips').value = venue.drivingTips || '';
+            document.getElementById('venueVimeoId').value = venue.vimeoId || '';
+            
+            // Handle track map display if it exists
+            const trackMapPreview = document.getElementById('trackMapPreview');
+            const trackMapImage = document.getElementById('trackMapImage');
+            if (venue.trackMapPath) {
+                trackMapImage.src = `/.netlify/functions/get-photo?path=${encodeURIComponent(venue.trackMapPath)}`;
+                trackMapPreview.style.display = 'block';
+            } else {
+                trackMapPreview.style.display = 'none';
+            }
+            
+            // Handle Vimeo preview if ID exists
+            const vimeoPreview = document.getElementById('vimeoPreview');
+            const iframe = vimeoPreview.querySelector('iframe');
+            if (venue.vimeoId && /^\d+$/.test(venue.vimeoId)) {
+                iframe.src = `https://player.vimeo.com/video/${venue.vimeoId}`;
+                vimeoPreview.style.display = 'block';
+            } else {
+                vimeoPreview.style.display = 'none';
+                iframe.src = '';
+            }
+            
             document.getElementById('venueModal').style.display = 'block';
         }
 
@@ -1081,8 +1144,26 @@
                     address: formData.get('venueAddress').trim(),
                     phone: formData.get('venuePhone').trim(),
                     website: formData.get('venueWebsite').trim(),
-                    notes: formData.get('venueNotes').trim()
+                    notes: formData.get('venueNotes').trim(),
+                    drivingTips: formData.get('venueDrivingTips').trim(),
+                    vimeoId: formData.get('venueVimeoId').trim()
                 };
+                
+                // Handle track map upload
+                const trackMapFile = formData.get('venueTrackMap');
+                if (trackMapFile && trackMapFile.size > 0) {
+                    const reader = new FileReader();
+                    const trackMapData = await new Promise((resolve, reject) => {
+                        reader.onload = e => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(trackMapFile);
+                    });
+                    venueData.trackMap = {
+                        data: trackMapData,
+                        fileName: trackMapFile.name,
+                        fileType: trackMapFile.type
+                    };
+                }
                 if (!venueData.name || !venueData.address) {
                     showError('Please fill in all required fields', 'venuesMessageContainer');
                     return;
@@ -1121,6 +1202,39 @@
                 } finally {
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
+                }
+            });
+
+            // Track map preview functionality
+            document.getElementById('venueTrackMap').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('trackMapPreview');
+                const image = document.getElementById('trackMapImage');
+                
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        image.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.style.display = 'none';
+                }
+            });
+
+            // Vimeo video preview functionality
+            document.getElementById('venueVimeoId').addEventListener('input', function(e) {
+                const vimeoId = e.target.value.trim();
+                const preview = document.getElementById('vimeoPreview');
+                const iframe = preview.querySelector('iframe');
+                
+                if (vimeoId && /^\d+$/.test(vimeoId)) {
+                    iframe.src = `https://player.vimeo.com/video/${vimeoId}`;
+                    preview.style.display = 'block';
+                } else {
+                    preview.style.display = 'none';
+                    iframe.src = '';
                 }
             });
 

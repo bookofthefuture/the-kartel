@@ -27,7 +27,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { venueId, name, address, phone, website, notes } = JSON.parse(event.body);
+    const { venueId, name, address, phone, website, notes, drivingTips, vimeoId, trackMap } = JSON.parse(event.body);
 
     if (!venueId) {
       return {
@@ -93,6 +93,34 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Handle track map upload if provided
+    let trackMapPath = venueData.trackMapPath; // Keep existing path
+    if (trackMap && trackMap.data) {
+      try {
+        // Extract base64 data
+        const base64Data = trackMap.data.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // Generate unique filename
+        const extension = trackMap.fileName.split('.').pop().toLowerCase();
+        trackMapPath = `venues/${venueId}/track-map.${extension}`;
+        
+        // Store the track map
+        await venuesStore.set(trackMapPath, buffer, {
+          metadata: {
+            contentType: trackMap.fileType,
+            originalName: trackMap.fileName,
+            uploadedAt: new Date().toISOString()
+          }
+        });
+        
+        console.log('✅ Track map updated:', trackMapPath);
+      } catch (uploadError) {
+        console.error('⚠️ Track map upload failed:', uploadError);
+        // Keep existing track map if upload fails
+      }
+    }
+
     // Update venue with provided data
     const updatedVenue = {
       ...venueData,
@@ -101,6 +129,9 @@ exports.handler = async (event, context) => {
       phone: phone?.trim() || null,
       website: website?.trim() || null,
       notes: notes?.trim() || null,
+      drivingTips: drivingTips?.trim() || null,
+      vimeoId: vimeoId?.trim() || null,
+      trackMapPath: trackMapPath,
       updatedAt: new Date().toISOString(),
       updatedBy: 'Admin'
     };
