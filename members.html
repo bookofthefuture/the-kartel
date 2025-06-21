@@ -65,6 +65,13 @@
         .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
         .status-approved { background: #d4edda; color: #155724; }
 
+        /* Venue feature styles */
+        .venue-feature { margin-top: 20px; padding-top: 15px; border-top: 1px solid #ecf0f1; }
+        .venue-feature h4 { color: #2c3e50; font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
+        .driving-tips { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c; font-size: 0.95rem; line-height: 1.5; color: #2c3e50; }
+        .video-container { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .video-container iframe { border-radius: 8px; }
+
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
@@ -488,6 +495,36 @@
                     ${venue.phone ? `<div class="venue-detail"><strong>Phone:</strong> ${venue.phone}</div>` : ''}
                     ${venue.website ? `<div class="venue-detail"><strong>Website:</strong> <a href="${venue.website}" target="_blank" style="color: #e74c3c;">Visit Site</a></div>` : ''}
                     ${venue.notes ? `<div class="venue-detail"><strong>Notes:</strong> ${venue.notes}</div>` : ''}
+                    
+                    ${venue.trackMapPath ? `
+                        <div class="venue-feature">
+                            <h4>🏁 Track Map</h4>
+                            <img src="/.netlify/functions/get-photo?path=${encodeURIComponent(venue.trackMapPath)}" 
+                                 alt="Track map for ${venue.name}" 
+                                 style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                                 loading="lazy">
+                        </div>
+                    ` : ''}
+                    
+                    ${venue.drivingTips ? `
+                        <div class="venue-feature">
+                            <h4>🏎️ Driving Tips</h4>
+                            <div class="driving-tips">${venue.drivingTips.replace(/\n/g, '<br>')}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${venue.vimeoId ? `
+                        <div class="venue-feature">
+                            <h4>🎥 Track Video</h4>
+                            <div class="video-container">
+                                <iframe src="https://player.vimeo.com/video/${venue.vimeoId}?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" 
+                                        width="100%" height="200" frameborder="0" 
+                                        allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
+                                        title="Track video for ${venue.name}">
+                                </iframe>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
             container.innerHTML = `<div class="venues-grid">${venuesHTML}</div>`;
