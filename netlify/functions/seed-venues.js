@@ -1,40 +1,79 @@
+// /.netlify/functions/seed-venues.js
+const { getStore } = require('@netlify/blobs');
 
-// /.netlify/functions/seed-venues.js (Optional - for initial setup)
-import { getStore } from "@netlify/blobs";
-
-export default async (req, context) => {
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
+exports.handler = async (event, context) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   // Check authentication
-  const authHeader = req.headers.get('authorization');
+  const authHeader = event.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Unauthorized' })
+    };
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token || token.length < 32) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Invalid token' })
+    };
   }
 
   try {
-    const venueStore = getStore("venues");
-    const existingVenues = await venueStore.get("all-venues", { type: "json" });
+    console.log('🌱 Seeding default venues');
 
-    // Only seed if no venues exist
-    if (existingVenues && existingVenues.length > 0) {
-      return new Response(JSON.stringify({ 
-        success: false,
-        message: 'Venues already exist. Seeding skipped.',
-        existingCount: existingVenues.length
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    // Check environment variables
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server configuration error' })
+      };
     }
 
+    // Create venues store
+    const venuesStore = getStore({
+      name: 'venues',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_ACCESS_TOKEN,
+      consistency: 'strong'
+    });
+    
+    // Check for existing venues
+    let existingVenues = [];
+    try {
+      const venuesData = await venuesStore.get('_list', { type: 'json' });
+      if (venuesData && Array.isArray(venuesData)) {
+        existingVenues = venuesData;
+      }
+    } catch (error) {
+      console.log('📝 No existing venues found');
+      existingVenues = [];
+    }
+
+    // Only seed if no venues exist
+    if (existingVenues.length > 0) {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          success: false,
+          message: 'Venues already exist. Seeding skipped.',
+          existingCount: existingVenues.length
+        })
+      };
+    }
+
+    const timestamp = new Date().toISOString();
     const seedVenues = [
       {
         id: `venue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -43,8 +82,9 @@ export default async (req, context) => {
         phone: '0161 637 0637',
         website: 'https://www.team-sport.co.uk/go-karting/manchester-city-centre/',
         notes: 'Our primary venue. Indoor karting, excellent facilities. Use code GET10 for 10% off.',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        createdBy: 'System'
       },
       {
         id: `venue_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`,
@@ -53,26 +93,42 @@ export default async (req, context) => {
         phone: '0161 865 0070',
         website: 'https://www.team-sport.co.uk/go-karting/manchester-trafford/',
         notes: 'Alternative venue with outdoor track. Good for larger groups.',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        createdBy: 'System'
       }
     ];
 
-    await venueStore.set("all-venues", seedVenues);
+    // Store individual venues
+    for (const venue of seedVenues) {
+      await venuesStore.setJSON(venue.id, venue);
+      console.log(`✅ Stored venue: ${venue.name}`);
+    }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      message: 'Default venues created successfully',
-      venues: seedVenues
-    }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    // Store venues list
+    await venuesStore.setJSON('_list', seedVenues);
+    console.log(`✅ Venues list created with ${seedVenues.length} venues`);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        success: true,
+        message: 'Default venues created successfully',
+        venues: seedVenues
+      })
+    };
   } catch (error) {
-    console.error('Error seeding venues:', error);
-    return new Response(JSON.stringify({ error: 'Failed to seed venues' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('💥 Error seeding venues:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message
+      })
+    };
   }
 };

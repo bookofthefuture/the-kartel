@@ -1,33 +1,75 @@
 // /.netlify/functions/get-venues.js
-import { getStore } from "@netlify/blobs";
+const { getStore } = require('@netlify/blobs');
 
-export default async (req, context) => {
+exports.handler = async (event, context) => {
   // Check authentication
-  const authHeader = req.headers.get('authorization');
+  const authHeader = event.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Unauthorized' })
+    };
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token || token.length < 32) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Invalid token' })
+    };
   }
 
   try {
-    const venueStore = getStore("venues");
-    const venues = await venueStore.get("all-venues", { type: "json" }) || [];
+    // Check environment variables
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server configuration error' })
+      };
+    }
+
+    // Create venues store
+    const venuesStore = getStore({
+      name: 'venues',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_ACCESS_TOKEN,
+      consistency: 'strong'
+    });
     
-    return new Response(JSON.stringify({ 
-      success: true, 
-      venues: venues.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    // Get venues from blob storage
+    let venues = [];
+    try {
+      const venuesData = await venuesStore.get('_list', { type: 'json' });
+      if (venuesData && Array.isArray(venuesData)) {
+        venues = venuesData;
+      }
+    } catch (error) {
+      console.log('📝 No existing venues found, starting fresh');
+      venues = [];
+    }
+    
+    // Sort venues by creation date (newest first)
+    venues.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        success: true, 
+        venues: venues
+      })
+    };
   } catch (error) {
-    console.error('Error fetching venues:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch venues' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('💥 Error fetching venues:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message
+      })
+    };
   }
 };
-
