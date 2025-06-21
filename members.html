@@ -302,8 +302,8 @@
             }
 
             const eventsHTML = eventsToDisplay.map(event => {
-                // Log the event object to the console for debugging
-                console.log('Event being rendered:', event);
+                // Log the event object and its type to the console for debugging
+                console.log(`Event being rendered for '${type}' tab:`, event);
 
                 const currentAttendeesCount = event.attendees ? event.attendees.length : 0;
                 const isSignedUp = event.attendees && event.attendees.some(a => a.memberId === currentMember.id);
@@ -320,9 +320,9 @@
                         </div>
                         <div class="event-actions">
                             ${type === 'upcoming' ? `
-                                <button class="btn btn-primary" onclick="signUpForEvent('${event.id}')">Sign Up</button>
+                                <button class="btn btn-primary" onclick="signUpForEvent('${event.id}', event)">Sign Up</button>
                             ` : `
-                                <button class="btn btn-secondary" onclick="cancelSignUp('${event.id}')">Cancel Sign-up</button>
+                                <button class="btn btn-secondary" onclick="cancelSignUp('${event.id}', event)">Cancel Sign-up</button>
                                 ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
                             `}
                         </div>
@@ -333,13 +333,14 @@
         }
 
         // --- Event Sign-up/Cancel Logic ---
-        async function signUpForEvent(eventId) {
+        async function signUpForEvent(eventId, eventObj) { // Added eventObj parameter
+            console.log("Sign-up button clicked for event:", eventId); // Diagnostic log
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to sign up for events.', 'error');
                 return;
             }
 
-            const btn = event.target;
+            const btn = eventObj.target; // Use eventObj.target to get the clicked button
             btn.disabled = true;
             const originalText = btn.textContent;
             btn.textContent = 'Signing up...';
@@ -384,7 +385,8 @@
             }
         }
 
-        async function cancelSignUp(eventId) {
+        async function cancelSignUp(eventId, eventObj) { // Added eventObj parameter
+            console.log("Cancel sign-up button clicked for event:", eventId); // Diagnostic log
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to cancel event sign-ups.', 'error');
                 return;
@@ -394,7 +396,7 @@
             // A custom modal UI would be ideal for a real confirmation.
             showMessage('Cancelling your sign-up...', 'success'); 
             
-            const btn = event.target;
+            const btn = eventObj.target; // Use eventObj.target to get the clicked button
             btn.disabled = true;
             const originalText = btn.textContent;
             btn.textContent = 'Cancelling...';
