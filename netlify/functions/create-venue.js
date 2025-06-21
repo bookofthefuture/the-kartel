@@ -30,7 +30,7 @@ exports.handler = async (event, context) => {
     console.log('🏁 Creating new venue');
     
     const data = JSON.parse(event.body);
-    const { name, address, phone, website, notes } = data;
+    const { name, address, phone, website, notes, drivingTips, vimeoId, trackMap } = data;
 
     // Validate required fields
     if (!name || !address) {
@@ -77,14 +77,48 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Generate venue ID first
+    const venueId = `venue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Handle track map upload if provided
+    let trackMapPath = null;
+    if (trackMap && trackMap.data) {
+      try {
+        // Extract base64 data
+        const base64Data = trackMap.data.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // Generate unique filename
+        const extension = trackMap.fileName.split('.').pop().toLowerCase();
+        trackMapPath = `venues/${venueId}/track-map.${extension}`;
+        
+        // Store the track map
+        await venuesStore.set(trackMapPath, buffer, {
+          metadata: {
+            contentType: trackMap.fileType,
+            originalName: trackMap.fileName,
+            uploadedAt: new Date().toISOString()
+          }
+        });
+        
+        console.log('✅ Track map uploaded:', trackMapPath);
+      } catch (uploadError) {
+        console.error('⚠️ Track map upload failed:', uploadError);
+        // Continue without track map if upload fails
+      }
+    }
+
     // Create venue object
     const newVenue = {
-      id: `venue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: venueId,
       name: name.trim(),
       address: address.trim(),
       phone: phone?.trim() || null,
       website: website?.trim() || null,
       notes: notes?.trim() || null,
+      drivingTips: drivingTips?.trim() || null,
+      vimeoId: vimeoId?.trim() || null,
+      trackMapPath: trackMapPath,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: 'Admin'
