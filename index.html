@@ -962,112 +962,81 @@
     </div>
 
     <script>
-        // Load dynamic gallery photos
-        async function loadGalleryPhotos() {
-            try {
-                const response = await fetch('/.netlify/functions/get-gallery');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const photos = data.photos || [];
-                    
-                    if (photos.length > 0) {
-                        renderDynamicGallery(photos);
-                    } else {
-                        // Fall back to static gallery if no dynamic photos
-                        console.log('No dynamic photos found, keeping static gallery');
-                    }
+// Load dynamic gallery photos
+    async function loadGalleryPhotos() {
+        try {
+            const response = await fetch('/.netlify/functions/get-gallery');
+
+            if (response.ok) {
+                const data = await response.json();
+                const photos = data.photos || [];
+
+                if (photos.length > 0) {
+                    renderDynamicGallery(photos);
                 } else {
-                    console.log('Gallery service not available, keeping static gallery');
+                    // Fall back to static gallery if no dynamic photos
+                    console.log('No dynamic photos found, keeping static gallery');
+                    renderDynamicGallery([]); // Call with empty array if no dynamic photos, to prevent errors
                 }
-            } catch (error) {
-                console.log('Could not load dynamic gallery, keeping static gallery');
+            } else {
+                console.log('Gallery service not available, keeping static gallery');
+                renderDynamicGallery([]); // Call with empty array if service not available
             }
+        } catch (error) {
+            console.log('Could not load dynamic gallery, keeping static gallery');
+            renderDynamicGallery([]); // Call with empty array on error
         }
+    }
 
-        function renderDynamicGallery(photos) {
-            const galleryGrid = document.getElementById('galleryGrid');
-            
-            /* Removing static pics because not needed now
-            // Combine static photos with dynamic ones
-            const staticPhotos = [
-                {
-                    src: 'photos/the-kartel-logo.png',
-                    alt: 'The Kartel Logo',
-                    caption: 'The Kartel Logo',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-attendees.jpg',
-                    alt: 'Attendees at the first Kartel Event',
-                    caption: 'First Event Attendees',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-overtake.jpg',
-                    alt: 'Overtaking on a kart track',
-                    caption: 'Overtaking on track',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-board.jpg',
-                    alt: 'The results',
-                    caption: 'The results of round 1',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-r1.jpg',
-                    alt: 'Race 1 leaderboard',
-                    caption: 'Leaderboard for the first session',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-r2.jpg',
-                    alt: 'Race 2 leaderboard',
-                    caption: 'Leaderboard for the second session',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-r3.jpg',
-                    alt: 'Race 3 leaderboard',
-                    caption: 'Leaderboard for the third session',
-                    isStatic: true
-                },
-                {
-                    src: 'photos/09-06-25-pub.jpg',
-                    alt: 'Networking in the pub afterwards',
-                    caption: 'Networking afterwards',
-                    isStatic: true
-                }
-            ];
-            */
+    function renderDynamicGallery(dynamicPhotos) {
+        const galleryGrid = document.getElementById('galleryGrid');
 
-            // Combine and sort by date (dynamic photos first, then static)
-            const allPhotos = [
-                ...photos.map(photo => ({
-                    src: photo.src,
-                    alt: photo.alt,
-                    caption: photo.caption || `Photo from ${photo.eventName}`,
-                    eventName: photo.eventName,
-                    eventDate: photo.eventDate,
-                    isStatic: false
-                })),
-                ...staticPhotos
-            ];
+        // REMOVE OR COMMENT OUT THIS ENTIRE `staticPhotos` BLOCK
+        // AND ENSURE ALL DESIRED PHOTOS ARE UPLOADED VIA THE ADMIN DASHBOARD
+        // const staticPhotos = [
+        //     {
+        //         src: 'photos/the-kartel-logo.png',
+        //         alt: 'The Kartel Logo',
+        //         caption: 'The Kartel Logo',
+        //         isStatic: true
+        //     },
+        //     {
+        //         src: 'photos/09-06-25-attendees.jpg',
+        //         alt: 'Attendees at the first Kartel Event',
+        //         caption: 'First Event Attendees',
+        //         isStatic: true
+        //     },
+        //     // ... other static photos
+        // ];
 
-            // Generate gallery HTML
-            const galleryHTML = allPhotos.map(photo => `
-                <div class="gallery-item">
-                    <img src="${photo.src}" alt="${photo.alt}" onclick="openModal(this)">
-                    <div class="gallery-overlay">
-                        <span>${photo.caption}</span>
-                        ${photo.eventName && !photo.isStatic ? `<br><small>${photo.eventName} - ${new Date(photo.eventDate).toLocaleDateString()}</small>` : ''}
-                    </div>
+        // Combine and sort by upload date (dynamic photos only, or if you keep static, then combine and sort as needed)
+        // If removing static photos, simply use dynamicPhotos directly:
+        const allPhotos = dynamicPhotos.map(photo => ({
+            src: photo.src,
+            alt: photo.alt,
+            caption: photo.caption || `Photo from ${photo.eventName}`,
+            eventName: photo.eventName,
+            eventDate: photo.eventDate,
+            isStatic: false
+        }));
+
+        // Sort by upload date (newest first) as already done in get-gallery.js, but re-sort here just in case.
+        allPhotos.sort((a, b) => new Date(b.eventDate || b.uploadedAt) - new Date(a.eventDate || a.uploadedAt));
+
+
+        // Generate gallery HTML
+        const galleryHTML = allPhotos.map(photo => `
+            <div class="gallery-item">
+                <img src="${photo.src}" alt="${photo.alt}" onclick="openModal(this)">
+                <div class="gallery-overlay">
+                    <span>${photo.caption}</span>
+                    ${photo.eventName && !photo.isStatic ? `<br><small>${photo.eventName} - ${new Date(photo.eventDate).toLocaleDateString()}</small>` : ''}
                 </div>
-            `).join('');
+            </div>
+        `).join('');
 
-            galleryGrid.innerHTML = galleryHTML;
-        }
+        galleryGrid.innerHTML = galleryHTML;
+    }
 
         // Gallery Modal functionality
         function openModal(img) {
