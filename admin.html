@@ -106,23 +106,32 @@
         .photo-preview { max-width: 200px; max-height: 200px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
         .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
         .photo-item { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .photo-item img { width: 100%; height: 120px; object-fit: cover; }
+        .photo-caption { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; padding: 10px 8px 8px; font-size: 0.8rem; }
+        .attendee-management-section { background: #f8f9fa; border-radius: 10px; padding: 25px; margin-top: 20px; border: 2px solid #e9ecef; }
+        .attendee-management-section h4 { color: #2c3e50; margin-bottom: 15px; font-weight: 700; }
+        .attendee-selector { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
+        .attendee-selector select { flex: 1; padding: 10px; border: 2px solid #ecf0f1; border-radius: 4px; font-size: 1rem; }
+        .attendee-selector button { padding: 10px 20px; white-space: nowrap; }
+        .attendees-list { max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; background: white; }
+        .attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f1f1f1; transition: background-color 0.2s ease; }
+        .attendee-item:hover { background-color: #f8f9fa; }
+        .attendee-item:last-child { border-bottom: none; }
+        .attendee-info { flex: 1; }
+        .attendee-name { font-weight: 600; color: #2c3e50; margin-bottom: 2px; }
+        .attendee-details { font-size: 0.9rem; color: #6c757d; }
+        .attendee-status { display: flex; align-items: center; gap: 10px; }
+        .status-toggle { position: relative; width: 50px; height: 24px; background: #ccc; border-radius: 12px; cursor: pointer; transition: background-color 0.3s ease; }
+        .status-toggle.attended { background: #27ae60; }
+        .status-toggle::before { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.3s ease; }
+        .status-toggle.attended::before { transform: translateX(26px); }
+        .remove-attendee { background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; transition: background-color 0.3s ease; }
+        .remove-attendee:hover { background: #c0392b; }
+        .attendee-stats { display: flex; gap: 20px; margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #dee2e6; }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: 700; color: #2c3e50; }
+        .stat-label { font-size: 0.8rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.photo-item img {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-}
-
-.photo-caption {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.8));
-    color: white;
-    padding: 10px 8px 8px;
-    font-size: 0.8rem;
-}
         @media (max-width: 768px) {
             .header-content { flex-direction: column; gap: 15px; }
             .tab-navigation { flex-direction: column; }
@@ -135,6 +144,9 @@
             .venue-actions { flex-direction: column; }
             .modal-content { margin: 2% auto; width: 95%; }
             .modal-body { padding: 20px; }
+            .attendee-selector { flex-direction: column; align-items: stretch; }
+            .attendee-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .attendee-status { align-self: flex-end; }
         }
     </style>
 </head>
@@ -414,6 +426,40 @@
                             <button type="button" id="uploadPhotoBtn" class="btn btn-secondary" style="margin-top: 10px;" disabled>
                                 Upload Photo
                             </button>
+                        </div>
+                    </div>
+                    <div class="attendee-management-section">
+                        <h4>👥 Event Attendees</h4>
+                        
+                        <!-- Attendee Stats -->
+                        <div class="attendee-stats">
+                            <div class="stat-item">
+                                <div class="stat-number" id="registeredCount">0</div>
+                                <div class="stat-label">Registered</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="attendedCount">0</div>
+                                <div class="stat-label">Attended</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="noShowCount">0</div>
+                                <div class="stat-label">No Show</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add Attendee -->
+                        <div class="attendee-selector">
+                            <select id="memberSelect">
+                                <option value="">Select an approved member...</option>
+                            </select>
+                            <button type="button" id="addAttendeeBtn" class="btn btn-success" disabled>
+                                Add Attendee
+                            </button>
+                        </div>
+                        
+                        <!-- Attendees List -->
+                        <div class="attendees-list" id="attendeesList">
+                            <!-- Attendees will be populated here -->
                         </div>
                     </div>
                     <div class="form-actions">
@@ -702,7 +748,13 @@
                     <td><strong>${evt.name}</strong></td>
                     <td>${new Date(evt.date).toLocaleDateString()}${evt.time ? `<br><small>${evt.time}</small>` : ''}</td>
                     <td><strong>${evt.venue}</strong></td>
-                    <td><span class="status-badge status-approved">${evt.attendees ? evt.attendees.length : 0}</span></td>
+                    <td>
+                        <span class="status-badge status-approved">${evt.attendees ? evt.attendees.length : 0}</span>
+                        ${evt.attendees && evt.attendees.length > 0 ? 
+                            `<br><small>${evt.attendees.filter(a => a.attended).length} attended</small>` : 
+                            ''
+                        }
+                    </td>
                     <td><span class="status-badge status-approved">${evt.photos ? evt.photos.length : 0}</span></td>
                     <td><span class="status-badge status-${evt.status}">${evt.status}</span></td>
                     <td>
@@ -744,8 +796,12 @@
                 }
             }
             
-            // Load and display event photos
+            // Load event photos
             loadEventPhotos(event.id);
+            
+            // Load attendees and approved members
+            loadEventAttendees(event.id);
+            loadApprovedMembers();
             
             // Show the modal
             document.getElementById('eventModal').style.display = 'block';
@@ -1209,6 +1265,246 @@
             checkAuth();
         });
 
+        // Load approved members for attendee selection
+        async function loadApprovedMembers() {
+            try {
+                const response = await fetch('/.netlify/functions/get-applications', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const approvedMembers = data.applications.filter(app => app.status === 'approved');
+                    populateMemberSelect(approvedMembers);
+                    return approvedMembers;
+                }
+            } catch (error) {
+                console.error('Error loading approved members:', error);
+            }
+            return [];
+        }
+
+        function populateMemberSelect(members) {
+            const select = document.getElementById('memberSelect');
+            // Clear existing options except the first one
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            // Add member options
+            members.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                const memberName = member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.name || 'Unknown';
+                option.textContent = `${memberName} (${member.company || 'No company'})`;
+                option.dataset.email = member.email;
+                option.dataset.company = member.company || '';
+                select.appendChild(option);
+            });
+        }
+
+        // Enable/disable add attendee button based on selection
+        document.getElementById('memberSelect').addEventListener('change', function() {
+            const addBtn = document.getElementById('addAttendeeBtn');
+            addBtn.disabled = !this.value;
+        });
+
+        // Add attendee to event
+        document.getElementById('addAttendeeBtn').addEventListener('click', function() {
+            const select = document.getElementById('memberSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption.value) return;
+            
+            const eventId = document.getElementById('editEventId').value;
+            const memberId = selectedOption.value;
+            const memberName = selectedOption.textContent.split(' (')[0]; // Remove company part
+            const memberEmail = selectedOption.dataset.email;
+            const memberCompany = selectedOption.dataset.company;
+            
+            // Check if member is already added
+            const event = events.find(e => e.id === eventId);
+            const existingAttendee = event.attendees?.find(a => a.memberId === memberId);
+            
+            if (existingAttendee) {
+                showError('This member is already added to the event', 'eventsMessageContainer');
+                return;
+            }
+            
+            // Add attendee to event
+            addAttendeeToEvent(eventId, {
+                memberId: memberId,
+                name: memberName,
+                email: memberEmail,
+                company: memberCompany,
+                registeredAt: new Date().toISOString(),
+                attended: false
+            });
+            
+            // Reset selection
+            select.value = '';
+            document.getElementById('addAttendeeBtn').disabled = true;
+        });
+
+        // Add attendee to event data and update display
+        async function addAttendeeToEvent(eventId, attendee) {
+            try {
+                // Find the event in our local events array
+                const eventIndex = events.findIndex(e => e.id === eventId);
+                if (eventIndex === -1) return;
+                
+                // Initialize attendees array if it doesn't exist
+                if (!events[eventIndex].attendees) {
+                    events[eventIndex].attendees = [];
+                }
+                
+                // Add the attendee
+                events[eventIndex].attendees.push(attendee);
+                
+                // Update the event on the server
+                await updateEventAttendees(eventId, events[eventIndex].attendees);
+                
+                // Refresh the attendees display
+                displayEventAttendees(events[eventIndex].attendees);
+                
+                showMessage('Attendee added successfully!', 'success', 'eventsMessageContainer');
+                
+            } catch (error) {
+                console.error('Error adding attendee:', error);
+                showError('Failed to add attendee. Please try again.', 'eventsMessageContainer');
+            }
+        }
+
+        // Remove attendee from event
+        async function removeAttendeeFromEvent(eventId, memberId) {
+            try {
+                const eventIndex = events.findIndex(e => e.id === eventId);
+                if (eventIndex === -1) return;
+                
+                // Remove the attendee
+                events[eventIndex].attendees = events[eventIndex].attendees.filter(a => a.memberId !== memberId);
+                
+                // Update the event on the server
+                await updateEventAttendees(eventId, events[eventIndex].attendees);
+                
+                // Refresh the attendees display
+                displayEventAttendees(events[eventIndex].attendees);
+                
+                showMessage('Attendee removed successfully!', 'success', 'eventsMessageContainer');
+                
+            } catch (error) {
+                console.error('Error removing attendee:', error);
+                showError('Failed to remove attendee. Please try again.', 'eventsMessageContainer');
+            }
+        }
+
+        // Toggle attendee attendance status
+        async function toggleAttendeeStatus(eventId, memberId) {
+            try {
+                const eventIndex = events.findIndex(e => e.id === eventId);
+                if (eventIndex === -1) return;
+                
+                const attendee = events[eventIndex].attendees.find(a => a.memberId === memberId);
+                if (!attendee) return;
+                
+                // Toggle attendance status
+                attendee.attended = !attendee.attended;
+                attendee.statusUpdatedAt = new Date().toISOString();
+                
+                // Update the event on the server
+                await updateEventAttendees(eventId, events[eventIndex].attendees);
+                
+                // Refresh the attendees display
+                displayEventAttendees(events[eventIndex].attendees);
+                
+            } catch (error) {
+                console.error('Error updating attendee status:', error);
+                showError('Failed to update attendance status. Please try again.', 'eventsMessageContainer');
+            }
+        }
+
+        // Update event attendees on server
+        async function updateEventAttendees(eventId, attendees) {
+            const response = await fetch('/.netlify/functions/update-event', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    updates: {
+                        attendees: attendees
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update event attendees');
+            }
+            
+            return await response.json();
+        }
+
+        // Display event attendees
+        function displayEventAttendees(attendees) {
+            const attendeesList = document.getElementById('attendeesList');
+            
+            if (!attendees || attendees.length === 0) {
+                attendeesList.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px;">No attendees added yet</p>';
+                updateAttendeeStats(0, 0, 0);
+                return;
+            }
+            
+            const attendedCount = attendees.filter(a => a.attended).length;
+            const noShowCount = attendees.filter(a => !a.attended).length;
+            
+            updateAttendeeStats(attendees.length, attendedCount, noShowCount);
+            
+            const attendeesHTML = attendees.map(attendee => `
+                <div class="attendee-item">
+                    <div class="attendee-info">
+                        <div class="attendee-name">${attendee.name}</div>
+                        <div class="attendee-details">
+                            ${attendee.company ? `${attendee.company} • ` : ''}${attendee.email}
+                            <br><small>Registered: ${new Date(attendee.registeredAt).toLocaleDateString()}</small>
+                        </div>
+                    </div>
+                    <div class="attendee-status">
+                        <span style="font-size: 0.8rem; margin-right: 8px;">
+                            ${attendee.attended ? 'Attended' : 'Registered'}
+                        </span>
+                        <div class="status-toggle ${attendee.attended ? 'attended' : ''}" 
+                            onclick="toggleAttendeeStatus('${document.getElementById('editEventId').value}', '${attendee.memberId}')">
+                        </div>
+                        <button class="remove-attendee" 
+                                onclick="removeAttendeeFromEvent('${document.getElementById('editEventId').value}', '${attendee.memberId}')">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            attendeesList.innerHTML = attendeesHTML;
+        }
+
+        // Update attendee statistics
+        function updateAttendeeStats(registered, attended, noShow) {
+            document.getElementById('registeredCount').textContent = registered;
+            document.getElementById('attendedCount').textContent = attended;
+            document.getElementById('noShowCount').textContent = noShow;
+        }
+
+        // Load event attendees when opening edit modal
+        async function loadEventAttendees(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (event && event.attendees) {
+                displayEventAttendees(event.attendees);
+            } else {
+                displayEventAttendees([]);
+            }
+        }
+
         // Global functions for onclick handlers
         window.switchTab = switchTab;
         window.openAddVenueModal = openAddVenueModal;
@@ -1224,6 +1520,11 @@
         window.deleteEvent = deleteEvent;
         window.loadEventPhotos = loadEventPhotos;
         window.displayEventPhotos = displayEventPhotos;
+        window.addAttendeeToEvent = addAttendeeToEvent;
+        window.removeAttendeeFromEvent = removeAttendeeFromEvent;
+        window.toggleAttendeeStatus = toggleAttendeeStatus;
+        window.loadEventAttendees = loadEventAttendees;
+        window.loadApprovedMembers = loadApprovedMembers;
 
     </script>
 </body>
