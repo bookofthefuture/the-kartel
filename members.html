@@ -97,12 +97,38 @@
         .video-container { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .video-container iframe { border-radius: 8px; }
 
+        /* Event attendee modal styles */
+        .event-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .event-modal-content { background-color: white; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .event-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #ecf0f1; }
+        .event-modal-title { font-size: 1.8rem; font-weight: 700; color: #2c3e50; margin: 0; }
+        .event-modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; background: none; border: none; }
+        .event-modal-close:hover { color: #e74c3c; }
+        .event-details { margin-bottom: 25px; }
+        .event-detail-item { margin-bottom: 10px; font-size: 1rem; }
+        .event-detail-item strong { color: #2c3e50; }
+        .attendees-section h3 { color: #2c3e50; font-size: 1.4rem; margin-bottom: 15px; font-weight: 600; }
+        .attendees-list { list-style: none; padding: 0; margin: 0; }
+        .attendee-item { background: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #e74c3c; display: flex; justify-content: space-between; align-items: center; }
+        .attendee-info { flex-grow: 1; }
+        .attendee-name { font-weight: 600; color: #2c3e50; font-size: 1.1rem; }
+        .attendee-company { color: #7f8c8d; font-size: 0.9rem; margin-top: 2px; }
+        .attendee-status { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+        .status-registered { background: #d4edda; color: #155724; }
+        .status-attended { background: #cce7ff; color: #004085; }
+        .clickable-event { cursor: pointer; transition: all 0.2s ease; }
+        .clickable-event:hover { transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+
         @media (max-width: 768px) {
             .header-content { flex-direction: column; gap: 15px; }
             .tab-navigation { flex-direction: column; }
             .tab-button { padding: 15px; font-size: 1rem; }
             .events-grid, .venues-grid { grid-template-columns: 1fr; }
             .login-card { padding: 30px; }
+            .event-modal-content { width: 95%; margin: 10% auto; padding: 20px; }
+            .event-modal-title { font-size: 1.5rem; }
+            .attendee-item { flex-direction: column; align-items: flex-start; }
+            .attendee-status { margin-top: 8px; }
         }
     </style>
 </head>
@@ -173,6 +199,25 @@
                 <div id="venuesContainer">
                     <div class="loading">Loading venues...</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Attendees Modal -->
+    <div id="eventModal" class="event-modal">
+        <div class="event-modal-content">
+            <div class="event-modal-header">
+                <h2 class="event-modal-title" id="eventModalTitle">Event Details</h2>
+                <button class="event-modal-close" onclick="closeEventModal()">&times;</button>
+            </div>
+            <div class="event-details" id="eventModalDetails">
+                <!-- Event details will be populated here -->
+            </div>
+            <div class="attendees-section">
+                <h3>Registered Attendees <span id="attendeeCount" class="status-badge status-approved">0</span></h3>
+                <ul class="attendees-list" id="attendeesList">
+                    <!-- Attendees will be populated here -->
+                </ul>
             </div>
         </div>
     </div>
@@ -386,7 +431,7 @@
                 const currentAttendeesCount = event.attendees ? event.attendees.length : 0;
                 const isSignedUp = event.attendees && event.attendees.some(a => a.memberId === currentMember.id);
                 return `
-                    <div class="event-card">
+                    <div class="event-card clickable-event" onclick="showEventDetails('${event.id}')">
                         <div class="event-name">${event.name}</div>
                         <div class="event-detail"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</div>
                         <div class="event-detail"><strong>Time:</strong> ${event.time || 'N/A'}</div>
@@ -395,8 +440,9 @@
                         <div class="event-detail">
                             <strong>Attendees:</strong> 
                             <span class="status-badge status-approved">${currentAttendeesCount}</span>
+                            <small style="color: #7f8c8d; margin-left: 10px;">Click to see who's coming</small>
                         </div>
-                        <div class="event-actions">
+                        <div class="event-actions" onclick="event.stopPropagation()">
                             ${type === 'upcoming' ? `
                                 <button class="btn btn-primary" onclick="signUpForEvent(this, '${event.id}')">Sign Up</button>
                             ` : `
@@ -588,11 +634,67 @@
             container.innerHTML = `<div class="venues-grid">${venuesHTML}</div>`;
         }
 
+        // Event modal functions
+        function showEventDetails(eventId) {
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) return;
+
+            // Populate modal with event details
+            document.getElementById('eventModalTitle').textContent = event.name;
+            
+            const eventDetails = `
+                <div class="event-detail-item"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</div>
+                <div class="event-detail-item"><strong>Time:</strong> ${event.time || 'N/A'}</div>
+                <div class="event-detail-item"><strong>Venue:</strong> ${event.venue || 'N/A'}</div>
+                <div class="event-detail-item"><strong>Description:</strong> ${event.description || 'No description available.'}</div>
+            `;
+            document.getElementById('eventModalDetails').innerHTML = eventDetails;
+
+            // Populate attendees list
+            const attendees = event.attendees || [];
+            document.getElementById('attendeeCount').textContent = attendees.length;
+            
+            const attendeesList = document.getElementById('attendeesList');
+            if (attendees.length === 0) {
+                attendeesList.innerHTML = '<li style="text-align: center; color: #7f8c8d; padding: 20px;">No one has registered yet. Be the first!</li>';
+            } else {
+                const attendeesHTML = attendees.map(attendee => `
+                    <li class="attendee-item">
+                        <div class="attendee-info">
+                            <div class="attendee-name">${attendee.memberName || attendee.memberEmail}</div>
+                            <div class="attendee-company">${attendee.memberCompany || 'Company not specified'}</div>
+                        </div>
+                        <span class="attendee-status ${attendee.attended ? 'status-attended' : 'status-registered'}">
+                            ${attendee.attended ? 'Attended' : 'Registered'}
+                        </span>
+                    </li>
+                `).join('');
+                attendeesList.innerHTML = attendeesHTML;
+            }
+
+            // Show modal
+            document.getElementById('eventModal').style.display = 'block';
+        }
+
+        function closeEventModal() {
+            document.getElementById('eventModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('eventModal');
+            if (event.target === modal) {
+                closeEventModal();
+            }
+        }
+
         // Expose functions to global scope for onclick attributes
         window.switchTab = switchTab;
         window.signUpForEvent = signUpForEvent;
         window.cancelSignUp = cancelSignUp;
         window.showLoginForm = showLoginForm;
+        window.showEventDetails = showEventDetails;
+        window.closeEventModal = closeEventModal;
     </script>
 </body>
 </html>
