@@ -35,6 +35,15 @@ The Kartel is a static website for an exclusive business networking group based 
 - Functions are deployed automatically via Netlify
 - Local testing requires Netlify CLI for function simulation
 
+## CSS Formatting Convention
+
+**Compact CSS Format:**
+- Write CSS classes on single lines with properties separated by semicolons and spaces
+- Example: `.hero { height: 100vh; background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); position: relative; }`
+- This approach maintains readability while significantly reducing file size
+- For complex multi-line properties (like gradients), keep them inline but ensure proper spacing
+- Always maintain 8-space indentation for CSS selectors within `<style>` blocks
+
 ## Key Features & Implementation
 
 ### Interactive Elements (JavaScript)
