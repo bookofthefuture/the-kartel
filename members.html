@@ -320,9 +320,9 @@
                         </div>
                         <div class="event-actions">
                             ${type === 'upcoming' ? `
-                                <button class="btn btn-primary" onclick="signUpForEvent('${event.id}', event)">Sign Up</button>
+                                <button class="btn btn-primary" onclick="signUpForEvent(event, '${event.id}')">Sign Up</button>
                             ` : `
-                                <button class="btn btn-secondary" onclick="cancelSignUp('${event.id}', event)">Cancel Sign-up</button>
+                                <button class="btn btn-secondary" onclick="cancelSignUp(event, '${event.id}')">Cancel Sign-up</button>
                                 ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
                             `}
                         </div>
@@ -333,7 +333,7 @@
         }
 
         // --- Event Sign-up/Cancel Logic ---
-        async function signUpForEvent(eventId, eventObj) { // Added eventObj parameter
+        async function signUpForEvent(eventObj, eventId) { // Swapped parameter order
             console.log("Sign-up button clicked for event:", eventId); // Diagnostic log
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to sign up for events.', 'error');
@@ -385,7 +385,7 @@
             }
         }
 
-        async function cancelSignUp(eventId, eventObj) { // Added eventObj parameter
+        async function cancelSignUp(eventObj, eventId) { // Swapped parameter order
             console.log("Cancel sign-up button clicked for event:", eventId); // Diagnostic log
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to cancel event sign-ups.', 'error');
