@@ -22,15 +22,19 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const photosStore = getStore({
-      name: 'photos',
+    // Determine which store to use based on path
+    const isVenueTrackMap = path.startsWith('venues/');
+    const storeName = isVenueTrackMap ? 'venues' : 'photos';
+    
+    const store = getStore({
+      name: storeName,
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
     });
 
     // Get the photo
-    const photoData = await photosStore.get(path, { type: 'arrayBuffer' });
+    const photoData = await store.get(path, { type: 'arrayBuffer' });
     
     if (!photoData) {
       return {
