@@ -95,8 +95,17 @@
         .racing-stripe { position: fixed; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, #e74c3c, #f1c40f, #e74c3c); background-size: 200% 100%; animation: stripe-move 3s linear infinite; z-index: 1000; }
         @keyframes stripe-move { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
         @keyframes pulse-badge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        /* Top Header Styles */
+        .top-header { position: absolute; top: 5px; left: 0; right: 0; z-index: 100; padding: 15px 0; }
+        .top-header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: flex-end; }
+        .members-login-link { color: #ecf0f1; text-decoration: none; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; padding: 8px 20px; border: 1px solid rgba(236, 240, 241, 0.3); border-radius: 25px; transition: all 0.3s ease; background: rgba(44, 62, 80, 0.6); backdrop-filter: blur(10px); }
+        .members-login-link:hover { color: #f1c40f; border-color: #f1c40f; background: rgba(241, 196, 15, 0.15); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(241, 196, 15, 0.2); }
+
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
+            .top-header { padding: 10px 0; }
+            .top-header-content { padding: 0 15px; }
+            .members-login-link { font-size: 0.8rem; padding: 6px 15px; }
             .hero-nav { gap: 15px; margin-top: 30px; }
             .nav-link { font-size: 0.85rem; padding: 6px 12px; }
             .logo { font-size: 3rem; letter-spacing: 4px; }
@@ -124,6 +133,13 @@
 <body>
     <div class="racing-stripe"></div>
     
+    <!-- TOP HEADER -->
+    <header class="top-header">
+        <div class="top-header-content">
+            <a href="members.html" class="members-login-link">Members Area</a>
+        </div>
+    </header>
+    
     <!-- HERO SECTION -->
     <section class="hero">
         <div class="hero-content">
@@ -138,7 +154,6 @@
                 <a href="#video" class="nav-link">See The Action</a>
                 <a href="#about" class="nav-link">The Experience</a>
                 <a href="#event-format" class="nav-link">Event Structure</a>
-                <a href="members.html" class="nav-link">Members Area</a>
                 <a href="#contact" class="nav-link">Join Us</a>
                 <a href="#faq" class="nav-link">FAQ</a>
                 <a href="#gallery" class="nav-link">Gallery</a>
