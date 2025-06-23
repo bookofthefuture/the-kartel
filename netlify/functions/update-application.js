@@ -127,9 +127,33 @@ async function sendApprovalEmail(application) {
       </div>
       
       <div style="padding: 40px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50; margin-bottom: 20px;">Congratulations, ${application.name}!</h2>
-        <p style="color: #2c3e50;">We're thrilled to welcome you to The Kartel - Manchester's most exclusive business networking collective!</p>
-        <p style="color: #2c3e50;">You'll receive details about upcoming events and access to our private WhatsApp community shortly.</p>
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">Congratulations, ${application.firstName || application.name}!</h2>
+        <p style="color: #2c3e50; margin-bottom: 20px;">We're thrilled to welcome you to The Kartel - Manchester's most exclusive business networking collective!</p>
+        
+        <div style="background: white; padding: 25px; border-radius: 8px; border-left: 4px solid #e74c3c; margin: 25px 0;">
+          <h3 style="color: #2c3e50; margin-bottom: 15px;">🏁 Access Your Members Area</h3>
+          <p style="color: #2c3e50; margin-bottom: 15px;">Log in to your exclusive members area to view upcoming events, see who's attending, and register for karting sessions:</p>
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="https://thekartel.co.uk/members.html" style="display: inline-block; background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; text-decoration: none; padding: 15px 30px; border-radius: 5px; font-weight: bold; font-size: 16px;">Access Members Area</a>
+          </div>
+          <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 0;">Simply enter your email address to receive a secure login link.</p>
+        </div>
+        
+        <div style="background: white; padding: 25px; border-radius: 8px; border-left: 4px solid #f1c40f; margin: 25px 0;">
+          <h3 style="color: #2c3e50; margin-bottom: 15px;">📅 What's Next?</h3>
+          <ul style="color: #2c3e50; margin: 0; padding-left: 20px;">
+            <li style="margin-bottom: 8px;">Browse upcoming karting events and register</li>
+            <li style="margin-bottom: 8px;">See which members are attending each event</li>
+            <li style="margin-bottom: 8px;">Access track maps and driving tips for venues</li>
+            <li style="margin-bottom: 8px;">Join our private WhatsApp community (invite coming soon)</li>
+          </ul>
+        </div>
+        
+        <p style="color: #2c3e50; margin-top: 30px;">Get ready to accelerate your business network while racing around Manchester's finest karting tracks!</p>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;">
+          <p style="color: #7f8c8d; font-size: 14px; margin: 0;">Questions? Reply to this email or contact us through the website.</p>
+        </div>
       </div>
     </div>
   `;
