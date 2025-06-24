@@ -447,6 +447,11 @@
             const eventsHTML = eventsToDisplay.map(event => {
                 const currentAttendeesCount = event.attendees ? event.attendees.length : 0;
                 const isSignedUp = event.attendees && event.attendees.some(a => a.memberId === currentMember.id);
+                const eventDate = new Date(event.date);
+                const today = new Date();
+                const isPastEvent = eventDate < today;
+                const attendeeText = (type === 'my' && isPastEvent) ? "Click to see who came." : "Click to see who's coming";
+                
                 return `
                     <div class="event-card clickable-event" onclick="showEventDetails('${event.id}')">
                         <div class="event-name">${event.name}</div>
@@ -457,7 +462,7 @@
                         <div class="event-detail">
                             <strong>Attendees:</strong> 
                             <span class="status-badge status-approved">${currentAttendeesCount}</span>
-                            <small style="color: #7f8c8d; margin-left: 10px;">Click to see who's coming</small>
+                            <small style="color: #7f8c8d; margin-left: 10px;">${attendeeText}</small>
                         </div>
                         <div class="event-actions" onclick="event.stopPropagation()">
                             ${type === 'upcoming' ? `
