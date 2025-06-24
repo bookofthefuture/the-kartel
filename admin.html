@@ -289,10 +289,10 @@
                     <div class="table-container">
                         <table class="events-table">
                             <thead>
-                                <tr><th>Event</th><th>Date & Time</th><th>Venue</th><th>Attendees</th><th>Photos</th><th>Status</th><th>Actions</th></tr>
+                                <tr><th>Event</th><th>Date & Time</th><th>Venue</th><th>Attendees</th><th>Photos</th><th>Videos</th><th>Status</th><th>Actions</th></tr>
                             </thead>
                             <tbody id="eventsTableBody">
-                                <tr><td colspan="7" class="loading">Loading events...</td></tr>
+                                <tr><td colspan="8" class="loading">Loading events...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -468,6 +468,46 @@
                             <button type="button" id="uploadPhotoBtn" class="btn btn-secondary" style="margin-top: 10px;" disabled>
                                 Upload Photo
                             </button>
+                        </div>
+                    </div>
+                    <div class="video-upload-section" style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin-top: 20px; border: 2px dashed #bdc3c7;">
+                        <h4 style="color: #2c3e50; margin-bottom: 15px; font-weight: 700;">🎥 Event Videos</h4>
+    
+                        <!-- Existing Videos Display -->
+                        <div id="existingVideos">
+                            <div class="videos-grid" id="eventVideosGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
+                            <!-- Videos will be populated here -->
+                            </div>
+                        </div>
+    
+                        <!-- Video Upload Form -->
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                            <div class="form-group">
+                                <label for="videoUpload">Add New Video</label>
+                                <input type="file" id="videoUpload" accept="video/*" style="margin-bottom: 10px;">
+                                <small style="color: #7f8c8d; display: block;">Supported formats: MP4, MOV, AVI (max 500MB)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="videoTitle">Video Title</label>
+                                <input type="text" id="videoTitle" placeholder="Enter video title...">
+                            </div>
+                            <div class="form-group">
+                                <label for="videoDescription">Video Description</label>
+                                <textarea id="videoDescription" rows="3" placeholder="Describe this video..."></textarea>
+                            </div>
+                            <video id="videoPreview" style="display: none; max-width: 300px; max-height: 200px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);" controls></video>
+                            <br>
+                            <button type="button" id="uploadVideoBtn" class="btn btn-secondary" style="margin-top: 10px;" disabled>
+                                Upload to Vimeo
+                            </button>
+                            <div id="uploadProgress" style="display: none; margin-top: 10px;">
+                                <div style="background: #f8f9fa; border-radius: 4px; padding: 8px;">
+                                    <div style="color: #2c3e50; font-size: 0.9rem; margin-bottom: 5px;">Uploading...</div>
+                                    <div style="background: #ecf0f1; height: 8px; border-radius: 4px; overflow: hidden;">
+                                        <div id="progressBar" style="background: #3498db; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="attendee-management-section">
@@ -885,7 +925,7 @@
         function renderEventsTable() {
             const tbody = document.getElementById('eventsTableBody');
             if (events.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="loading">No events found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">No events found</td></tr>';
                 return;
             }
             tbody.innerHTML = events.map(evt => `
@@ -901,6 +941,7 @@
                         }
                     </td>
                     <td><span class="status-badge status-approved">${evt.photos ? evt.photos.length : 0}</span></td>
+                    <td><span class="status-badge status-pending">${evt.videos ? evt.videos.length : 0}</span></td>
                     <td><span class="status-badge status-${evt.status}">${evt.status}</span></td>
                     <td>
                         <button class="action-btn edit-btn" onclick="editEvent('${evt.id}')">Edit</button>
@@ -941,8 +982,9 @@
                 }
             }
             
-            // Load event photos
+            // Load event photos and videos
             loadEventPhotos(event.id);
+            loadEventVideos(event.id);
             
             // Load attendees and approved members
             loadEventAttendees(event.id);
@@ -1083,6 +1125,186 @@
             `).join('');
             
             photosGrid.innerHTML = photosHTML;
+        }
+
+        // Video upload functionality
+        document.getElementById('videoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('videoPreview');
+            const uploadBtn = document.getElementById('uploadVideoBtn');
+            
+            if (file) {
+                // Check file size (500MB limit)
+                const maxSize = 500 * 1024 * 1024; // 500MB
+                if (file.size > maxSize) {
+                    showError('Video file size must be less than 500MB', 'eventsMessageContainer');
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Show preview
+                const videoURL = URL.createObjectURL(file);
+                preview.src = videoURL;
+                preview.style.display = 'block';
+                uploadBtn.disabled = false;
+                
+                // Auto-populate title if empty
+                const titleInput = document.getElementById('videoTitle');
+                if (!titleInput.value) {
+                    titleInput.value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                }
+            } else {
+                preview.style.display = 'none';
+                uploadBtn.disabled = true;
+            }
+        });
+
+        document.getElementById('uploadVideoBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('videoUpload');
+            const titleInput = document.getElementById('videoTitle');
+            const descriptionInput = document.getElementById('videoDescription');
+            const eventId = document.getElementById('editEventId').value;
+            
+            if (!fileInput.files[0] || !eventId) {
+                showError('Please select a video and ensure an event is selected', 'eventsMessageContainer');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const title = titleInput.value.trim() || file.name;
+            const description = descriptionInput.value.trim();
+            
+            // Show progress
+            const uploadBtn = this;
+            const originalText = uploadBtn.textContent;
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            
+            uploadBtn.textContent = 'Preparing Upload...';
+            uploadBtn.disabled = true;
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '10%';
+            
+            try {
+                // Convert file to base64
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const videoData = e.target.result;
+                    
+                    progressBar.style.width = '30%';
+                    uploadBtn.textContent = 'Uploading to Vimeo...';
+                    
+                    try {
+                        const response = await fetch('/.netlify/functions/upload-video-vimeo', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                eventId: eventId,
+                                videoData: videoData,
+                                fileName: file.name,
+                                title: title,
+                                description: description
+                            })
+                        });
+                        
+                        progressBar.style.width = '90%';
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok && result.success) {
+                            progressBar.style.width = '100%';
+                            showMessage(`Video uploaded successfully to Vimeo! <a href="${result.vimeoUrl}" target="_blank">View Video</a>`, 'success', 'eventsMessageContainer');
+                            
+                            // Clear the form
+                            fileInput.value = '';
+                            titleInput.value = '';
+                            descriptionInput.value = '';
+                            document.getElementById('videoPreview').style.display = 'none';
+                            
+                            // Refresh the videos display
+                            await loadEventVideos(eventId);
+                            
+                            // Refresh events list
+                            loadEvents();
+                            
+                        } else {
+                            showError(result.error || 'Failed to upload video to Vimeo', 'eventsMessageContainer');
+                        }
+                        
+                    } catch (uploadError) {
+                        console.error('Video upload error:', uploadError);
+                        showError('Failed to upload video. Please try again.', 'eventsMessageContainer');
+                    } finally {
+                        uploadBtn.textContent = originalText;
+                        uploadBtn.disabled = false;
+                        progressDiv.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }
+                };
+                
+                reader.readAsDataURL(file);
+                
+            } catch (error) {
+                console.error('Video processing error:', error);
+                showError('Failed to process video file. Please try again.', 'eventsMessageContainer');
+                uploadBtn.textContent = originalText;
+                uploadBtn.disabled = false;
+                progressDiv.style.display = 'none';
+            }
+        });
+
+        // Load and display event videos
+        async function loadEventVideos(eventId) {
+            try {
+                const response = await fetch('/.netlify/functions/get-events', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const event = data.events.find(e => e.id === eventId);
+                    
+                    if (event && event.videos) {
+                        displayEventVideos(event.videos);
+                    } else {
+                        displayEventVideos([]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading event videos:', error);
+            }
+        }
+
+        function displayEventVideos(videos) {
+            const videosGrid = document.getElementById('eventVideosGrid');
+            
+            if (!videos || videos.length === 0) {
+                videosGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px;">No videos uploaded yet</p>';
+                return;
+            }
+            
+            const videosHTML = videos.map(video => `
+                <div style="border: 1px solid #ecf0f1; border-radius: 8px; padding: 15px; background: white;">
+                    <div style="aspect-ratio: 16/9; margin-bottom: 10px;">
+                        <iframe src="https://player.vimeo.com/video/${video.vimeoId}" 
+                                width="100%" height="100%" frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
+                                style="border-radius: 4px;">
+                        </iframe>
+                    </div>
+                    <h5 style="color: #2c3e50; margin-bottom: 5px; font-size: 1rem;">${video.title || 'Untitled Video'}</h5>
+                    ${video.description ? `<p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 8px;">${video.description}</p>` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #999;">
+                        <span>Uploaded: ${new Date(video.uploadedAt).toLocaleDateString()}</span>
+                        <a href="https://vimeo.com/${video.vimeoId}" target="_blank" style="color: #3498db;">View on Vimeo</a>
+                    </div>
+                </div>
+            `).join('');
+            
+            videosGrid.innerHTML = videosHTML;
         }
 
         function closeEventModal() {
@@ -1558,6 +1780,144 @@
                 if (event.target === applicantModal) closeApplicantModal();
             }
 
+            // Video upload functionality
+            const videoUpload = document.getElementById('videoUpload');
+            const videoTitle = document.getElementById('videoTitle');
+            const videoDescription = document.getElementById('videoDescription');
+            const videoPreview = document.getElementById('videoPreview');
+            const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+
+            // Video file selection handler
+            videoUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) {
+                    videoPreview.style.display = 'none';
+                    uploadVideoBtn.disabled = true;
+                    return;
+                }
+
+                // Validate file size (500MB limit)
+                const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+                if (file.size > maxSize) {
+                    alert('File size must be less than 500MB');
+                    videoUpload.value = '';
+                    videoPreview.style.display = 'none';
+                    uploadVideoBtn.disabled = true;
+                    return;
+                }
+
+                // Validate file type
+                const validTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/avi'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please select a valid video file (MP4, MOV, AVI)');
+                    videoUpload.value = '';
+                    videoPreview.style.display = 'none';
+                    uploadVideoBtn.disabled = true;
+                    return;
+                }
+
+                // Show video preview
+                const url = URL.createObjectURL(file);
+                videoPreview.src = url;
+                videoPreview.style.display = 'block';
+                
+                // Enable upload button
+                uploadVideoBtn.disabled = false;
+                
+                // Set default title if not provided
+                if (!videoTitle.value) {
+                    videoTitle.value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                }
+            });
+
+            // Video upload button handler
+            uploadVideoBtn.addEventListener('click', async function() {
+                const file = videoUpload.files[0];
+                if (!file) return;
+
+                const eventId = document.getElementById('editEventId').value;
+                if (!eventId) {
+                    alert('Please save the event first before uploading videos');
+                    return;
+                }
+
+                const title = videoTitle.value.trim() || file.name;
+                const description = videoDescription.value.trim();
+
+                // Show progress
+                uploadProgress.style.display = 'block';
+                uploadVideoBtn.disabled = true;
+                uploadVideoBtn.textContent = 'Uploading...';
+                progressBar.style.width = '10%';
+
+                try {
+                    // Convert file to base64
+                    const base64Data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+
+                    progressBar.style.width = '30%';
+
+                    // Upload to Vimeo via our backend function
+                    const response = await fetch('/.netlify/functions/upload-video-vimeo', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            eventId: eventId,
+                            videoData: base64Data,
+                            fileName: file.name,
+                            title: title,
+                            description: description
+                        })
+                    });
+
+                    progressBar.style.width = '80%';
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Upload failed');
+                    }
+
+                    const result = await response.json();
+                    progressBar.style.width = '100%';
+
+                    if (result.success) {
+                        showMessage('Video uploaded to Vimeo successfully!', 'success', 'eventsMessageContainer');
+                        
+                        // Clear form
+                        videoUpload.value = '';
+                        videoTitle.value = '';
+                        videoDescription.value = '';
+                        videoPreview.style.display = 'none';
+                        
+                        // Refresh videos display
+                        loadEventVideos(eventId);
+                        
+                        // Refresh events list to show updated video count
+                        loadEvents();
+                    } else {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+
+                } catch (error) {
+                    console.error('Video upload error:', error);
+                    showError(`Video upload failed: ${error.message}`, 'eventsMessageContainer');
+                } finally {
+                    uploadProgress.style.display = 'none';
+                    uploadVideoBtn.disabled = false;
+                    uploadVideoBtn.textContent = 'Upload to Vimeo';
+                    progressBar.style.width = '0%';
+                }
+            });
+
             checkAuth();
         });
 
@@ -1801,6 +2161,52 @@
             }
         }
 
+        // Load and display event videos
+        async function loadEventVideos(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (event && event.videos) {
+                displayEventVideos(event.videos);
+            } else {
+                displayEventVideos([]);
+            }
+        }
+
+        // Display event videos
+        function displayEventVideos(videos) {
+            const videosGrid = document.getElementById('eventVideosGrid');
+            
+            if (!videos || videos.length === 0) {
+                videosGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px; grid-column: 1 / -1;">No videos uploaded yet</p>';
+                return;
+            }
+            
+            const videosHTML = videos.map(video => `
+                <div class="video-item" style="border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div style="aspect-ratio: 16/9; background: #f8f9fa; position: relative;">
+                        <iframe 
+                            src="https://player.vimeo.com/video/${video.vimeoId}?badge=0&autopause=0&quality_selector=1&player_id=0&app_id=58479" 
+                            width="100%" 
+                            height="100%" 
+                            frameborder="0" 
+                            allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                            title="${video.title || 'Event Video'}">
+                        </iframe>
+                    </div>
+                    <div style="padding: 12px;">
+                        <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px; font-size: 0.9rem;">${video.title || video.fileName}</div>
+                        ${video.description ? `<div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 8px; line-height: 1.4;">${video.description}</div>` : ''}
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #7f8c8d;">
+                            <span>Uploaded: ${new Date(video.uploadedAt).toLocaleDateString()}</span>
+                            <a href="https://vimeo.com/${video.vimeoId}" target="_blank" style="color: #3498db; text-decoration: none;">View on Vimeo</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            videosGrid.innerHTML = videosHTML;
+        }
+
         // Global functions for onclick handlers
         window.switchTab = switchTab;
         window.openAddVenueModal = openAddVenueModal;
@@ -1816,6 +2222,8 @@
         window.deleteEvent = deleteEvent;
         window.loadEventPhotos = loadEventPhotos;
         window.displayEventPhotos = displayEventPhotos;
+        window.loadEventVideos = loadEventVideos;
+        window.displayEventVideos = displayEventVideos;
         window.addAttendeeToEvent = addAttendeeToEvent;
         window.removeAttendeeFromEvent = removeAttendeeFromEvent;
         window.toggleAttendeeStatus = toggleAttendeeStatus;
