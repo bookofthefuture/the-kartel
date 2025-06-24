@@ -673,25 +673,71 @@
             // Find the venue to get booking URL
             const venue = allVenues.find(v => v.id === event.venueId || v.name === event.venue);
             
-            let alertMessage = "🎉 Great! You're registered for the event!\n\n";
-            alertMessage += "📍 Important: Don't forget to book your karting session directly with the track if you haven't already.\n\n";
+            // Create and show booking reminder modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.7); z-index: 2000; display: flex; 
+                align-items: center; justify-content: center; font-family: 'League Spartan', sans-serif;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px; max-width: 500px; 
+                margin: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: center;
+            `;
+            
+            let contentHTML = `
+                <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">🎉 Registration Successful!</h3>
+                <p style="color: #5d6d7e; margin-bottom: 25px; line-height: 1.6;">
+                    <strong>Important:</strong> Don't forget to book your karting session directly with the track if you haven't already.
+                </p>
+            `;
             
             if (venue && venue.website) {
-                alertMessage += `Click "OK" to go to ${venue.name}'s booking page, or visit:\n${venue.website}`;
-                
-                if (confirm(alertMessage)) {
-                    window.open(venue.website, '_blank');
-                }
+                contentHTML += `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <p style="color: #2c3e50; margin-bottom: 15px; font-weight: 600;">📍 ${venue.name}</p>
+                        <a href="${venue.website}" target="_blank" 
+                           style="display: inline-block; background: #e74c3c; color: white; padding: 12px 24px; 
+                                  text-decoration: none; border-radius: 6px; font-weight: 600; 
+                                  transition: background 0.3s ease;"
+                           onmouseover="this.style.background='#c0392b'" 
+                           onmouseout="this.style.background='#e74c3c'">
+                            🔗 Book Your Session Now
+                        </a>
+                    </div>
+                `;
             } else {
-                alertMessage += `Contact the venue directly to book your session:\n`;
-                alertMessage += `📍 ${event.venue || 'Venue details in event information'}`;
-                
-                if (venue && venue.phone) {
-                    alertMessage += `\n📞 ${venue.phone}`;
-                }
-                
-                alert(alertMessage);
+                contentHTML += `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <p style="color: #2c3e50; margin-bottom: 10px;"><strong>📍 ${event.venue || 'Venue details in event information'}</strong></p>
+                        ${venue && venue.phone ? `<p style="color: #5d6d7e; margin-bottom: 10px;">📞 ${venue.phone}</p>` : ''}
+                        <p style="color: #7f8c8d; font-size: 0.9rem;">Contact the venue directly to book your session</p>
+                    </div>
+                `;
             }
+            
+            contentHTML += `
+                <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" 
+                        style="background: #95a5a6; color: white; border: none; padding: 10px 20px; 
+                               border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'League Spartan', sans-serif;"
+                        onmouseover="this.style.background='#7f8c8d'" 
+                        onmouseout="this.style.background='#95a5a6'">
+                    Close
+                </button>
+            `;
+            
+            modalContent.innerHTML = contentHTML;
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
 
         async function cancelSignUp(buttonElement, eventId) {
