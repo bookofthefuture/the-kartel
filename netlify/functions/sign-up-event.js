@@ -28,9 +28,20 @@
     }
 
     try {
-      const { eventId, memberId, memberName, memberEmail, memberCompany } = JSON.parse(event.body);
+      const requestBody = JSON.parse(event.body);
+      console.log('📝 Received request body:', JSON.stringify(requestBody, null, 2));
+      
+      const { eventId, memberId, memberName, memberEmail, memberCompany } = requestBody;
+      
+      console.log('📋 Extracted fields:', { eventId, memberId, memberName, memberEmail, memberCompany });
 
       if (!eventId || !memberId || !memberName || !memberEmail) {
+        console.log('❌ Missing required fields check:', {
+          eventId: !!eventId,
+          memberId: !!memberId, 
+          memberName: !!memberName,
+          memberEmail: !!memberEmail
+        });
         return {
           statusCode: 400,
           body: JSON.stringify({ error: 'Missing required attendee details' })

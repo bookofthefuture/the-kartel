@@ -610,7 +610,7 @@
                 const requestBody = { 
                     eventId: eventId,
                     memberId: currentMember.id,
-                    memberName: currentMember.fullName,
+                    memberName: `${currentMember.firstName} ${currentMember.lastName}`,
                     memberEmail: currentMember.email,
                     memberCompany: currentMember.company || '' 
                 };
