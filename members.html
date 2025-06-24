@@ -745,8 +745,8 @@
                 const attendeesHTML = attendees.map(attendee => `
                     <li class="attendee-item">
                         <div class="attendee-info">
-                            <div class="attendee-name">${attendee.memberName || attendee.memberEmail}</div>
-                            <div class="attendee-company">${attendee.memberCompany || 'Company not specified'}</div>
+                            <div class="attendee-name">${attendee.name || attendee.memberName || attendee.email || attendee.memberEmail}</div>
+                            <div class="attendee-company">${attendee.company || attendee.memberCompany || 'Company not specified'}</div>
                         </div>
                         <span class="attendee-status ${attendee.attended ? 'status-attended' : 'status-registered'}">
                             ${attendee.attended ? 'Attended' : 'Registered'}
