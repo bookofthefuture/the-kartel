@@ -468,7 +468,7 @@
                             ${type === 'upcoming' ? `
                                 <button class="btn btn-primary" onclick="signUpForEvent(this, '${event.id}')">Sign Up</button>
                             ` : `
-                                <button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>
+                                ${!isPastEvent ? `<button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>` : ''}
                                 ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
                             `}
                         </div>
