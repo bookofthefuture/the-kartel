@@ -131,6 +131,7 @@ async function sendMagicLinkEmail(member, loginToken) {
 
   const baseUrl = process.env.SITE_URL || 'https://the-kartel.netlify.app';
   const loginUrl = `${baseUrl}/members.html?token=${loginToken}`;
+  const memberName = member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email;
 
   const subject = 'Your Secure Kartel Login Link';
   const htmlBody = `
@@ -141,7 +142,7 @@ async function sendMagicLinkEmail(member, loginToken) {
       </div>
       
       <div style="padding: 40px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50; margin-bottom: 20px;">Hello ${member.fullName || member.firstName},</h2>
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">Hello ${memberName},</h2>
         <p style="color: #2c3e50; margin-bottom: 25px;">Click the button below to securely access your Kartel members area:</p>
         
         <div style="text-align: center; margin: 30px 0;">

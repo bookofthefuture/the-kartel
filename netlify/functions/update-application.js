@@ -118,6 +118,7 @@ async function sendApplicantEmail(application, status) {
 }
 
 async function sendApprovalEmail(application) {
+  const applicantName = application.fullName || `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.name || application.email;
   const subject = `Welcome to The Kartel - Application Approved!`;
   const htmlBody = `
     <div style="font-family: 'League Spartan', 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
@@ -128,7 +129,7 @@ async function sendApprovalEmail(application) {
       </div>
       
       <div style="padding: 40px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Congratulations, ${application.firstName || application.name}!</h2>
+        <h2 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Congratulations, ${applicantName}!</h2>
         <p style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">We're thrilled to welcome you to The Kartel - Manchester's most exclusive business networking collective!</p>
         
         <div style="background: white; padding: 25px; border-radius: 8px; border-left: 4px solid #3498db; margin: 25px 0;">
@@ -163,6 +164,7 @@ async function sendApprovalEmail(application) {
 }
 
 async function sendRejectionEmail(application) {
+  const applicantName = application.fullName || `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.name || application.email;
   const subject = `Thank you for your interest in The Kartel`;
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -171,7 +173,7 @@ async function sendRejectionEmail(application) {
       </div>
       
       <div style="padding: 40px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50;">Dear ${application.name},</h2>
+        <h2 style="color: #2c3e50;">Dear ${applicantName},</h2>
         <p style="color: #2c3e50;">Thank you for your interest in The Kartel. After careful consideration, we've decided not to move forward with your application at this time.</p>
         <p style="color: #2c3e50;">We appreciate your interest and wish you well in your professional endeavors.</p>
       </div>
