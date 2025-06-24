@@ -6,7 +6,42 @@
     "@netlify/blobs": "^8.1.0",
     "@sendgrid/mail": "^8.1.5"
   },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "prepare": "husky install"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.js",
+      "**/?(*.)+(spec|test).js"
+    ],
+    "collectCoverageFrom": [
+      "netlify/functions/**/*.js",
+      "!netlify/functions/**/*.test.js"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ]
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm test -- --bail --findRelatedTests"
+    ]
   }
 }
