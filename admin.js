@@ -1615,34 +1615,67 @@ let currentFaqs = [];
 
 async function loadGalleryManagement() {
     try {
-        const response = await fetch('/.netlify/functions/get-gallery', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            selectedGalleryPhotos = data.photos || [];
-            updateGalleryStats();
+        console.log('Loading gallery management...');
+        
+        // Load existing gallery selection
+        try {
+            const response = await fetch('/.netlify/functions/get-gallery', {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            console.log('Get gallery response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Gallery data received:', data);
+                selectedGalleryPhotos = data.photos || [];
+                updateGalleryStats();
+            } else {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.log('Gallery fetch error:', errorData);
+                // Don't fail here, just start with empty selection
+                selectedGalleryPhotos = [];
+            }
+        } catch (galleryError) {
+            console.error('Error fetching gallery:', galleryError);
+            selectedGalleryPhotos = [];
         }
-        await loadAvailablePhotos();
+        
+        // Load available photos from events
+        try {
+            await loadAvailablePhotos();
+            console.log('Available photos loaded, count:', allEventPhotos.length);
+        } catch (photosError) {
+            console.error('Error loading available photos:', photosError);
+            allEventPhotos = [];
+        }
+        
         renderGalleryManagement();
+        console.log('Gallery management loaded successfully');
+        
     } catch (error) {
-        console.error('Error loading gallery management:', error);
-        showError('Failed to load gallery management. Please try again.', 'galleryMessageContainer');
+        console.error('Error in loadGalleryManagement:', error);
+        showError(`Failed to load gallery management: ${error.message}`, 'galleryMessageContainer');
     }
 }
 
 async function loadAvailablePhotos() {
     try {
+        console.log('Loading available photos from events...');
         const response = await fetch('/.netlify/functions/get-events', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        
+        console.log('Get events response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
+            console.log('Events data received:', data);
             const events = data.events || [];
             allEventPhotos = [];
             
             events.forEach(event => {
                 if (event.photos && event.photos.length > 0) {
+                    console.log(`Event "${event.name}" has ${event.photos.length} photos`);
                     event.photos.forEach(photo => {
                         allEventPhotos.push({
                             ...photo,
@@ -1652,15 +1685,24 @@ async function loadAvailablePhotos() {
                     });
                 }
             });
+            
+            console.log(`Total photos collected: ${allEventPhotos.length}`);
+        } else {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Events fetch error:', errorData);
+            throw new Error(`Failed to fetch events: ${errorData.error || response.status}`);
         }
     } catch (error) {
         console.error('Error loading available photos:', error);
+        throw error; // Re-throw to be caught by parent function
     }
 }
 
 function renderGalleryManagement() {
     const availableGrid = document.getElementById('availablePhotosGrid');
     const selectedGrid = document.getElementById('selectedPhotosGrid');
+    
+    console.log('Rendering gallery management. Available photos:', allEventPhotos.length, 'Selected photos:', selectedGalleryPhotos.length);
     
     if (allEventPhotos.length === 0) {
         availableGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; grid-column: 1 / -1;">No event photos available. Upload photos to events first.</p>';
