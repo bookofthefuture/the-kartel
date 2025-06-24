@@ -524,9 +524,9 @@
         function renderEvents(type, container) {
             let eventsToDisplay = [];
             if (type === 'upcoming') {
+                // Show ALL upcoming events, regardless of signup status
                 eventsToDisplay = allEvents.filter(event => 
-                    new Date(event.date) >= new Date() && 
-                    !(event.attendees && event.attendees.some(a => a.memberId === currentMember.id))
+                    new Date(event.date) >= new Date()
                 );
             } else if (type === 'my') {
                 eventsToDisplay = allEvents.filter(event => 
@@ -566,7 +566,12 @@
                         </div>
                         <div class="event-actions" onclick="event.stopPropagation()">
                             ${type === 'upcoming' ? `
-                                <button class="btn btn-primary" onclick="signUpForEvent(this, '${event.id}')">Sign Up</button>
+                                ${isSignedUp ? `
+                                    <button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>
+                                    <span class="status-badge status-approved">Registered</span>
+                                ` : `
+                                    <button class="btn btn-primary" onclick="signUpForEvent(this, '${event.id}')">Sign Up</button>
+                                `}
                             ` : `
                                 ${!isPastEvent ? `<button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>` : ''}
                                 ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
