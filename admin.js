@@ -1830,6 +1830,31 @@ async function deleteFaq(faqId) {
     }
 }
 
+async function seedFaqs() {
+    if (!confirm('This will populate the CMS with the existing FAQs from the website. Continue?')) return;
+    
+    try {
+        const response = await fetch('/.netlify/functions/seed-faqs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(result.message, 'success', 'faqMessageContainer');
+            loadFaqs();
+        } else {
+            throw new Error('Failed to seed FAQs');
+        }
+    } catch (error) {
+        console.error('Error seeding FAQs:', error);
+        showError('Failed to seed FAQs. Please try again.', 'faqMessageContainer');
+    }
+}
+
 async function loadExperienceVideo() {
     try {
         const response = await fetch('/.netlify/functions/get-experience-video', {
@@ -1957,6 +1982,7 @@ window.openAddFaqModal = openAddFaqModal;
 window.editFaq = editFaq;
 window.closeFaqModal = closeFaqModal;
 window.deleteFaq = deleteFaq;
+window.seedFaqs = seedFaqs;
 window.loadExperienceVideo = loadExperienceVideo;
 window.updateExperienceVideo = updateExperienceVideo;
 window.closeApplicantModal = closeApplicantModal;

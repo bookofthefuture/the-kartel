@@ -176,7 +176,7 @@
         <div class="container">
             <h2 class="section-title">Experience the Rush</h2>
             <p class="section-subtitle">Get a taste of what awaits you at The Kartel</p>
-            <div class="video-container">
+            <div class="video-container" id="experienceVideoContainer">
                 <iframe src="https://player.vimeo.com/video/1092055210?badge=0&autopause=0&player_id=0&app_id=58479" 
                         frameborder="0" 
                         allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
@@ -297,7 +297,8 @@
         <div class="container">
             <h2 class="section-title">Frequently Asked Questions</h2>
             <p class="section-subtitle">Answers to common enquiries about The Kartel.</p>
-            <div class="faq-accordion">
+            <div class="faq-accordion" id="faqAccordion">
+                <!-- Static FAQs as fallback -->
                 <div class="faq-item">
                     <button class="faq-question">How much does membership cost?</button>
                     <div class="faq-answer">
@@ -343,7 +344,56 @@
             <h2 class="section-title">Event Gallery</h2>
             <p class="section-subtitle">Moments from our exclusive karting experiences</p>
             
-            <div class="gallery-grid" id="galleryGrid">               
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- Static gallery items as fallback -->
+                <div class="gallery-item">
+                    <img src="photos/the-kartel-logo.png" alt="The Kartel Logo" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>The Kartel Logo</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-attendees.jpg" alt="Attendees at the first Kartel Event" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>First Event Attendees</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-board.jpg" alt="Event leaderboard from the first Kartel Event" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>Event Leaderboard</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-overtake.jpg" alt="Close racing action from the first Kartel Event" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>Close Racing Action</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-pub.jpg" alt="Post-race networking at a local pub" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>Post-Race Networking</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-r1.jpg" alt="Race 1 results from the first Kartel Event" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>Race 1 Results</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-r2.jpg" alt="Race 2 results from the first Kartel Event" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>Race 2 Results</span>
+                    </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="photos/09-06-25-r3.jpg" alt="Race 3 results from the first Kartel Event" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>Race 3 Results</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -356,81 +406,126 @@
     </div>
 
     <script>
-// Load dynamic gallery photos
-    async function loadGalleryPhotos() {
-        try {
-            const response = await fetch('/.netlify/functions/get-gallery');
-
-            if (response.ok) {
-                const data = await response.json();
-                const photos = data.photos || [];
-
-                if (photos.length > 0) {
-                    renderDynamicGallery(photos);
-                } else {
-                    // Fall back to static gallery if no dynamic photos
-                    console.log('No dynamic photos found, keeping static gallery');
-                    renderDynamicGallery([]); // Call with empty array if no dynamic photos, to prevent errors
-                }
-            } else {
-                console.log('Gallery service not available, keeping static gallery');
-                renderDynamicGallery([]); // Call with empty array if service not available
-            }
-        } catch (error) {
-            console.log('Could not load dynamic gallery, keeping static gallery');
-            renderDynamicGallery([]); // Call with empty array on error
+        // Load dynamic content
+        async function loadDynamicContent() {
+            await Promise.all([
+                loadGalleryPhotos(),
+                loadDynamicFAQs(),
+                loadExperienceVideo()
+            ]);
         }
-    }
 
-    function renderDynamicGallery(dynamicPhotos) {
-        const galleryGrid = document.getElementById('galleryGrid');
+        // Load dynamic gallery photos
+        async function loadGalleryPhotos() {
+            try {
+                const response = await fetch('/.netlify/functions/get-gallery');
 
-        // REMOVE OR COMMENT OUT THIS ENTIRE `staticPhotos` BLOCK
-        // AND ENSURE ALL DESIRED PHOTOS ARE UPLOADED VIA THE ADMIN DASHBOARD
-        // const staticPhotos = [
-        //     {
-        //         src: 'photos/the-kartel-logo.png',
-        //         alt: 'The Kartel Logo',
-        //         caption: 'The Kartel Logo',
-        //         isStatic: true
-        //     },
-        //     {
-        //         src: 'photos/09-06-25-attendees.jpg',
-        //         alt: 'Attendees at the first Kartel Event',
-        //         caption: 'First Event Attendees',
-        //         isStatic: true
-        //     },
-        //     // ... other static photos
-        // ];
+                if (response.ok) {
+                    const data = await response.json();
+                    const photos = data.photos || [];
 
-        // Combine and sort by upload date (dynamic photos only, or if you keep static, then combine and sort as needed)
-        // If removing static photos, simply use dynamicPhotos directly:
-        const allPhotos = dynamicPhotos.map(photo => ({
-            src: photo.src,
-            alt: photo.alt,
-            caption: photo.caption || `Photo from ${photo.eventName}`,
-            eventName: photo.eventName,
-            eventDate: photo.eventDate,
-            isStatic: false
-        }));
+                    if (photos.length > 0) {
+                        renderDynamicGallery(photos);
+                        console.log('✅ Loaded dynamic gallery photos');
+                    } else {
+                        console.log('📋 No CMS gallery photos, keeping static gallery');
+                    }
+                } else {
+                    console.log('🔄 Gallery service not available, keeping static gallery');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not load dynamic gallery, keeping static gallery');
+            }
+        }
 
-        // Sort by upload date (newest first) as already done in get-gallery.js, but re-sort here just in case.
-        allPhotos.sort((a, b) => new Date(b.eventDate || b.uploadedAt) - new Date(a.eventDate || a.uploadedAt));
+        function renderDynamicGallery(dynamicPhotos) {
+            const galleryGrid = document.getElementById('galleryGrid');
 
-
-        // Generate gallery HTML
-        const galleryHTML = allPhotos.map(photo => `
-            <div class="gallery-item">
-                <img src="${photo.src}" alt="${photo.alt}" onclick="openModal(this)">
-                <div class="gallery-overlay">
-                    <span>${photo.caption}</span>
-                    ${photo.eventName && !photo.isStatic ? `<br><small>${photo.eventName} - ${new Date(photo.eventDate).toLocaleDateString()}</small>` : ''}
+            const galleryHTML = dynamicPhotos.map(photo => `
+                <div class="gallery-item">
+                    <img src="${photo.url}" alt="${photo.caption || photo.alt}" onclick="openModal(this)">
+                    <div class="gallery-overlay">
+                        <span>${photo.caption || `Photo from ${photo.eventName}`}</span>
+                        ${photo.eventName ? `<br><small>${photo.eventName} - ${new Date(photo.eventDate).toLocaleDateString()}</small>` : ''}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
 
-        galleryGrid.innerHTML = galleryHTML;
-    }
+            galleryGrid.innerHTML = galleryHTML;
+        }
+
+        // Load dynamic FAQs
+        async function loadDynamicFAQs() {
+            try {
+                const response = await fetch('/.netlify/functions/get-faqs');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const faqs = data.faqs || [];
+
+                    if (faqs.length > 0) {
+                        renderDynamicFAQs(faqs);
+                        console.log('✅ Loaded dynamic FAQs');
+                    } else {
+                        console.log('📋 No CMS FAQs, keeping static FAQs');
+                    }
+                } else {
+                    console.log('🔄 FAQ service not available, keeping static FAQs');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not load dynamic FAQs, keeping static FAQs');
+            }
+        }
+
+        function renderDynamicFAQs(faqs) {
+            const faqAccordion = document.getElementById('faqAccordion');
+
+            const faqHTML = faqs.map(faq => `
+                <div class="faq-item">
+                    <button class="faq-question">${faq.question}</button>
+                    <div class="faq-answer">
+                        <div style="padding: 20px 0;">${faq.answer}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            faqAccordion.innerHTML = faqHTML;
+            
+            // Reattach event listeners for new FAQ items
+            attachFAQListeners();
+        }
+
+        // Load dynamic experience video
+        async function loadExperienceVideo() {
+            try {
+                const response = await fetch('/.netlify/functions/get-experience-video');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const vimeoId = data.vimeoId;
+
+                    if (vimeoId && vimeoId !== '1092055210') {
+                        updateExperienceVideoDisplay(vimeoId);
+                        console.log('✅ Loaded dynamic experience video');
+                    } else {
+                        console.log('📋 Using default experience video');
+                    }
+                } else {
+                    console.log('🔄 Video service not available, keeping default video');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not load dynamic video, keeping default video');
+            }
+        }
+
+        function updateExperienceVideoDisplay(vimeoId) {
+            const videoContainer = document.getElementById('experienceVideoContainer');
+            const iframe = videoContainer.querySelector('iframe');
+            
+            if (iframe && vimeoId) {
+                iframe.src = `https://player.vimeo.com/video/${vimeoId}?badge=0&autopause=0&player_id=0&app_id=58479`;
+            }
+        }
 
         // Gallery Modal functionality
         function openModal(img) {
@@ -456,10 +551,7 @@
         }
 
         // FAQ Accordion functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load dynamic gallery after a short delay to ensure page is fully loaded
-            setTimeout(loadGalleryPhotos, 1000);
-            
+        function attachFAQListeners() {
             const faqQuestions = document.querySelectorAll('.faq-question');
             
             faqQuestions.forEach(question => {
@@ -488,6 +580,14 @@
                     }
                 });
             });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load all dynamic content
+            loadDynamicContent();
+            
+            // Attach FAQ listeners to static FAQs initially
+            attachFAQListeners();
         });
 
         // Form submission functionality
