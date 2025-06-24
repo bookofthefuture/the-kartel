@@ -122,7 +122,7 @@ async function sendApprovalEmail(application) {
   const htmlBody = `
     <div style="font-family: 'League Spartan', 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 50%, #27ae60 100%); color: white; padding: 40px; text-align: center;">
-        <img src="${process.env.SITE_URL || 'https://thekartel.co.uk'}/assets/the-kartel-logo.png" alt="The Kartel Logo" style="height: 60px; width: auto; margin-bottom: 15px; filter: brightness(0) invert(1);">
+        <img src="${process.env.SITE_URL || 'https://the-kartel.com'}/assets/the-kartel-logo.png" alt="The Kartel Logo" style="height: 60px; width: auto; margin-bottom: 15px; filter: brightness(0) invert(1);">
         <h1 style="margin: 0; font-size: 28px; font-family: 'League Spartan', 'Arial', sans-serif;">Welcome to The Kartel!</h1>
         <p style="margin: 15px 0 0 0; font-size: 18px; font-family: 'League Spartan', 'Arial', sans-serif;">Your application has been approved</p>
       </div>
@@ -135,7 +135,7 @@ async function sendApprovalEmail(application) {
           <h3 style="color: #2c3e50; margin-bottom: 15px; font-family: 'League Spartan', 'Arial', sans-serif;">🏁 Access Your Members Area</h3>
           <p style="color: #2c3e50; margin-bottom: 15px; font-family: 'League Spartan', 'Arial', sans-serif;">Log in to your exclusive members area to view upcoming events, see who's attending, and register for karting sessions:</p>
           <div style="text-align: center; margin: 20px 0;">
-            <a href="https://thekartel.co.uk/members.html" style="display: inline-block; background: linear-gradient(45deg, #3498db, #2980b9); color: white; text-decoration: none; padding: 15px 30px; border-radius: 5px; font-weight: bold; font-size: 16px; font-family: 'League Spartan', 'Arial', sans-serif;">Access Members Area</a>
+            <a href="${process.env.SITE_URL || 'https://the-kartel.com'}/members.html" style="display: inline-block; background: linear-gradient(45deg, #3498db, #2980b9); color: white; text-decoration: none; padding: 15px 30px; border-radius: 5px; font-weight: bold; font-size: 16px; font-family: 'League Spartan', 'Arial', sans-serif;">Access Members Area</a>
           </div>
           <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 0;">Simply enter your email address to receive a secure login link.</p>
         </div>
