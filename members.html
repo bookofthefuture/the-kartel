@@ -641,6 +641,12 @@
                 if (response.ok && result.success) {
                     console.log('Sign-up successful!');
                     showMessage('Successfully signed up for the event!', 'success');
+                    
+                    // Show booking reminder alert after a short delay
+                    setTimeout(() => {
+                        showBookingReminder(eventId);
+                    }, 1500);
+                    
                     loadEvents('upcoming'); 
                     loadEvents('my');       
                 } else {
@@ -653,6 +659,38 @@
             } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
+            }
+        }
+
+        function showBookingReminder(eventId) {
+            // Find the event to get venue information
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) {
+                console.log('Event not found for booking reminder');
+                return;
+            }
+
+            // Find the venue to get booking URL
+            const venue = allVenues.find(v => v.id === event.venueId || v.name === event.venue);
+            
+            let alertMessage = "🎉 Great! You're registered for the event!\n\n";
+            alertMessage += "📍 Important: Don't forget to book your karting session directly with the track if you haven't already.\n\n";
+            
+            if (venue && venue.website) {
+                alertMessage += `Click "OK" to go to ${venue.name}'s booking page, or visit:\n${venue.website}`;
+                
+                if (confirm(alertMessage)) {
+                    window.open(venue.website, '_blank');
+                }
+            } else {
+                alertMessage += `Contact the venue directly to book your session:\n`;
+                alertMessage += `📍 ${event.venue || 'Venue details in event information'}`;
+                
+                if (venue && venue.phone) {
+                    alertMessage += `\n📞 ${venue.phone}`;
+                }
+                
+                alert(alertMessage);
             }
         }
 
@@ -1022,6 +1060,7 @@
         window.switchTab = switchTab;
         window.signUpForEvent = signUpForEvent;
         window.cancelSignUp = cancelSignUp;
+        window.showBookingReminder = showBookingReminder;
         window.showLoginForm = showLoginForm;
         window.showEventDetails = showEventDetails;
         window.closeEventModal = closeEventModal;
