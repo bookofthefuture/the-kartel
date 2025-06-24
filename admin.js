@@ -1665,29 +1665,35 @@ function renderGalleryManagement() {
     if (allEventPhotos.length === 0) {
         availableGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; grid-column: 1 / -1;">No event photos available. Upload photos to events first.</p>';
     } else {
-        availableGrid.innerHTML = allEventPhotos.map(photo => `
+        availableGrid.innerHTML = allEventPhotos.map(photo => {
+            const photoUrl = photo.url || photo.src || `/.netlify/functions/get-photo?path=${encodeURIComponent(photo.path)}`;
+            return `
             <div class="photo-item" style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); ${selectedGalleryPhotos.find(p => p.id === photo.id) ? 'opacity: 0.5;' : ''}" 
                  onclick="selectPhoto('${photo.id}')">
-                <img src="${photo.url}" alt="${photo.caption || 'Event photo'}" style="width: 100%; height: 120px; object-fit: cover;">
+                <img src="${photoUrl}" alt="${photo.caption || 'Event photo'}" style="width: 100%; height: 120px; object-fit: cover;">
                 <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; padding: 8px 6px 6px; font-size: 0.7rem;">
                     <div style="font-weight: 600;">${photo.eventName}</div>
                     <div style="opacity: 0.8;">${photo.eventDate}</div>
                 </div>
                 ${selectedGalleryPhotos.find(p => p.id === photo.id) ? '<div style="position: absolute; top: 5px; right: 5px; background: #27ae60; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div>' : ''}
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
     
     if (selectedGalleryPhotos.length === 0) {
         selectedGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; grid-column: 1 / -1;">Click photos from the left to add them here</p>';
     } else {
-        selectedGrid.innerHTML = selectedGalleryPhotos.map(photo => `
+        selectedGrid.innerHTML = selectedGalleryPhotos.map(photo => {
+            const photoUrl = photo.url || photo.src || `/.netlify/functions/get-photo?path=${encodeURIComponent(photo.path)}`;
+            return `
             <div class="photo-item" style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
                  onclick="deselectPhoto('${photo.id}')">
-                <img src="${photo.url}" alt="${photo.caption || 'Event photo'}" style="width: 100%; height: 100px; object-fit: cover;">
+                <img src="${photoUrl}" alt="${photo.caption || 'Event photo'}" style="width: 100%; height: 100px; object-fit: cover;">
                 <div style="position: absolute; top: 2px; right: 2px; background: #e74c3c; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer;">×</div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
     
     document.getElementById('selectedCount').textContent = selectedGalleryPhotos.length;
@@ -1713,13 +1719,24 @@ function deselectPhoto(photoId) {
 
 async function saveGallerySelection() {
     try {
+        // Prepare photos with proper URL structure for frontend
+        const photosForFrontend = selectedGalleryPhotos.map(photo => ({
+            id: photo.id,
+            url: photo.url || photo.src || `/.netlify/functions/get-photo?path=${encodeURIComponent(photo.path)}`,
+            alt: photo.alt || photo.caption || `Photo from ${photo.eventName}`,
+            caption: photo.caption || `Photo from ${photo.eventName}`,
+            eventName: photo.eventName,
+            eventDate: photo.eventDate,
+            uploadedAt: photo.uploadedAt
+        }));
+
         const response = await fetch('/.netlify/functions/update-gallery', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ photos: selectedGalleryPhotos })
+            body: JSON.stringify({ photos: photosForFrontend })
         });
         
         if (response.ok) {
