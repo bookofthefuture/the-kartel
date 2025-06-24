@@ -853,7 +853,9 @@
                 lastName: formData.get('profileLastName').trim(),
                 company: formData.get('profileCompany').trim(),
                 position: formData.get('profilePosition').trim(),
-                phone: formData.get('profilePhone').trim()
+                phone: formData.get('profilePhone').trim(),
+                memberId: currentMember.id,
+                memberEmail: currentMember.email
             };
             
             if (!profileData.firstName || !profileData.lastName) {

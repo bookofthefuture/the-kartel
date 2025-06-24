@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { firstName, lastName, company, position, phone } = JSON.parse(event.body);
+    const { firstName, lastName, company, position, phone, memberId, memberEmail } = JSON.parse(event.body);
 
     if (!firstName || !firstName.trim() || !lastName || !lastName.trim()) {
       return {
@@ -35,42 +35,20 @@ exports.handler = async (event, context) => {
       };
     }
 
-    console.log('👤 Updating member profile');
+    if (!memberId || !memberEmail) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Member identification required' })
+      };
+    }
+
+    console.log(`👤 Updating profile for member ${memberId}`);
 
     // Check environment variables
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
       return {
         statusCode: 500,
         body: JSON.stringify({ error: 'Server configuration error' })
-      };
-    }
-
-    // Get member info from token store first to validate the token and get member ID
-    const tokenStore = getStore({
-      name: 'login-tokens',
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_ACCESS_TOKEN,
-      consistency: 'strong'
-    });
-
-    let memberEmail = null;
-    let memberId = null;
-
-    // Check if this is a valid login token
-    try {
-      const tokenData = await tokenStore.get(token, { type: 'json' });
-      if (tokenData && !tokenData.used && new Date() < new Date(tokenData.expiresAt)) {
-        memberEmail = tokenData.email;
-        memberId = tokenData.memberId;
-      }
-    } catch (tokenError) {
-      console.log('Token not found in login-tokens, checking member tokens...');
-    }
-
-    if (!memberEmail || !memberId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Invalid or expired token' })
       };
     }
 
@@ -95,7 +73,7 @@ exports.handler = async (event, context) => {
     if (member.email !== memberEmail) {
       return {
         statusCode: 403,
-        body: JSON.stringify({ error: 'Token does not match member' })
+        body: JSON.stringify({ error: 'Member email does not match' })
       };
     }
 
