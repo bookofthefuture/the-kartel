@@ -148,27 +148,28 @@ async function sendAdminNotification(application) {
 
   const subject = `New Kartel Application - ${application.name}`;
   const htmlBody = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">The Kartel</h1>
-        <p style="margin: 10px 0 0 0; opacity: 0.9;">New Membership Application</p>
+    <div style="font-family: 'League Spartan', 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 30px; text-align: center;">
+        <img src="${baseUrl}/assets/the-kartel-logo.png" alt="The Kartel Logo" style="height: 60px; width: auto; margin-bottom: 15px;">
+        <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; font-family: 'League Spartan', 'Arial', sans-serif;">The Kartel</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9; font-family: 'League Spartan', 'Arial', sans-serif;">New Membership Application</p>
       </div>
       
       <div style="padding: 30px; background: #f8f9fa;">
-        <h2 style="color: #2c3e50; margin-bottom: 20px;">Quick Actions</h2>
+        <h2 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Quick Actions</h2>
         
         <div style="text-align: center; margin-bottom: 30px;">
           <a href="${approveUrl}" 
-             style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 15px; display: inline-block;">
+             style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 15px; display: inline-block; font-family: 'League Spartan', 'Arial', sans-serif;">
             APPROVE APPLICATION
           </a>
           <a href="${rejectUrl}" 
-             style="background: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+             style="background: #e67e22; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-family: 'League Spartan', 'Arial', sans-serif;">
             REJECT APPLICATION
           </a>
         </div>
         
-        <h3 style="color: #2c3e50; margin-bottom: 15px;">Application Details</h3>
+        <h3 style="color: #2c3e50; margin-bottom: 15px; font-family: 'League Spartan', 'Arial', sans-serif;">Application Details</h3>
         
         <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <p><strong>Name:</strong> ${application.firstName} ${application.lastName}</p>
@@ -182,7 +183,7 @@ async function sendAdminNotification(application) {
         
         <div style="text-align: center; margin-top: 20px;">
           <a href="${baseUrl}/admin.html" 
-             style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+             style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-family: 'League Spartan', 'Arial', sans-serif;">
             Open Admin Dashboard
           </a>
         </div>
