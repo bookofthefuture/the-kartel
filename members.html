@@ -355,6 +355,8 @@
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
             document.getElementById('memberDisplayName').textContent = currentMember.firstName || currentMember.email;
+            // Load venues in background for booking reminders
+            loadVenuesData();
             switchTab('upcomingEvents');
         }
 
@@ -687,48 +689,91 @@
                 margin: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: center;
             `;
             
-            let contentHTML = `
-                <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">🎉 Registration Successful!</h3>
-                <p style="color: #5d6d7e; margin-bottom: 25px; line-height: 1.6;">
-                    <strong>Important:</strong> Don't forget to book your karting session directly with the track if you haven't already.
-                </p>
-            `;
+            // Create header
+            const header = document.createElement('h3');
+            header.style.cssText = 'color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;';
+            header.textContent = '🎉 Registration Successful!';
+            
+            // Create description
+            const description = document.createElement('p');
+            description.style.cssText = 'color: #5d6d7e; margin-bottom: 25px; line-height: 1.6;';
+            description.innerHTML = '<strong>Important:</strong> Don\'t forget to book your karting session directly with the track if you haven\'t already.';
+            
+            // Create venue info container
+            const venueContainer = document.createElement('div');
+            venueContainer.style.cssText = 'background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;';
             
             if (venue && venue.website) {
-                contentHTML += `
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                        <p style="color: #2c3e50; margin-bottom: 15px; font-weight: 600;">📍 ${venue.name}</p>
-                        <a href="${venue.website}" target="_blank" 
-                           style="display: inline-block; background: #e74c3c; color: white; padding: 12px 24px; 
-                                  text-decoration: none; border-radius: 6px; font-weight: 600; 
-                                  transition: background 0.3s ease;"
-                           onmouseover="this.style.background='#c0392b'" 
-                           onmouseout="this.style.background='#e74c3c'">
-                            🔗 Book Your Session Now
-                        </a>
-                    </div>
+                const venueName = document.createElement('p');
+                venueName.style.cssText = 'color: #2c3e50; margin-bottom: 15px; font-weight: 600;';
+                venueName.textContent = `📍 ${venue.name}`;
+                
+                const bookingLink = document.createElement('a');
+                bookingLink.href = venue.website;
+                bookingLink.target = '_blank';
+                bookingLink.style.cssText = `
+                    display: inline-block; background: #e74c3c; color: white; padding: 12px 24px; 
+                    text-decoration: none; border-radius: 6px; font-weight: 600; 
+                    transition: background 0.3s ease; cursor: pointer;
                 `;
+                bookingLink.textContent = '🔗 Book Your Session Now';
+                
+                // Add hover effects
+                bookingLink.addEventListener('mouseenter', () => {
+                    bookingLink.style.background = '#c0392b';
+                });
+                bookingLink.addEventListener('mouseleave', () => {
+                    bookingLink.style.background = '#e74c3c';
+                });
+                
+                venueContainer.appendChild(venueName);
+                venueContainer.appendChild(bookingLink);
             } else {
-                contentHTML += `
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                        <p style="color: #2c3e50; margin-bottom: 10px;"><strong>📍 ${event.venue || 'Venue details in event information'}</strong></p>
-                        ${venue && venue.phone ? `<p style="color: #5d6d7e; margin-bottom: 10px;">📞 ${venue.phone}</p>` : ''}
-                        <p style="color: #7f8c8d; font-size: 0.9rem;">Contact the venue directly to book your session</p>
-                    </div>
-                `;
+                const venueName = document.createElement('p');
+                venueName.style.cssText = 'color: #2c3e50; margin-bottom: 10px;';
+                venueName.innerHTML = `<strong>📍 ${event.venue || 'Venue details in event information'}</strong>`;
+                
+                if (venue && venue.phone) {
+                    const venuePhone = document.createElement('p');
+                    venuePhone.style.cssText = 'color: #5d6d7e; margin-bottom: 10px;';
+                    venuePhone.textContent = `📞 ${venue.phone}`;
+                    venueContainer.appendChild(venuePhone);
+                }
+                
+                const contactNote = document.createElement('p');
+                contactNote.style.cssText = 'color: #7f8c8d; font-size: 0.9rem;';
+                contactNote.textContent = 'Contact the venue directly to book your session';
+                
+                venueContainer.appendChild(venueName);
+                venueContainer.appendChild(contactNote);
             }
             
-            contentHTML += `
-                <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" 
-                        style="background: #95a5a6; color: white; border: none; padding: 10px 20px; 
-                               border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'League Spartan', sans-serif;"
-                        onmouseover="this.style.background='#7f8c8d'" 
-                        onmouseout="this.style.background='#95a5a6'">
-                    Close
-                </button>
+            // Create close button
+            const closeButton = document.createElement('button');
+            closeButton.style.cssText = `
+                background: #95a5a6; color: white; border: none; padding: 10px 20px; 
+                border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'League Spartan', sans-serif;
+                transition: background 0.3s ease;
             `;
+            closeButton.textContent = 'Close';
             
-            modalContent.innerHTML = contentHTML;
+            // Add hover effects and click handler to close button
+            closeButton.addEventListener('mouseenter', () => {
+                closeButton.style.background = '#7f8c8d';
+            });
+            closeButton.addEventListener('mouseleave', () => {
+                closeButton.style.background = '#95a5a6';
+            });
+            closeButton.addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            // Assemble modal content
+            modalContent.appendChild(header);
+            modalContent.appendChild(description);
+            modalContent.appendChild(venueContainer);
+            modalContent.appendChild(closeButton);
+            
             modal.appendChild(modalContent);
             document.body.appendChild(modal);
             
@@ -785,6 +830,23 @@
             } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
+            }
+        }
+
+        // Load venues data only (for background loading)
+        async function loadVenuesData() {
+            try {
+                const response = await fetch('/.netlify/functions/get-venues-member', {
+                    headers: { 'Authorization': `Bearer ${memberToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allVenues = data.venues || [];
+                    console.log('Venues loaded for booking reminders:', allVenues.length);
+                }
+            } catch (error) {
+                console.error('Error loading venues data:', error);
             }
         }
 
