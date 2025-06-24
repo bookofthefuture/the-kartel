@@ -1,0 +1,1609 @@
+let authToken = localStorage.getItem('kartel_admin_token');
+let applications = [], events = [], venues = [], csvData = [];
+let currentTab = 'applications', editingVenueId = null;
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    event.target.classList.add('active');
+    currentTab = tabName;
+    if (tabName === 'applications') loadApplications();
+    else if (tabName === 'events') { loadEvents(); loadVenuesForDropdown(); }
+    else if (tabName === 'venues') loadVenues();
+}
+
+function showMessage(message, type = 'success', container = 'messageContainer') {
+    const messageContainer = document.getElementById(container);
+    messageContainer.innerHTML = `<div class="${type}">${message}</div>`;
+    setTimeout(() => messageContainer.innerHTML = '', 5000);
+}
+
+function showError(message, container = 'messageContainer') { showMessage(message, 'error', container); }
+
+async function loadVenues() {
+    try {
+        const response = await fetch('/.netlify/functions/get-venues', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.status === 401) { authToken = null; localStorage.removeItem('kartel_admin_token'); showLogin(); return; }
+        if (!response.ok) throw new Error('Failed to load venues');
+        const data = await response.json();
+        venues = data.venues || [];
+        updateVenueStats();
+        renderVenues();
+    } catch (error) {
+        console.error('Error loading venues:', error);
+        showError('Failed to load venues. Please try again.', 'venuesMessageContainer');
+    }
+}
+
+async function loadVenuesForDropdown() {
+    try {
+        const response = await fetch('/.netlify/functions/get-venues', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            venues = data.venues || [];
+            populateVenueDropdown();
+        }
+    } catch (error) { console.error('Error loading venues for dropdown:', error); }
+}
+
+function populateVenueDropdown() {
+    const select = document.getElementById('eventVenue');
+    while (select.children.length > 2) select.removeChild(select.lastChild);
+    venues.forEach(venue => {
+        const option = document.createElement('option');
+        option.value = venue.id;
+        option.textContent = venue.name;
+        select.appendChild(option);
+    });
+}
+
+function updateVenueStats() {
+    const total = venues.length;
+    const thisMonth = venues.filter(venue => {
+        const venueDate = new Date(venue.createdAt);
+        const now = new Date();
+        return venueDate.getMonth() === now.getMonth() && venueDate.getFullYear() === now.getFullYear();
+    }).length;
+    document.getElementById('totalVenues').textContent = total;
+    document.getElementById('activeVenues').textContent = total;
+    document.getElementById('venuesWithEvents').textContent = 0;
+    document.getElementById('recentVenues').textContent = thisMonth;
+}
+
+function renderVenues(filteredVenues = null) {
+    const container = document.getElementById('venuesContainer');
+    const venuesToRender = filteredVenues || venues;
+    if (venuesToRender.length === 0) {
+        container.innerHTML = `
+            <div class="search-container">
+                <input type="text" class="search-input" id="venueSearch" placeholder="Search venues..." onkeyup="filterVenues()">
+            </div>
+            <div class="empty-state">
+                <h3>No venues found</h3>
+                <p>Start by adding your first karting venue to manage events effectively.</p>
+                <button class="btn btn-success" onclick="openAddVenueModal()">Add Your First Venue</button>
+            </div>
+        `;
+        return;
+    }
+    const venuesHTML = venuesToRender.map(venue => `
+        <div class="venue-card">
+            <div class="venue-name">${venue.name}</div>
+            <div class="venue-details">
+                <div class="venue-detail"><strong>Address:</strong> ${venue.address}</div>
+                ${venue.phone ? `<div class="venue-detail"><strong>Phone:</strong> ${venue.phone}</div>` : ''}
+                ${venue.website ? `<div class="venue-detail"><strong>Website:</strong> <a href="${venue.website}" target="_blank" style="color: #e74c3c;">Visit Site</a></div>` : ''}
+                ${venue.notes ? `<div class="venue-detail"><strong>Notes:</strong> ${venue.notes}</div>` : ''}
+                ${venue.drivingTips ? `<div class="venue-detail"><strong>Driving Tips:</strong> ${venue.drivingTips.substring(0, 100)}${venue.drivingTips.length > 100 ? '...' : ''}</div>` : ''}
+                ${venue.vimeoId ? `<div class="venue-detail"><strong>Video:</strong> <a href="https://vimeo.com/${venue.vimeoId}" target="_blank" style="color: #e74c3c;">Watch on Vimeo</a></div>` : ''}
+                ${venue.trackMapPath ? `<div class="venue-detail"><strong>Track Map:</strong> <span style="color: #27ae60;">✓ Available</span></div>` : ''}
+                <div class="venue-detail"><strong>Added:</strong> ${new Date(venue.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div class="venue-actions">
+                <button class="action-btn edit-btn btn-small" onclick="editVenue('${venue.id}')">Edit</button>
+                <button class="action-btn delete-btn btn-small" onclick="deleteVenue('${venue.id}')">Delete</button>
+            </div>
+        </div>
+    `).join('');
+    container.innerHTML = `
+        <div class="search-container">
+            <input type="text" class="search-input" id="venueSearch" placeholder="Search venues..." onkeyup="filterVenues()" value="${document.getElementById('venueSearch')?.value || ''}">
+        </div>
+        <div class="venues-grid">${venuesHTML}</div>
+    `;
+}
+
+function filterVenues() {
+    const searchTerm = document.getElementById('venueSearch').value.toLowerCase();
+    if (!searchTerm.trim()) { renderVenues(); return; }
+    const filteredVenues = venues.filter(venue => 
+        venue.name.toLowerCase().includes(searchTerm) ||
+        venue.address.toLowerCase().includes(searchTerm) ||
+        (venue.notes && venue.notes.toLowerCase().includes(searchTerm)) ||
+        (venue.drivingTips && venue.drivingTips.toLowerCase().includes(searchTerm))
+    );
+    renderVenues(filteredVenues);
+}
+
+function openAddVenueModal() {
+    editingVenueId = null;
+    document.getElementById('modalTitle').textContent = 'Add New Venue';
+    document.getElementById('venueForm').reset();
+    
+    // Clear preview elements
+    document.getElementById('trackMapPreview').style.display = 'none';
+    document.getElementById('vimeoPreview').style.display = 'none';
+    document.getElementById('vimeoPreview').querySelector('iframe').src = '';
+    
+    document.getElementById('venueModal').style.display = 'block';
+}
+
+function editVenue(venueId) {
+    const venue = venues.find(v => v.id === venueId);
+    if (!venue) return;
+    editingVenueId = venueId;
+    document.getElementById('modalTitle').textContent = 'Edit Venue';
+    document.getElementById('venueId').value = venue.id;
+    document.getElementById('venueName').value = venue.name;
+    document.getElementById('venueAddress').value = venue.address;
+    document.getElementById('venuePhone').value = venue.phone || '';
+    document.getElementById('venueWebsite').value = venue.website || '';
+    document.getElementById('venueNotes').value = venue.notes || '';
+    
+    // New fields for track information
+    document.getElementById('venueDrivingTips').value = venue.drivingTips || '';
+    document.getElementById('venueVimeoId').value = venue.vimeoId || '';
+    
+    // Handle track map display if it exists
+    const trackMapPreview = document.getElementById('trackMapPreview');
+    const trackMapImage = document.getElementById('trackMapImage');
+    if (venue.trackMapPath) {
+        trackMapImage.src = `/.netlify/functions/get-photo?path=${encodeURIComponent(venue.trackMapPath)}`;
+        trackMapPreview.style.display = 'block';
+    } else {
+        trackMapPreview.style.display = 'none';
+    }
+    
+    // Handle Vimeo preview if ID exists
+    const vimeoPreview = document.getElementById('vimeoPreview');
+    const iframe = vimeoPreview.querySelector('iframe');
+    if (venue.vimeoId && /^\d+$/.test(venue.vimeoId)) {
+        iframe.src = `https://player.vimeo.com/video/${venue.vimeoId}`;
+        vimeoPreview.style.display = 'block';
+    } else {
+        vimeoPreview.style.display = 'none';
+        iframe.src = '';
+    }
+    
+    document.getElementById('venueModal').style.display = 'block';
+}
+
+function closeVenueModal() {
+    document.getElementById('venueModal').style.display = 'none';
+    editingVenueId = null;
+}
+
+async function deleteVenue(venueId) {
+    const venue = venues.find(v => v.id === venueId);
+    if (!venue || !confirm(`Are you sure you want to delete "${venue.name}"?`)) return;
+    try {
+        const response = await fetch('/.netlify/functions/delete-venue', {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ venueId })
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+            showMessage(result.message, 'success', 'venuesMessageContainer');
+            loadVenues();
+            loadVenuesForDropdown();
+        } else {
+            showError(result.error || 'Failed to delete venue', 'venuesMessageContainer');
+        }
+    } catch (error) {
+        console.error('Error deleting venue:', error);
+        showError('Failed to delete venue. Please try again.', 'venuesMessageContainer');
+    }
+}
+
+async function loadApplications() {
+    try {
+        const response = await fetch('/.netlify/functions/get-applications', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.status === 401) { authToken = null; localStorage.removeItem('kartel_admin_token'); showLogin(); return; }
+        if (!response.ok) throw new Error('Failed to load applications');
+        const data = await response.json();
+        applications = data.applications || [];
+        updateStats();
+        renderApplicationsTable();
+    } catch (error) {
+        console.error('Error loading applications:', error);
+        showError('Failed to load applications. Please try again.');
+    }
+}
+
+async function loadEvents() {
+    try {
+        const response = await fetch('/.netlify/functions/get-events', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.status === 401) { authToken = null; localStorage.removeItem('kartel_admin_token'); showLogin(); return; }
+        if (!response.ok) throw new Error('Failed to load events');
+        const data = await response.json();
+        events = data.events || [];
+        updateEventStats();
+        renderEventsTable();
+    } catch (error) {
+        console.error('Error loading events:', error);
+        showError('Failed to load events. Please try again.', 'eventsMessageContainer');
+    }
+}
+
+function updateStats() {
+    const total = applications.length;
+    const pending = applications.filter(app => app.status === 'pending').length;
+    const approved = applications.filter(app => app.status === 'approved').length;
+    const rejected = applications.filter(app => app.status === 'rejected').length;
+    document.getElementById('totalApplications').textContent = total;
+    document.getElementById('pendingApplications').textContent = pending;
+    document.getElementById('approvedApplications').textContent = approved;
+    document.getElementById('rejectedApplications').textContent = rejected;
+}
+
+function updateEventStats() {
+    const total = events.length;
+    const upcoming = events.filter(evt => evt.status === 'upcoming').length;
+    const completed = events.filter(evt => evt.status === 'completed').length;
+    const totalPhotos = events.reduce((sum, evt) => sum + (evt.photos ? evt.photos.length : 0), 0);
+    document.getElementById('totalEvents').textContent = total;
+    document.getElementById('upcomingEvents').textContent = upcoming;
+    document.getElementById('completedEvents').textContent = completed;
+    document.getElementById('totalPhotos').textContent = totalPhotos;
+}
+
+function renderApplicationsTable() {
+    const tbody = document.getElementById('applicationsTableBody');
+    if (applications.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">No applications found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = applications.map(app => `
+        <tr>
+            <td>
+                <strong>${app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'N/A'}</strong>
+                ${app.importedAt ? '<br><small style="color: #6c757d;">📥 Imported</small>' : ''}
+            </td>
+            <td>${app.email}</td>
+            <td>
+                <strong>${app.company || 'N/A'}</strong>
+                ${app.position ? `<br><small>${app.position}</small>` : ''}
+            </td>
+            <td>${app.phone}</td>
+            <td><span class="status-badge status-${app.status}">${app.status}</span></td>
+            <td>${new Date(app.submittedAt).toLocaleDateString()}</td>
+            <td>
+                ${app.status === 'pending' ? `
+                    <button class="action-btn approve-btn" onclick="updateApplication('${app.id}', 'approved')">Approve</button>
+                    <button class="action-btn reject-btn" onclick="updateApplication('${app.id}', 'rejected')">Reject</button>
+                ` : ''}
+                <button class="action-btn details-btn" onclick="showDetails('${app.id}')">Details</button>
+                <button class="action-btn delete-btn" onclick="deleteApplication('${app.id}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderEventsTable() {
+    const tbody = document.getElementById('eventsTableBody');
+    if (events.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">No events found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = events.map(evt => `
+        <tr>
+            <td><strong>${evt.name}</strong></td>
+            <td>${new Date(evt.date).toLocaleDateString()}${evt.time ? `<br><small>${evt.time}</small>` : ''}</td>
+            <td><strong>${evt.venue}</strong></td>
+            <td>
+                <span class="status-badge status-approved">${evt.attendees ? evt.attendees.length : 0}</span>
+                ${evt.attendees && evt.attendees.length > 0 ? 
+                    `<br><small>${evt.attendees.filter(a => a.attended).length} attended</small>` : 
+                    ''
+                }
+            </td>
+            <td><span class="status-badge status-approved">${evt.photos ? evt.photos.length : 0}</span></td>
+            <td><span class="status-badge status-pending">${evt.videos ? evt.videos.length : 0}</span></td>
+            <td><span class="status-badge status-${evt.status}">${evt.status}</span></td>
+            <td>
+                <button class="action-btn edit-btn" onclick="editEvent('${evt.id}')">Edit</button>
+                <button class="action-btn delete-btn" onclick="deleteEvent('${evt.id}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function editEvent(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+        showError('Event not found', 'eventsMessageContainer');
+        return;
+    }
+    
+    // Populate the edit form (existing code)
+    document.getElementById('editEventId').value = event.id;
+    document.getElementById('editEventName').value = event.name;
+    document.getElementById('editEventDate').value = event.date;
+    document.getElementById('editEventTime').value = event.time || '';
+    document.getElementById('editEventMaxAttendees').value = event.maxAttendees || '';
+    document.getElementById('editEventStatus').value = event.status || 'upcoming';
+    document.getElementById('editEventDescription').value = event.description || '';
+    
+    // Populate venue dropdown if venues are loaded
+    populateEditEventVenueDropdown();
+    
+    // Set the venue if it exists
+    if (event.venueId) {
+        document.getElementById('editEventVenue').value = event.venueId;
+    } else {
+        // If no venueId, try to match by venue name
+        const venueOption = Array.from(document.getElementById('editEventVenue').options)
+            .find(option => option.textContent === event.venue);
+        if (venueOption) {
+            document.getElementById('editEventVenue').value = venueOption.value;
+        }
+    }
+    
+    // Load event photos and videos
+    loadEventPhotos(event.id);
+    loadEventVideos(event.id);
+    
+    // Load attendees and approved members
+    loadEventAttendees(event.id);
+    loadApprovedMembers();
+    
+    // Show the modal
+    document.getElementById('eventModal').style.display = 'block';
+}
+
+// Photo upload functionality
+document.getElementById('photoUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('photoPreview');
+    const uploadBtn = document.getElementById('uploadPhotoBtn');
+    
+    if (file) {
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            uploadBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+        uploadBtn.disabled = true;
+    }
+});
+
+document.getElementById('uploadPhotoBtn').addEventListener('click', async function() {
+    const fileInput = document.getElementById('photoUpload');
+    const captionInput = document.getElementById('photoCaption');
+    const eventId = document.getElementById('editEventId').value;
+    
+    if (!fileInput.files[0] || !eventId) {
+        showError('Please select a photo and ensure an event is selected', 'eventsMessageContainer');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const caption = captionInput.value.trim();
+    
+    // Convert file to base64
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const photoData = e.target.result;
+        
+        const uploadBtn = document.getElementById('uploadPhotoBtn');
+        const originalText = uploadBtn.textContent;
+        uploadBtn.textContent = 'Uploading...';
+        uploadBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/.netlify/functions/upload-photo', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    photoData: photoData,
+                    fileName: file.name,
+                    caption: caption
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showMessage('Photo uploaded successfully!', 'success', 'eventsMessageContainer');
+                
+                // Clear the form
+                fileInput.value = '';
+                captionInput.value = '';
+                document.getElementById('photoPreview').style.display = 'none';
+                
+                // Refresh the photos display
+                await loadEventPhotos(eventId);
+                
+                // Refresh events list to show updated photo count
+                loadEvents();
+                
+            } else {
+                showError(result.error || 'Failed to upload photo', 'eventsMessageContainer');
+            }
+            
+        } catch (error) {
+            console.error('Photo upload error:', error);
+            showError('Failed to upload photo. Please try again.', 'eventsMessageContainer');
+        } finally {
+            uploadBtn.textContent = originalText;
+            uploadBtn.disabled = false;
+        }
+    };
+    
+    reader.readAsDataURL(file);
+});
+
+// Load and display event photos
+async function loadEventPhotos(eventId) {
+    try {
+        const response = await fetch('/.netlify/functions/get-events', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const event = data.events.find(e => e.id === eventId);
+            
+            if (event && event.photos) {
+                displayEventPhotos(event.photos);
+            } else {
+                displayEventPhotos([]);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading event photos:', error);
+    }
+}
+
+function displayEventPhotos(photos) {
+    const photosGrid = document.getElementById('eventPhotosGrid');
+    
+    if (!photos || photos.length === 0) {
+        photosGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px;">No photos uploaded yet</p>';
+        return;
+    }
+    
+    const photosHTML = photos.map(photo => `
+        <div class="photo-item">
+            <img src="/.netlify/functions/get-photo?path=${encodeURIComponent(photo.path)}" 
+                alt="${photo.caption || 'Event photo'}"
+                onerror="this.style.display='none'">
+            ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
+        </div>
+    `).join('');
+    
+    photosGrid.innerHTML = photosHTML;
+}
+
+// Video upload functionality
+document.getElementById('videoUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('videoPreview');
+    const uploadBtn = document.getElementById('uploadVideoBtn');
+    
+    if (file) {
+        // Check file size (500MB limit)
+        const maxSize = 500 * 1024 * 1024; // 500MB
+        if (file.size > maxSize) {
+            showError('Video file size must be less than 500MB', 'eventsMessageContainer');
+            e.target.value = '';
+            return;
+        }
+        
+        // Show preview
+        const videoURL = URL.createObjectURL(file);
+        preview.src = videoURL;
+        preview.style.display = 'block';
+        uploadBtn.disabled = false;
+        
+        // Auto-populate title if empty
+        const titleInput = document.getElementById('videoTitle');
+        if (!titleInput.value) {
+            titleInput.value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+        }
+    } else {
+        preview.style.display = 'none';
+        uploadBtn.disabled = true;
+    }
+});
+
+document.getElementById('uploadVideoBtn').addEventListener('click', async function() {
+    const fileInput = document.getElementById('videoUpload');
+    const titleInput = document.getElementById('videoTitle');
+    const descriptionInput = document.getElementById('videoDescription');
+    const eventId = document.getElementById('editEventId').value;
+    
+    if (!fileInput.files[0] || !eventId) {
+        showError('Please select a video and ensure an event is selected', 'eventsMessageContainer');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const title = titleInput.value.trim() || file.name;
+    const description = descriptionInput.value.trim();
+    
+    // Show progress
+    const uploadBtn = this;
+    const originalText = uploadBtn.textContent;
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    
+    uploadBtn.textContent = 'Preparing Upload...';
+    uploadBtn.disabled = true;
+    progressDiv.style.display = 'block';
+    progressBar.style.width = '10%';
+    
+    try {
+        // Convert file to base64
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const videoData = e.target.result;
+            
+            progressBar.style.width = '30%';
+            uploadBtn.textContent = 'Uploading to Vimeo...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/upload-video-vimeo', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        eventId: eventId,
+                        videoData: videoData,
+                        fileName: file.name,
+                        title: title,
+                        description: description
+                    })
+                });
+                
+                progressBar.style.width = '90%';
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    progressBar.style.width = '100%';
+                    showMessage(`Video uploaded successfully to Vimeo! <a href="${result.vimeoUrl}" target="_blank">View Video</a>`, 'success', 'eventsMessageContainer');
+                    
+                    // Clear the form
+                    fileInput.value = '';
+                    titleInput.value = '';
+                    descriptionInput.value = '';
+                    document.getElementById('videoPreview').style.display = 'none';
+                    
+                    // Refresh the videos display
+                    await loadEventVideos(eventId);
+                    
+                    // Refresh events list
+                    loadEvents();
+                    
+                } else {
+                    showError(result.error || 'Failed to upload video to Vimeo', 'eventsMessageContainer');
+                }
+                
+            } catch (uploadError) {
+                console.error('Video upload error:', uploadError);
+                showError('Failed to upload video. Please try again.', 'eventsMessageContainer');
+            } finally {
+                uploadBtn.textContent = originalText;
+                uploadBtn.disabled = false;
+                progressDiv.style.display = 'none';
+                progressBar.style.width = '0%';
+            }
+        };
+        
+        reader.readAsDataURL(file);
+        
+    } catch (error) {
+        console.error('Video processing error:', error);
+        showError('Failed to process video file. Please try again.', 'eventsMessageContainer');
+        uploadBtn.textContent = originalText;
+        uploadBtn.disabled = false;
+        progressDiv.style.display = 'none';
+    }
+});
+
+// Load and display event videos
+async function loadEventVideos(eventId) {
+    try {
+        const response = await fetch('/.netlify/functions/get-events', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const event = data.events.find(e => e.id === eventId);
+            
+            if (event && event.videos) {
+                displayEventVideos(event.videos);
+            } else {
+                displayEventVideos([]);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading event videos:', error);
+    }
+}
+
+function displayEventVideos(videos) {
+    const videosGrid = document.getElementById('eventVideosGrid');
+    
+    if (!videos || videos.length === 0) {
+        videosGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px;">No videos uploaded yet</p>';
+        return;
+    }
+    
+    const videosHTML = videos.map(video => `
+        <div style="border: 1px solid #ecf0f1; border-radius: 8px; padding: 15px; background: white;">
+            <div style="aspect-ratio: 16/9; margin-bottom: 10px;">
+                <iframe src="https://player.vimeo.com/video/${video.vimeoId}" 
+                        width="100%" height="100%" frameborder="0" 
+                        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
+                        style="border-radius: 4px;">
+                </iframe>
+            </div>
+            <h5 style="color: #2c3e50; margin-bottom: 5px; font-size: 1rem;">${video.title || 'Untitled Video'}</h5>
+            ${video.description ? `<p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 8px;">${video.description}</p>` : ''}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #999;">
+                <span>Uploaded: ${new Date(video.uploadedAt).toLocaleDateString()}</span>
+                <a href="https://vimeo.com/${video.vimeoId}" target="_blank" style="color: #3498db;">View on Vimeo</a>
+            </div>
+        </div>
+    `).join('');
+    
+    videosGrid.innerHTML = videosHTML;
+}
+
+function closeEventModal() {
+    document.getElementById('eventModal').style.display = 'none';
+}
+
+function populateEditEventVenueDropdown() {
+    const select = document.getElementById('editEventVenue');
+    // Clear existing options except the first one
+    while (select.children.length > 1) {
+        select.removeChild(select.lastChild);
+    }
+    
+    // Add venue options
+    venues.forEach(venue => {
+        const option = document.createElement('option');
+        option.value = venue.id;
+        option.textContent = venue.name;
+        select.appendChild(option);
+    });
+}
+
+async function updateApplication(applicationId, status) {
+    try {
+        const response = await fetch('/.netlify/functions/update-application', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ applicationId, status, sendEmail: true })
+        });
+        if (!response.ok) throw new Error('Failed to update application');
+        showMessage(`Application ${status} successfully! Email sent to applicant.`);
+        loadApplications();
+    } catch (error) {
+        console.error('Error updating application:', error);
+        showError('Failed to update application. Please try again.');
+    }
+}
+
+async function deleteApplication(applicationId) {
+    const app = applications.find(a => a.id === applicationId);
+    if (!app) return;
+    const fullName = app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || 'Unknown';
+    if (!confirm(`Are you sure you want to permanently delete the application for ${fullName}?`)) return;
+    try {
+        const response = await fetch('/.netlify/functions/delete-application', {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ applicationId })
+        });
+        if (!response.ok) throw new Error('Failed to delete application');
+        showMessage(`Application for ${fullName} deleted successfully.`);
+        loadApplications();
+    } catch (error) {
+        console.error('Error deleting application:', error);
+        showError('Failed to delete application. Please try again.');
+    }
+}
+
+function showDetails(applicationId) {
+    const app = applications.find(a => a.id === applicationId);
+    if (!app) return;
+    
+    // Populate the form with current application data
+    document.getElementById('applicantId').value = app.id;
+    document.getElementById('applicantFirstName').value = app.firstName || '';
+    document.getElementById('applicantLastName').value = app.lastName || '';
+    document.getElementById('applicantEmail').value = app.email || '';
+    document.getElementById('applicantCompany').value = app.company || '';
+    document.getElementById('applicantPosition').value = app.position || '';
+    document.getElementById('applicantPhone').value = app.phone || '';
+    document.getElementById('applicantOriginalMessage').value = app.message || '';
+    document.getElementById('applicantStatus').value = app.status || 'pending';
+    document.getElementById('applicantSubmitted').value = new Date(app.submittedAt).toLocaleString();
+    
+    // Clear any previous messages
+    const messageContainer = document.getElementById('applicantMessage');
+    if (messageContainer) {
+        messageContainer.classList.add('hidden');
+        messageContainer.textContent = '';
+    }
+    
+    // Show the modal
+    document.getElementById('applicantModal').style.display = 'block';
+}
+
+function closeApplicantModal() {
+    document.getElementById('applicantModal').style.display = 'none';
+}
+
+async function updateApplicantDetails(applicantData) {
+    try {
+        const response = await fetch('/.netlify/functions/update-applicant-details', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(applicantData)
+        });
+
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('kartel_admin_token');
+            showLogin();
+            return false;
+        }
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage('Applicant details updated successfully!', 'success', 'messageContainer');
+            loadApplications(); // Refresh the applications list
+            return true;
+        } else {
+            showMessage(result.error || 'Failed to update applicant details.', 'error', 'applicantMessage');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error updating applicant details:', error);
+        showMessage('Failed to update applicant details due to network error. Please try again.', 'error', 'applicantMessage');
+        return false;
+    }
+}
+
+function deleteEvent(eventId) {
+    if (!confirm('Are you sure you want to delete this event?')) return;
+    alert('Event deletion feature coming soon!');
+}
+
+function showLogin() {
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('dashboardSection').classList.add('hidden');
+}
+
+function showDashboard() {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('dashboardSection').classList.remove('hidden');
+    loadApplications();
+}
+
+function checkAuth() {
+    if (authToken) showDashboard();
+    else showLogin();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Login form
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const loginBtn = document.getElementById('loginBtn');
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+        try {
+            const response = await fetch('/.netlify/functions/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                authToken = result.token;
+                localStorage.setItem('kartel_admin_token', authToken);
+                showDashboard();
+            } else {
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = result.error || 'Invalid credentials';
+                errorDiv.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = 'Login failed. Please try again.';
+            errorDiv.classList.remove('hidden');
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Login';
+        }
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        authToken = null;
+        localStorage.removeItem('kartel_admin_token');
+        showLogin();
+    });
+
+    // Refresh buttons
+    document.getElementById('refreshBtn').addEventListener('click', loadApplications);
+    document.getElementById('refreshEventsBtn').addEventListener('click', loadEvents);
+    document.getElementById('refreshVenuesBtn').addEventListener('click', loadVenues);
+
+    // Venue form submission
+    document.getElementById('venueForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const venueData = {
+            name: formData.get('venueName').trim(),
+            address: formData.get('venueAddress').trim(),
+            phone: formData.get('venuePhone').trim(),
+            website: formData.get('venueWebsite').trim(),
+            notes: formData.get('venueNotes').trim(),
+            drivingTips: formData.get('venueDrivingTips').trim(),
+            vimeoId: formData.get('venueVimeoId').trim()
+        };
+        
+        // Handle track map upload
+        const trackMapFile = formData.get('venueTrackMap');
+        if (trackMapFile && trackMapFile.size > 0) {
+            const reader = new FileReader();
+            const trackMapData = await new Promise((resolve, reject) => {
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(trackMapFile);
+            });
+            venueData.trackMap = {
+                data: trackMapData,
+                fileName: trackMapFile.name,
+                fileType: trackMapFile.type
+            };
+        }
+        if (!venueData.name || !venueData.address) {
+            showError('Please fill in all required fields', 'venuesMessageContainer');
+            return;
+        }
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Saving...';
+        submitBtn.disabled = true;
+        try {
+            let response;
+            if (editingVenueId) {
+                response = await fetch('/.netlify/functions/update-venue', {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ venueId: editingVenueId, ...venueData })
+                });
+            } else {
+                response = await fetch('/.netlify/functions/create-venue', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(venueData)
+                });
+            }
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showMessage(result.message, 'success', 'venuesMessageContainer');
+                closeVenueModal();
+                loadVenues();
+                loadVenuesForDropdown();
+            } else {
+                showError(result.error || 'Failed to save venue', 'venuesMessageContainer');
+            }
+        } catch (error) {
+            console.error('Error saving venue:', error);
+            showError('Failed to save venue. Please try again.', 'venuesMessageContainer');
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Track map preview functionality
+    document.getElementById('venueTrackMap').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('trackMapPreview');
+        const image = document.getElementById('trackMapImage');
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                image.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
+    // Vimeo video preview functionality
+    document.getElementById('venueVimeoId').addEventListener('input', function(e) {
+        const vimeoId = e.target.value.trim();
+        const preview = document.getElementById('vimeoPreview');
+        const iframe = preview.querySelector('iframe');
+        
+        if (vimeoId && /^\d+$/.test(vimeoId)) {
+            iframe.src = `https://player.vimeo.com/video/${vimeoId}`;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+            iframe.src = '';
+        }
+    });
+
+    // Seed venues button
+    document.getElementById('seedVenuesBtn').addEventListener('click', async function() {
+        if (!confirm('This will add default venues if none exist. Continue?')) return;
+        const btn = this;
+        const originalText = btn.textContent;
+        btn.textContent = 'Seeding...';
+        btn.disabled = true;
+        try {
+            const response = await fetch('/.netlify/functions/seed-venues', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (response.ok) {
+                showMessage(result.message, 'success', 'venuesMessageContainer');
+                if (result.success) { loadVenues(); loadVenuesForDropdown(); }
+            } else {
+                showError(result.error || 'Failed to seed venues', 'venuesMessageContainer');
+            }
+        } catch (error) {
+            console.error('Error seeding venues:', error);
+            showError('Failed to seed venues. Please try again.', 'venuesMessageContainer');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    });
+
+    // Event venue selection
+    document.getElementById('eventVenue').addEventListener('change', function() {
+        if (this.value === 'add-new') {
+            openAddVenueModal();
+            this.value = '';
+        }
+    });
+
+    // Event form submission
+    document.getElementById('eventForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const selectedVenueId = formData.get('eventVenue');
+        if (!selectedVenueId) {
+            showError('Please select a venue', 'eventsMessageContainer');
+            return;
+        }
+        const selectedVenue = venues.find(v => v.id === selectedVenueId);
+        const eventData = {
+            name: formData.get('eventName'),
+            date: formData.get('eventDate'),
+            time: formData.get('eventTime'),
+            venueId: selectedVenueId,
+            venue: selectedVenue ? selectedVenue.name : '',
+            venueAddress: selectedVenue ? selectedVenue.address : '',
+            maxAttendees: formData.get('eventMaxAttendees'),
+            description: formData.get('eventDescription')
+        };
+        try {
+            const response = await fetch('/.netlify/functions/create-event', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(eventData)
+            });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showMessage('Event created successfully!', 'success', 'eventsMessageContainer');
+                document.getElementById('eventForm').reset();
+                loadEvents();
+            } else {
+                showError(result.error || 'Failed to create event', 'eventsMessageContainer');
+            }
+        } catch (error) {
+            console.error('Event creation error:', error);
+            showError('Failed to create event. Please try again.', 'eventsMessageContainer');
+        }
+    });
+
+    // Edit event form submission
+    document.getElementById('editEventForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const eventId = formData.get('editEventId');
+        const selectedVenueId = formData.get('editEventVenue');
+        
+        if (!selectedVenueId) {
+            showError('Please select a venue', 'eventsMessageContainer');
+            return;
+        }
+        
+        const selectedVenue = venues.find(v => v.id === selectedVenueId);
+        const updates = {
+            name: formData.get('editEventName'),
+            date: formData.get('editEventDate'),
+            time: formData.get('editEventTime'),
+            venueId: selectedVenueId,
+            venue: selectedVenue ? selectedVenue.name : '',
+            venueAddress: selectedVenue ? selectedVenue.address : '',
+            maxAttendees: formData.get('editEventMaxAttendees'),
+            status: formData.get('editEventStatus'),
+            description: formData.get('editEventDescription')
+        };
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Updating...';
+        submitBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/.netlify/functions/update-event', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ eventId, updates })
+            });
+            
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showMessage('Event updated successfully!', 'success', 'eventsMessageContainer');
+                closeEventModal();
+                loadEvents();
+            } else {
+                showError(result.error || 'Failed to update event', 'eventsMessageContainer');
+            }
+        } catch (error) {
+            console.error('Event update error:', error);
+            showError('Failed to update event. Please try again.', 'eventsMessageContainer');
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Applicant form submission handler
+    document.getElementById('applicantForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const applicantData = {
+            applicationId: formData.get('applicantId'),
+            firstName: formData.get('applicantFirstName').trim(),
+            lastName: formData.get('applicantLastName').trim(),
+            email: formData.get('applicantEmail').trim(),
+            company: formData.get('applicantCompany').trim(),
+            position: formData.get('applicantPosition').trim(),
+            phone: formData.get('applicantPhone').trim(),
+            status: formData.get('applicantStatus')
+        };
+        
+        if (!applicantData.firstName || !applicantData.lastName || !applicantData.email) {
+            showMessage('First name, last name, and email are required.', 'error', 'applicantMessage');
+            return;
+        }
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Saving...';
+        submitBtn.disabled = true;
+        
+        try {
+            const success = await updateApplicantDetails(applicantData);
+            if (success) {
+                setTimeout(() => {
+                    closeApplicantModal();
+                }, 2000);
+            }
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Modal close on outside click
+    window.onclick = function(event) {
+        const venueModal = document.getElementById('venueModal');
+        const eventModal = document.getElementById('eventModal');
+        const applicantModal = document.getElementById('applicantModal');
+        if (event.target === venueModal) closeVenueModal();
+        if (event.target === eventModal) closeEventModal();
+        if (event.target === applicantModal) closeApplicantModal();
+    }
+
+    // Video upload functionality
+    const videoUpload = document.getElementById('videoUpload');
+    const videoTitle = document.getElementById('videoTitle');
+    const videoDescription = document.getElementById('videoDescription');
+    const videoPreview = document.getElementById('videoPreview');
+    const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+
+    // Video file selection handler
+    videoUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) {
+            videoPreview.style.display = 'none';
+            uploadVideoBtn.disabled = true;
+            return;
+        }
+
+        // Validate file size (500MB limit)
+        const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+        if (file.size > maxSize) {
+            alert('File size must be less than 500MB');
+            videoUpload.value = '';
+            videoPreview.style.display = 'none';
+            uploadVideoBtn.disabled = true;
+            return;
+        }
+
+        // Validate file type
+        const validTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/avi'];
+        if (!validTypes.includes(file.type)) {
+            alert('Please select a valid video file (MP4, MOV, AVI)');
+            videoUpload.value = '';
+            videoPreview.style.display = 'none';
+            uploadVideoBtn.disabled = true;
+            return;
+        }
+
+        // Show video preview
+        const url = URL.createObjectURL(file);
+        videoPreview.src = url;
+        videoPreview.style.display = 'block';
+        
+        // Enable upload button
+        uploadVideoBtn.disabled = false;
+        
+        // Set default title if not provided
+        if (!videoTitle.value) {
+            videoTitle.value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+        }
+    });
+
+    // Video upload button handler
+    uploadVideoBtn.addEventListener('click', async function() {
+        const file = videoUpload.files[0];
+        if (!file) return;
+
+        const eventId = document.getElementById('editEventId').value;
+        if (!eventId) {
+            alert('Please save the event first before uploading videos');
+            return;
+        }
+
+        const title = videoTitle.value.trim() || file.name;
+        const description = videoDescription.value.trim();
+
+        // Show progress
+        uploadProgress.style.display = 'block';
+        uploadVideoBtn.disabled = true;
+        uploadVideoBtn.textContent = 'Uploading...';
+        progressBar.style.width = '10%';
+
+        try {
+            // Convert file to base64
+            const base64Data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            progressBar.style.width = '30%';
+
+            // Upload to Vimeo via our backend function
+            const response = await fetch('/.netlify/functions/upload-video-vimeo', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    videoData: base64Data,
+                    fileName: file.name,
+                    title: title,
+                    description: description
+                })
+            });
+
+            progressBar.style.width = '80%';
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Upload failed');
+            }
+
+            const result = await response.json();
+            progressBar.style.width = '100%';
+
+            if (result.success) {
+                showMessage('Video uploaded to Vimeo successfully!', 'success', 'eventsMessageContainer');
+                
+                // Clear form
+                videoUpload.value = '';
+                videoTitle.value = '';
+                videoDescription.value = '';
+                videoPreview.style.display = 'none';
+                
+                // Refresh videos display
+                loadEventVideos(eventId);
+                
+                // Refresh events list to show updated video count
+                loadEvents();
+            } else {
+                throw new Error(result.error || 'Upload failed');
+            }
+
+        } catch (error) {
+            console.error('Video upload error:', error);
+            showError(`Video upload failed: ${error.message}`, 'eventsMessageContainer');
+        } finally {
+            uploadProgress.style.display = 'none';
+            uploadVideoBtn.disabled = false;
+            uploadVideoBtn.textContent = 'Upload to Vimeo';
+            progressBar.style.width = '0%';
+        }
+    });
+
+    checkAuth();
+});
+
+// Load approved members for attendee selection
+async function loadApprovedMembers() {
+    try {
+        const response = await fetch('/.netlify/functions/get-applications', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const approvedMembers = data.applications.filter(app => app.status === 'approved');
+            populateMemberSelect(approvedMembers);
+            return approvedMembers;
+        }
+    } catch (error) {
+        console.error('Error loading approved members:', error);
+    }
+    return [];
+}
+
+function populateMemberSelect(members) {
+    const select = document.getElementById('memberSelect');
+    // Clear existing options except the first one
+    while (select.children.length > 1) {
+        select.removeChild(select.lastChild);
+    }
+    
+    // Add member options
+    members.forEach(member => {
+        const option = document.createElement('option');
+        option.value = member.id;
+        const memberName = member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.name || 'Unknown';
+        option.textContent = `${memberName} (${member.company || 'No company'})`;
+        option.dataset.email = member.email;
+        option.dataset.company = member.company || '';
+        select.appendChild(option);
+    });
+}
+
+// Enable/disable add attendee button based on selection
+document.getElementById('memberSelect').addEventListener('change', function() {
+    const addBtn = document.getElementById('addAttendeeBtn');
+    addBtn.disabled = !this.value;
+});
+
+// Add attendee to event
+document.getElementById('addAttendeeBtn').addEventListener('click', function() {
+    const select = document.getElementById('memberSelect');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (!selectedOption.value) return;
+    
+    const eventId = document.getElementById('editEventId').value;
+    const memberId = selectedOption.value;
+    const memberName = selectedOption.textContent.split(' (')[0]; // Remove company part
+    const memberEmail = selectedOption.dataset.email;
+    const memberCompany = selectedOption.dataset.company;
+    
+    // Check if member is already added
+    const event = events.find(e => e.id === eventId);
+    const existingAttendee = event.attendees?.find(a => a.memberId === memberId);
+    
+    if (existingAttendee) {
+        showError('This member is already added to the event', 'eventsMessageContainer');
+        return;
+    }
+    
+    // Add attendee to event
+    addAttendeeToEvent(eventId, {
+        memberId: memberId,
+        name: memberName,
+        email: memberEmail,
+        company: memberCompany,
+        registeredAt: new Date().toISOString(),
+        attended: false
+    });
+    
+    // Reset selection
+    select.value = '';
+    document.getElementById('addAttendeeBtn').disabled = true;
+});
+
+// Add attendee to event data and update display
+async function addAttendeeToEvent(eventId, attendee) {
+    try {
+        // Find the event in our local events array
+        const eventIndex = events.findIndex(e => e.id === eventId);
+        if (eventIndex === -1) return;
+        
+        // Initialize attendees array if it doesn't exist
+        if (!events[eventIndex].attendees) {
+            events[eventIndex].attendees = [];
+        }
+        
+        // Add the attendee
+        events[eventIndex].attendees.push(attendee);
+        
+        // Update the event on the server
+        await updateEventAttendees(eventId, events[eventIndex].attendees);
+        
+        // Refresh the attendees display
+        displayEventAttendees(events[eventIndex].attendees);
+        
+        showMessage('Attendee added successfully!', 'success', 'eventsMessageContainer');
+        
+    } catch (error) {
+        console.error('Error adding attendee:', error);
+        showError('Failed to add attendee. Please try again.', 'eventsMessageContainer');
+    }
+}
+
+// Remove attendee from event
+async function removeAttendeeFromEvent(eventId, memberId) {
+    try {
+        const eventIndex = events.findIndex(e => e.id === eventId);
+        if (eventIndex === -1) return;
+        
+        // Remove the attendee
+        events[eventIndex].attendees = events[eventIndex].attendees.filter(a => a.memberId !== memberId);
+        
+        // Update the event on the server
+        await updateEventAttendees(eventId, events[eventIndex].attendees);
+        
+        // Refresh the attendees display
+        displayEventAttendees(events[eventIndex].attendees);
+        
+        showMessage('Attendee removed successfully!', 'success', 'eventsMessageContainer');
+        
+    } catch (error) {
+        console.error('Error removing attendee:', error);
+        showError('Failed to remove attendee. Please try again.', 'eventsMessageContainer');
+    }
+}
+
+// Toggle attendee attendance status
+async function toggleAttendeeStatus(eventId, memberId) {
+    try {
+        const eventIndex = events.findIndex(e => e.id === eventId);
+        if (eventIndex === -1) return;
+        
+        const attendee = events[eventIndex].attendees.find(a => a.memberId === memberId);
+        if (!attendee) return;
+        
+        // Toggle attendance status
+        attendee.attended = !attendee.attended;
+        attendee.statusUpdatedAt = new Date().toISOString();
+        
+        // Update the event on the server
+        await updateEventAttendees(eventId, events[eventIndex].attendees);
+        
+        // Refresh the attendees display
+        displayEventAttendees(events[eventIndex].attendees);
+        
+    } catch (error) {
+        console.error('Error updating attendee status:', error);
+        showError('Failed to update attendance status. Please try again.', 'eventsMessageContainer');
+    }
+}
+
+// Update event attendees on server
+async function updateEventAttendees(eventId, attendees) {
+    const response = await fetch('/.netlify/functions/update-event', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            eventId: eventId,
+            updates: {
+                attendees: attendees
+            }
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to update event attendees');
+    }
+    
+    return await response.json();
+}
+
+// Display event attendees
+function displayEventAttendees(attendees) {
+    const attendeesList = document.getElementById('attendeesList');
+    
+    if (!attendees || attendees.length === 0) {
+        attendeesList.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px;">No attendees added yet</p>';
+        updateAttendeeStats(0, 0, 0);
+        return;
+    }
+    
+    const attendedCount = attendees.filter(a => a.attended).length;
+    const noShowCount = attendees.filter(a => !a.attended).length;
+    
+    updateAttendeeStats(attendees.length, attendedCount, noShowCount);
+    
+    const attendeesHTML = attendees.map(attendee => `
+        <div class="attendee-item">
+            <div class="attendee-info">
+                <div class="attendee-name">${attendee.name}</div>
+                <div class="attendee-details">
+                    ${attendee.company ? `${attendee.company} • ` : ''}${attendee.email}
+                    <br><small>Registered: ${new Date(attendee.registeredAt).toLocaleDateString()}</small>
+                </div>
+            </div>
+            <div class="attendee-status">
+                <span style="font-size: 0.8rem; margin-right: 8px;">
+                    ${attendee.attended ? 'Attended' : 'Registered'}
+                </span>
+                <div class="status-toggle ${attendee.attended ? 'attended' : ''}" 
+                    onclick="toggleAttendeeStatus('${document.getElementById('editEventId').value}', '${attendee.memberId}')">
+                </div>
+                <button class="remove-attendee" 
+                        onclick="removeAttendeeFromEvent('${document.getElementById('editEventId').value}', '${attendee.memberId}')">
+                    Remove
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    attendeesList.innerHTML = attendeesHTML;
+}
+
+// Update attendee statistics
+function updateAttendeeStats(registered, attended, noShow) {
+    document.getElementById('registeredCount').textContent = registered;
+    document.getElementById('attendedCount').textContent = attended;
+    document.getElementById('noShowCount').textContent = noShow;
+}
+
+// Load event attendees when opening edit modal
+async function loadEventAttendees(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (event && event.attendees) {
+        displayEventAttendees(event.attendees);
+    } else {
+        displayEventAttendees([]);
+    }
+}
+
+// Load and display event videos
+async function loadEventVideos(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (event && event.videos) {
+        displayEventVideos(event.videos);
+    } else {
+        displayEventVideos([]);
+    }
+}
+
+// Display event videos
+function displayEventVideos(videos) {
+    const videosGrid = document.getElementById('eventVideosGrid');
+    
+    if (!videos || videos.length === 0) {
+        videosGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px; grid-column: 1 / -1;">No videos uploaded yet</p>';
+        return;
+    }
+    
+    const videosHTML = videos.map(video => `
+        <div class="video-item" style="border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="aspect-ratio: 16/9; background: #f8f9fa; position: relative;">
+                <iframe 
+                    src="https://player.vimeo.com/video/${video.vimeoId}?badge=0&autopause=0&quality_selector=1&player_id=0&app_id=58479" 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                    title="${video.title || 'Event Video'}">
+                </iframe>
+            </div>
+            <div style="padding: 12px;">
+                <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px; font-size: 0.9rem;">${video.title || video.fileName}</div>
+                ${video.description ? `<div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 8px; line-height: 1.4;">${video.description}</div>` : ''}
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #7f8c8d;">
+                    <span>Uploaded: ${new Date(video.uploadedAt).toLocaleDateString()}</span>
+                    <a href="https://vimeo.com/${video.vimeoId}" target="_blank" style="color: #3498db; text-decoration: none;">View on Vimeo</a>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    videosGrid.innerHTML = videosHTML;
+}
+
+// Global functions for onclick handlers
+window.switchTab = switchTab;
+window.openAddVenueModal = openAddVenueModal;
+window.closeVenueModal = closeVenueModal;
+window.editVenue = editVenue;
+window.deleteVenue = deleteVenue;
+window.filterVenues = filterVenues;
+window.updateApplication = updateApplication;
+window.deleteApplication = deleteApplication;
+window.showDetails = showDetails;
+window.editEvent = editEvent;
+window.closeEventModal = closeEventModal;
+window.deleteEvent = deleteEvent;
+window.loadEventPhotos = loadEventPhotos;
+window.displayEventPhotos = displayEventPhotos;
+window.loadEventVideos = loadEventVideos;
+window.displayEventVideos = displayEventVideos;
+window.addAttendeeToEvent = addAttendeeToEvent;
+window.removeAttendeeFromEvent = removeAttendeeFromEvent;
+window.toggleAttendeeStatus = toggleAttendeeStatus;
+window.loadEventAttendees = loadEventAttendees;
+window.loadApprovedMembers = loadApprovedMembers;
+window.closeApplicantModal = closeApplicantModal;
