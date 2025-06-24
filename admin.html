@@ -513,6 +513,73 @@
         </div>
     </div>
 
+    <!-- Applicant Details Modal -->
+    <div id="applicantModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Applicant Details</h3>
+                <button class="close" onclick="closeApplicantModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="applicantForm">
+                    <input type="hidden" id="applicantId" name="applicantId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="applicantFirstName">First Name *</label>
+                            <input type="text" id="applicantFirstName" name="applicantFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="applicantLastName">Last Name *</label>
+                            <input type="text" id="applicantLastName" name="applicantLastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="applicantEmail">Email Address *</label>
+                        <input type="email" id="applicantEmail" name="applicantEmail" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="applicantCompany">Company</label>
+                            <input type="text" id="applicantCompany" name="applicantCompany">
+                        </div>
+                        <div class="form-group">
+                            <label for="applicantPosition">Position</label>
+                            <input type="text" id="applicantPosition" name="applicantPosition">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="applicantPhone">Mobile Number</label>
+                        <input type="tel" id="applicantPhone" name="applicantPhone">
+                    </div>
+                    <div class="form-group">
+                        <label for="applicantOriginalMessage">Original Message</label>
+                        <textarea id="applicantOriginalMessage" name="applicantOriginalMessage" rows="3" readonly style="background: #f8f9fa; cursor: not-allowed;"></textarea>
+                        <small style="color: #7f8c8d;">Original application message (read-only)</small>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="applicantStatus">Status</label>
+                            <select id="applicantStatus" name="applicantStatus">
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="applicantSubmitted">Submitted</label>
+                            <input type="text" id="applicantSubmitted" readonly style="background: #f8f9fa; cursor: not-allowed;">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeApplicantModal()">Cancel</button>
+                    </div>
+                </form>
+                <div id="applicantMessage" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let authToken = localStorage.getItem('kartel_admin_token');
         let applications = [], events = [], venues = [], csvData = [];
@@ -1077,8 +1144,67 @@
         function showDetails(applicationId) {
             const app = applications.find(a => a.id === applicationId);
             if (!app) return;
-            const fullName = app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || 'N/A';
-            alert(`Application Details:\n\nName: ${fullName}\nEmail: ${app.email}\nCompany: ${app.company || 'N/A'}\nPosition: ${app.position || 'N/A'}\nPhone: ${app.phone}\nMessage: ${app.message || 'N/A'}\nStatus: ${app.status}\nSubmitted: ${new Date(app.submittedAt).toLocaleString()}`);
+            
+            // Populate the form with current application data
+            document.getElementById('applicantId').value = app.id;
+            document.getElementById('applicantFirstName').value = app.firstName || '';
+            document.getElementById('applicantLastName').value = app.lastName || '';
+            document.getElementById('applicantEmail').value = app.email || '';
+            document.getElementById('applicantCompany').value = app.company || '';
+            document.getElementById('applicantPosition').value = app.position || '';
+            document.getElementById('applicantPhone').value = app.phone || '';
+            document.getElementById('applicantOriginalMessage').value = app.message || '';
+            document.getElementById('applicantStatus').value = app.status || 'pending';
+            document.getElementById('applicantSubmitted').value = new Date(app.submittedAt).toLocaleString();
+            
+            // Clear any previous messages
+            const messageContainer = document.getElementById('applicantMessage');
+            if (messageContainer) {
+                messageContainer.classList.add('hidden');
+                messageContainer.textContent = '';
+            }
+            
+            // Show the modal
+            document.getElementById('applicantModal').style.display = 'block';
+        }
+
+        function closeApplicantModal() {
+            document.getElementById('applicantModal').style.display = 'none';
+        }
+
+        async function updateApplicantDetails(applicantData) {
+            try {
+                const response = await fetch('/.netlify/functions/update-applicant-details', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(applicantData)
+                });
+
+                if (response.status === 401) {
+                    authToken = null;
+                    localStorage.removeItem('kartel_admin_token');
+                    showLogin();
+                    return false;
+                }
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage('Applicant details updated successfully!', 'success', 'messageContainer');
+                    loadApplications(); // Refresh the applications list
+                    return true;
+                } else {
+                    showMessage(result.error || 'Failed to update applicant details.', 'error', 'applicantMessage');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error updating applicant details:', error);
+                showMessage('Failed to update applicant details due to network error. Please try again.', 'error', 'applicantMessage');
+                return false;
+            }
         }
 
         function deleteEvent(eventId) {
@@ -1383,12 +1509,53 @@
                 }
             });
 
+            // Applicant form submission handler
+            document.getElementById('applicantForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const applicantData = {
+                    applicationId: formData.get('applicantId'),
+                    firstName: formData.get('applicantFirstName').trim(),
+                    lastName: formData.get('applicantLastName').trim(),
+                    email: formData.get('applicantEmail').trim(),
+                    company: formData.get('applicantCompany').trim(),
+                    position: formData.get('applicantPosition').trim(),
+                    phone: formData.get('applicantPhone').trim(),
+                    status: formData.get('applicantStatus')
+                };
+                
+                if (!applicantData.firstName || !applicantData.lastName || !applicantData.email) {
+                    showMessage('First name, last name, and email are required.', 'error', 'applicantMessage');
+                    return;
+                }
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Saving...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const success = await updateApplicantDetails(applicantData);
+                    if (success) {
+                        setTimeout(() => {
+                            closeApplicantModal();
+                        }, 2000);
+                    }
+                } finally {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
             // Modal close on outside click
             window.onclick = function(event) {
                 const venueModal = document.getElementById('venueModal');
                 const eventModal = document.getElementById('eventModal');
+                const applicantModal = document.getElementById('applicantModal');
                 if (event.target === venueModal) closeVenueModal();
                 if (event.target === eventModal) closeEventModal();
+                if (event.target === applicantModal) closeApplicantModal();
             }
 
             checkAuth();
@@ -1654,6 +1821,7 @@
         window.toggleAttendeeStatus = toggleAttendeeStatus;
         window.loadEventAttendees = loadEventAttendees;
         window.loadApprovedMembers = loadApprovedMembers;
+        window.closeApplicantModal = closeApplicantModal;
 
     </script>
 </body>
