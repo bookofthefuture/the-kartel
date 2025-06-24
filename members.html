@@ -148,7 +148,7 @@
     <div id="loginSection" class="login-container">
         <div class="login-card">
             <h1 class="login-title">The Kartel Members</h1>
-            <p style="margin-bottom: 30px; color: #7f8c8d;">Enter your email to receive a secure login link</p>
+            <p id="loginInstruction" style="margin-bottom: 30px; color: #7f8c8d;">Enter your email to receive a secure login link</p>
             
             <form id="magicLinkForm" class="magic-link-form">
                 <div class="form-group">
@@ -262,6 +262,7 @@
 
         function showLoginForm() {
             document.getElementById('magicLinkForm').classList.remove('hidden');
+            document.getElementById('loginInstruction').classList.remove('hidden');
             document.getElementById('checkEmailMessage').classList.add('hidden');
             document.getElementById('loginMessage').classList.add('hidden');
         }
@@ -321,6 +322,7 @@
                 
                 if (response.ok && result.success) {
                     document.getElementById('magicLinkForm').classList.add('hidden');
+                    document.getElementById('loginInstruction').classList.add('hidden');
                     document.getElementById('checkEmailMessage').classList.remove('hidden');
                 } else {
                     showMessage(result.error || 'Failed to send login link. Please try again.', 'error');
