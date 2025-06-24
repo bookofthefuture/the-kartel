@@ -131,7 +131,7 @@ async function sendMagicLinkEmail(member, loginToken) {
 
   const baseUrl = process.env.SITE_URL || 'https://the-kartel.netlify.app';
   const loginUrl = `${baseUrl}/members.html?token=${loginToken}`;
-  const memberName = member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email;
+  const memberName = member.firstName || member.email;
 
   const subject = 'Your Secure Kartel Login Link';
   const htmlBody = `

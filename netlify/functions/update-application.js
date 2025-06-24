@@ -118,7 +118,7 @@ async function sendApplicantEmail(application, status) {
 }
 
 async function sendApprovalEmail(application) {
-  const applicantName = application.fullName || `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.name || application.email;
+  const applicantName = application.firstName || application.email;
   const subject = `Welcome to The Kartel - Application Approved!`;
   const htmlBody = `
     <div style="font-family: 'League Spartan', 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
@@ -164,7 +164,7 @@ async function sendApprovalEmail(application) {
 }
 
 async function sendRejectionEmail(application) {
-  const applicantName = application.fullName || `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.name || application.email;
+  const applicantName = application.firstName || application.email;
   const subject = `Thank you for your interest in The Kartel`;
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
