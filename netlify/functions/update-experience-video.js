@@ -28,7 +28,20 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const store = getStore('kartel-content');
+        // Check environment variables
+        if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ error: 'Server configuration error' })
+            };
+        }
+
+        const store = getStore({
+            name: 'kartel-content',
+            siteID: process.env.NETLIFY_SITE_ID,
+            token: process.env.NETLIFY_ACCESS_TOKEN,
+            consistency: 'strong'
+        });
         
         const videoData = {
             vimeoId: vimeoId.trim(),
