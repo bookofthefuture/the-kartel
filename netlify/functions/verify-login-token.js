@@ -102,7 +102,11 @@ exports.handler = async (event, context) => {
         token: sessionToken,
         memberId: member.id,
         memberEmail: member.email,
-        memberFullName: member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email,
+        memberFirstName: member.firstName || '',
+        memberLastName: member.lastName || '',
+        memberCompany: member.company || '',
+        memberPosition: member.position || '',
+        memberPhone: member.phone || '',
         message: 'Login successful'
       })
     };

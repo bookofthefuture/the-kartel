@@ -121,6 +121,8 @@
         .status-attended { background: #cce7ff; color: #004085; }
         .clickable-event { cursor: pointer; transition: all 0.2s ease; }
         .clickable-event:hover { transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .member-name-clickable { cursor: pointer; transition: all 0.2s ease; border-radius: 4px; padding: 4px 8px; }
+        .member-name-clickable:hover { background: rgba(255,255,255,0.1); text-decoration: underline; }
 
         @media (max-width: 768px) {
             .header { padding: 12px 0; }
@@ -180,7 +182,7 @@
                     <h1 class="header-title">The Kartel Members</h1>
                 </div>
                 <div class="user-info">
-                    <span id="memberDisplayName"></span>
+                    <span id="memberDisplayName" class="member-name-clickable" onclick="openProfileModal()"></span>
                     <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
             </div>
@@ -237,6 +239,50 @@
         </div>
     </div>
 
+    <!-- Profile Update Modal -->
+    <div id="profileModal" class="event-modal">
+        <div class="event-modal-content">
+            <div class="event-modal-header">
+                <h2 class="event-modal-title">Update Profile</h2>
+                <button class="event-modal-close" onclick="closeProfileModal()">&times;</button>
+            </div>
+            <div class="event-modal-body">
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="profileFirstName">First Name *</label>
+                        <input type="text" id="profileFirstName" name="profileFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileLastName">Last Name *</label>
+                        <input type="text" id="profileLastName" name="profileLastName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileEmail">Email Address</label>
+                        <input type="email" id="profileEmail" name="profileEmail" disabled>
+                        <small style="color: #7f8c8d;">Email address cannot be changed</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileCompany">Company</label>
+                        <input type="text" id="profileCompany" name="profileCompany">
+                    </div>
+                    <div class="form-group">
+                        <label for="profilePosition">Position</label>
+                        <input type="text" id="profilePosition" name="profilePosition">
+                    </div>
+                    <div class="form-group">
+                        <label for="profilePhone">Mobile Number</label>
+                        <input type="tel" id="profilePhone" name="profilePhone">
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                        <button type="submit" class="btn btn-success">Update Profile</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
+                    </div>
+                </form>
+                <div id="profileMessage" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let memberToken = localStorage.getItem('kartel_member_token');
         let currentMember = null;
@@ -270,7 +316,7 @@
         function showDashboard() {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
-            document.getElementById('memberDisplayName').textContent = currentMember.fullName || currentMember.email;
+            document.getElementById('memberDisplayName').textContent = currentMember.firstName || currentMember.email;
             switchTab('upcomingEvents');
         }
 
@@ -294,7 +340,11 @@
                 currentMember = {
                     email: localStorage.getItem('kartel_member_email'),
                     id: localStorage.getItem('kartel_member_id'),
-                    fullName: localStorage.getItem('kartel_member_fullName')
+                    firstName: localStorage.getItem('kartel_member_firstName'),
+                    lastName: localStorage.getItem('kartel_member_lastName'),
+                    company: localStorage.getItem('kartel_member_company'),
+                    position: localStorage.getItem('kartel_member_position'),
+                    phone: localStorage.getItem('kartel_member_phone')
                 };
                 showDashboard();
             } else {
@@ -363,12 +413,20 @@
                     currentMember = {
                         id: result.memberId,
                         email: result.memberEmail,
-                        fullName: result.memberFullName
+                        firstName: result.memberFirstName,
+                        lastName: result.memberLastName,
+                        company: result.memberCompany,
+                        position: result.memberPosition,
+                        phone: result.memberPhone
                     };
                     localStorage.setItem('kartel_member_token', memberToken);
                     localStorage.setItem('kartel_member_id', currentMember.id);
                     localStorage.setItem('kartel_member_email', currentMember.email);
-                    localStorage.setItem('kartel_member_fullName', currentMember.fullName);
+                    localStorage.setItem('kartel_member_firstName', currentMember.firstName || '');
+                    localStorage.setItem('kartel_member_lastName', currentMember.lastName || '');
+                    localStorage.setItem('kartel_member_company', currentMember.company || '');
+                    localStorage.setItem('kartel_member_position', currentMember.position || '');
+                    localStorage.setItem('kartel_member_phone', currentMember.phone || '');
                     
                     window.history.replaceState({}, document.title, window.location.pathname);
                     showDashboard();
@@ -390,7 +448,11 @@
             localStorage.removeItem('kartel_member_token');
             localStorage.removeItem('kartel_member_id');
             localStorage.removeItem('kartel_member_email');
-            localStorage.removeItem('kartel_member_fullName');
+            localStorage.removeItem('kartel_member_firstName');
+            localStorage.removeItem('kartel_member_lastName');
+            localStorage.removeItem('kartel_member_company');
+            localStorage.removeItem('kartel_member_position');
+            localStorage.removeItem('kartel_member_phone');
             window.location.href = 'index.html';
         });
 
@@ -702,13 +764,120 @@
             document.getElementById('eventModal').style.display = 'none';
         }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('eventModal');
-            if (event.target === modal) {
-                closeEventModal();
+        // Profile modal functions
+        function openProfileModal() {
+            if (!currentMember) return;
+            
+            // Populate form with current member data
+            document.getElementById('profileFirstName').value = currentMember.firstName || '';
+            document.getElementById('profileLastName').value = currentMember.lastName || '';
+            document.getElementById('profileEmail').value = currentMember.email || '';
+            document.getElementById('profileCompany').value = currentMember.company || '';
+            document.getElementById('profilePosition').value = currentMember.position || '';
+            document.getElementById('profilePhone').value = currentMember.phone || '';
+            
+            // Clear any previous messages
+            document.getElementById('profileMessage').classList.add('hidden');
+            
+            // Show modal
+            document.getElementById('profileModal').style.display = 'block';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+
+        async function updateProfile(profileData) {
+            try {
+                const response = await fetch('/.netlify/functions/update-member-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${memberToken}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                if (response.status === 401) {
+                    showLogin();
+                    showMessage('Your session has expired. Please log in again.', 'error');
+                    return false;
+                }
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update local member data
+                    currentMember = { ...currentMember, ...profileData };
+                    localStorage.setItem('kartel_member_firstName', profileData.firstName);
+                    localStorage.setItem('kartel_member_lastName', profileData.lastName);
+                    localStorage.setItem('kartel_member_company', profileData.company);
+                    localStorage.setItem('kartel_member_position', profileData.position);
+                    localStorage.setItem('kartel_member_phone', profileData.phone);
+                    
+                    // Update display name in header
+                    document.getElementById('memberDisplayName').textContent = profileData.firstName || currentMember.email;
+                    
+                    showMessage('Profile updated successfully!', 'success', 'profileMessage');
+                    return true;
+                } else {
+                    showMessage(result.error || 'Failed to update profile.', 'error', 'profileMessage');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Profile update error:', error);
+                showMessage('Failed to update profile due to network error. Please try again.', 'error', 'profileMessage');
+                return false;
             }
         }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const eventModal = document.getElementById('eventModal');
+            const profileModal = document.getElementById('profileModal');
+            if (event.target === eventModal) {
+                closeEventModal();
+            }
+            if (event.target === profileModal) {
+                closeProfileModal();
+            }
+        }
+
+        // Profile form submission handler
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const profileData = {
+                firstName: formData.get('profileFirstName').trim(),
+                lastName: formData.get('profileLastName').trim(),
+                company: formData.get('profileCompany').trim(),
+                position: formData.get('profilePosition').trim(),
+                phone: formData.get('profilePhone').trim()
+            };
+            
+            if (!profileData.firstName || !profileData.lastName) {
+                showMessage('First name and last name are required.', 'error', 'profileMessage');
+                return;
+            }
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Updating...';
+            submitBtn.disabled = true;
+            
+            try {
+                const success = await updateProfile(profileData);
+                if (success) {
+                    setTimeout(() => {
+                        closeProfileModal();
+                    }, 2000);
+                }
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
 
         // Expose functions to global scope for onclick attributes
         window.switchTab = switchTab;
@@ -717,6 +886,8 @@
         window.showLoginForm = showLoginForm;
         window.showEventDetails = showEventDetails;
         window.closeEventModal = closeEventModal;
+        window.openProfileModal = openProfileModal;
+        window.closeProfileModal = closeProfileModal;
     </script>
 </body>
 </html>
