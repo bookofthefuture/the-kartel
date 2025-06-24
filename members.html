@@ -99,6 +99,19 @@
         .driving-tips { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c; font-size: 0.95rem; line-height: 1.5; color: #2c3e50; }
         .video-container { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .video-container iframe { border-radius: 8px; }
+        
+        /* Photo modal styles */
+        .photo-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); }
+        .photo-modal-content { position: relative; margin: auto; display: block; width: 90%; max-width: 800px; max-height: 90%; margin-top: 5%; }
+        .photo-modal-image { width: 100%; height: auto; border-radius: 8px; }
+        .photo-modal-caption { text-align: center; color: white; padding: 15px; font-size: 1.1rem; }
+        .photo-modal-close { position: absolute; top: 15px; right: 25px; color: white; font-size: 35px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.5); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
+        .photo-modal-close:hover { background: rgba(255,255,255,0.2); }
+        
+        /* Event media sections */
+        .event-media-section { border-top: 1px solid #ecf0f1; padding-top: 20px; }
+        .photos-grid img:hover { transform: scale(1.05); }
+        .videos-grid iframe { transition: transform 0.3s ease; }
 
         /* Event attendee modal styles */
         .event-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
@@ -230,6 +243,22 @@
             <div class="event-details" id="eventModalDetails">
                 <!-- Event details will be populated here -->
             </div>
+            <!-- Event Photos Section -->
+            <div id="eventPhotosSection" class="event-media-section" style="display: none; margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; font-size: 1.4rem; margin-bottom: 15px; font-weight: 600;">📸 Event Photos</h3>
+                <div id="eventPhotosGrid" class="photos-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 15px;">
+                    <!-- Photos will be populated here -->
+                </div>
+            </div>
+
+            <!-- Event Videos Section -->
+            <div id="eventVideosSection" class="event-media-section" style="display: none; margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; font-size: 1.4rem; margin-bottom: 15px; font-weight: 600;">🎥 Event Videos</h3>
+                <div id="eventVideosGrid" class="videos-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <!-- Videos will be populated here -->
+                </div>
+            </div>
+
             <div class="attendees-section">
                 <h3>Registered Attendees <span id="attendeeCount" class="status-badge status-approved">0</span></h3>
                 <ul class="attendees-list" id="attendeesList">
@@ -280,6 +309,15 @@
                 </form>
                 <div id="profileMessage" class="hidden"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Photo Modal -->
+    <div id="photoModal" class="photo-modal">
+        <span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+        <div class="photo-modal-content">
+            <img id="photoModalImage" class="photo-modal-image" src="" alt="Event Photo">
+            <div id="photoModalCaption" class="photo-modal-caption"></div>
         </div>
     </div>
 
@@ -734,6 +772,59 @@
             `;
             document.getElementById('eventModalDetails').innerHTML = eventDetails;
 
+            // Handle event photos - only show if photos exist
+            const photosSection = document.getElementById('eventPhotosSection');
+            const photosGrid = document.getElementById('eventPhotosGrid');
+            if (event.photos && event.photos.length > 0) {
+                const photosHTML = event.photos.map(photo => `
+                    <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="openPhotoModal('${photo.path}', '${photo.caption || ''}')">
+                        <img src="/.netlify/functions/get-photo?path=${encodeURIComponent(photo.path)}" 
+                             alt="${photo.caption || 'Event photo'}" 
+                             style="width: 100%; height: 120px; object-fit: cover; transition: transform 0.3s ease;"
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                        ${photo.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 8px; font-size: 0.8rem;">${photo.caption}</div>` : ''}
+                    </div>
+                `).join('');
+                photosGrid.innerHTML = photosHTML;
+                photosSection.style.display = 'block';
+            } else {
+                photosSection.style.display = 'none';
+            }
+
+            // Handle event videos - only show if videos exist
+            const videosSection = document.getElementById('eventVideosSection');
+            const videosGrid = document.getElementById('eventVideosGrid');
+            if (event.videos && event.videos.length > 0) {
+                const videosHTML = event.videos.map(video => `
+                    <div style="border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); background: white;">
+                        <div style="aspect-ratio: 16/9; background: #f8f9fa; position: relative;">
+                            <iframe 
+                                src="https://player.vimeo.com/video/${video.vimeoId}?badge=0&autopause=0&quality_selector=1&player_id=0&app_id=58479" 
+                                width="100%" 
+                                height="100%" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                                title="${video.title || 'Event Video'}">
+                            </iframe>
+                        </div>
+                        <div style="padding: 12px;">
+                            <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px; font-size: 0.9rem;">${video.title || video.fileName}</div>
+                            ${video.description ? `<div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 8px; line-height: 1.4;">${video.description}</div>` : ''}
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #7f8c8d;">
+                                <span>Uploaded: ${new Date(video.uploadedAt).toLocaleDateString()}</span>
+                                <a href="https://vimeo.com/${video.vimeoId}" target="_blank" style="color: #3498db; text-decoration: none;">View on Vimeo</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                videosGrid.innerHTML = videosHTML;
+                videosSection.style.display = 'block';
+            } else {
+                videosSection.style.display = 'none';
+            }
+
             // Populate attendees list
             const attendees = event.attendees || [];
             document.getElementById('attendeeCount').textContent = attendees.length;
@@ -787,6 +878,21 @@
             document.getElementById('profileModal').style.display = 'none';
         }
 
+        // Photo modal functions
+        function openPhotoModal(photoPath, caption) {
+            const modal = document.getElementById('photoModal');
+            const img = document.getElementById('photoModalImage');
+            const captionElement = document.getElementById('photoModalCaption');
+            
+            img.src = '/.netlify/functions/get-photo?path=' + encodeURIComponent(photoPath);
+            captionElement.textContent = caption || '';
+            modal.style.display = 'block';
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').style.display = 'none';
+        }
+
         async function updateProfile(profileData) {
             try {
                 const response = await fetch('/.netlify/functions/update-member-profile', {
@@ -835,11 +941,15 @@
         window.onclick = function(event) {
             const eventModal = document.getElementById('eventModal');
             const profileModal = document.getElementById('profileModal');
+            const photoModal = document.getElementById('photoModal');
             if (event.target === eventModal) {
                 closeEventModal();
             }
             if (event.target === profileModal) {
                 closeProfileModal();
+            }
+            if (event.target === photoModal) {
+                closePhotoModal();
             }
         }
 
@@ -890,6 +1000,8 @@
         window.closeEventModal = closeEventModal;
         window.openProfileModal = openProfileModal;
         window.closeProfileModal = closeProfileModal;
+        window.openPhotoModal = openPhotoModal;
+        window.closePhotoModal = closePhotoModal;
     </script>
 </body>
 </html>
