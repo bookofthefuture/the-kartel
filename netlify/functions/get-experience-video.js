@@ -13,20 +13,20 @@ exports.handler = async (event, context) => {
 
         const store = getStore('kartel-content');
         
-        let galleryData;
+        let videoData;
         try {
-            galleryData = await store.get('gallery', { type: 'json' });
+            videoData = await store.get('experience-video', { type: 'json' });
         } catch (error) {
-            galleryData = { photos: [] };
+            videoData = { vimeoId: '1092055210' }; // Default video ID
         }
         
         return {
             statusCode: 200,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(galleryData)
+            body: JSON.stringify(videoData)
         };
     } catch (error) {
-        console.error('Error in get-gallery:', error);
+        console.error('Error in get-experience-video:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Internal server error' })

@@ -50,6 +50,7 @@
                 <button class="tab-button active" onclick="switchTab('applications')">👥 Applications</button>
                 <button class="tab-button" onclick="switchTab('events')">📅 Events</button>
                 <button class="tab-button" onclick="switchTab('venues')">🏁 Venues</button>
+                <button class="tab-button" onclick="switchTab('content')">📝 Content</button>
             </div>
 
             <div id="applicationsTab" class="tab-content active">
@@ -167,6 +168,87 @@
                         <div id="venuesContainer">
                             <div class="venues-grid" id="venuesGrid">
                                 <div class="loading">Loading venues...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="contentTab" class="tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="totalGalleryPhotos">0</div><div class="stat-label">Gallery Photos</div></div>
+                    <div class="stat-card"><div class="stat-number" id="totalFaqs">0</div><div class="stat-label">FAQ Items</div></div>
+                    <div class="stat-card"><div class="stat-number" id="experienceVideoId">-</div><div class="stat-label">Experience Video</div></div>
+                    <div class="stat-card"><div class="stat-number" id="contentLastUpdated">-</div><div class="stat-label">Last Updated</div></div>
+                </div>
+
+                <!-- Home Gallery Management -->
+                <div class="applications-section" style="margin-bottom: 30px;">
+                    <div class="section-header">
+                        <h2 class="section-title">🖼️ Home Gallery</h2>
+                        <button class="refresh-btn" onclick="loadGalleryManagement()">Refresh</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div id="galleryMessageContainer"></div>
+                        <p style="color: #7f8c8d; margin-bottom: 20px;">Select up to 12 photos from all event photos to display on the homepage gallery. Drag and drop to reorder.</p>
+                        
+                        <div class="form-row" style="margin-bottom: 20px;">
+                            <div style="flex: 2;">
+                                <h4>Available Event Photos</h4>
+                                <div id="availablePhotosGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; border: 1px solid #ecf0f1; padding: 15px; border-radius: 8px;">
+                                    <div class="loading">Loading event photos...</div>
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <h4>Selected Gallery Photos (<span id="selectedCount">0</span>/12)</h4>
+                                <div id="selectedPhotosGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; min-height: 200px; border: 2px dashed #bdc3c7; padding: 15px; border-radius: 8px; background: #f8f9fa;">
+                                    <p style="color: #7f8c8d; text-align: center; grid-column: 1 / -1;">Click photos from the left to add them here</p>
+                                </div>
+                                <button id="saveGalleryBtn" class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="saveGallerySelection()">Save Gallery</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Management -->
+                <div class="applications-section" style="margin-bottom: 30px;">
+                    <div class="section-header">
+                        <h2 class="section-title">❓ FAQ Management</h2>
+                        <div>
+                            <button class="btn btn-success" onclick="openAddFaqModal()">Add FAQ</button>
+                            <button class="refresh-btn" onclick="loadFaqs()">Refresh</button>
+                        </div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div id="faqMessageContainer"></div>
+                        <div id="faqContainer">
+                            <div class="loading">Loading FAQs...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Experience Video Management -->
+                <div class="applications-section">
+                    <div class="section-header">
+                        <h2 class="section-title">🎥 Experience Video</h2>
+                        <button class="refresh-btn" onclick="loadExperienceVideo()">Refresh</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div id="videoMessageContainer"></div>
+                        <div class="form-row">
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label for="experienceVimeoId">Vimeo Video ID</label>
+                                    <input type="text" id="experienceVimeoId" placeholder="e.g., 1092055210" style="font-family: monospace;">
+                                    <small style="color: #7f8c8d;">Enter only the numeric ID from the Vimeo URL</small>
+                                </div>
+                                <button class="btn btn-success" onclick="updateExperienceVideo()">Update Video</button>
+                            </div>
+                            <div style="flex: 1;">
+                                <h4>Video Preview</h4>
+                                <div id="experienceVideoPreview" style="aspect-ratio: 16/9; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #7f8c8d;">
+                                    No video selected
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -460,6 +542,39 @@
                     </div>
                 </form>
                 <div id="applicantMessage" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div id="faqModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="faqModalTitle">Add FAQ</h3>
+                <button class="close" onclick="closeFaqModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="faqForm">
+                    <input type="hidden" id="faqId" name="faqId">
+                    <div class="form-group">
+                        <label for="faqQuestion">Question *</label>
+                        <input type="text" id="faqQuestion" name="faqQuestion" required placeholder="Enter the FAQ question...">
+                    </div>
+                    <div class="form-group">
+                        <label for="faqAnswer">Answer *</label>
+                        <textarea id="faqAnswer" name="faqAnswer" rows="4" required placeholder="Enter the FAQ answer..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="faqOrder">Display Order</label>
+                        <input type="number" id="faqOrder" name="faqOrder" min="1" placeholder="Order (1 = first)">
+                        <small style="color: #7f8c8d;">Leave blank to add at the end</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">Save FAQ</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeFaqModal()">Cancel</button>
+                    </div>
+                </form>
+                <div id="faqMessage" class="hidden"></div>
             </div>
         </div>
     </div>

@@ -13,20 +13,25 @@ exports.handler = async (event, context) => {
 
         const store = getStore('kartel-content');
         
-        let galleryData;
+        let faqData;
         try {
-            galleryData = await store.get('gallery', { type: 'json' });
+            faqData = await store.get('faqs', { type: 'json' });
         } catch (error) {
-            galleryData = { photos: [] };
+            faqData = { faqs: [] };
+        }
+        
+        // Sort FAQs by order
+        if (faqData.faqs && Array.isArray(faqData.faqs)) {
+            faqData.faqs.sort((a, b) => (a.order || 999) - (b.order || 999));
         }
         
         return {
             statusCode: 200,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(galleryData)
+            body: JSON.stringify(faqData)
         };
     } catch (error) {
-        console.error('Error in get-gallery:', error);
+        console.error('Error in get-faqs:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Internal server error' })

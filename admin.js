@@ -11,6 +11,7 @@ function switchTab(tabName) {
     if (tabName === 'applications') loadApplications();
     else if (tabName === 'events') { loadEvents(); loadVenuesForDropdown(); }
     else if (tabName === 'venues') loadVenues();
+    else if (tabName === 'content') { loadGalleryManagement(); loadFaqs(); loadExperienceVideo(); }
 }
 
 function showMessage(message, type = 'success', container = 'messageContainer') {
@@ -1606,4 +1607,356 @@ window.removeAttendeeFromEvent = removeAttendeeFromEvent;
 window.toggleAttendeeStatus = toggleAttendeeStatus;
 window.loadEventAttendees = loadEventAttendees;
 window.loadApprovedMembers = loadApprovedMembers;
+
+// CMS Functions
+let selectedGalleryPhotos = [];
+let allEventPhotos = [];
+let currentFaqs = [];
+
+async function loadGalleryManagement() {
+    try {
+        const response = await fetch('/.netlify/functions/get-gallery', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            selectedGalleryPhotos = data.photos || [];
+            updateGalleryStats();
+        }
+        await loadAvailablePhotos();
+        renderGalleryManagement();
+    } catch (error) {
+        console.error('Error loading gallery management:', error);
+        showError('Failed to load gallery management. Please try again.', 'galleryMessageContainer');
+    }
+}
+
+async function loadAvailablePhotos() {
+    try {
+        const response = await fetch('/.netlify/functions/get-events', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const events = data.events || [];
+            allEventPhotos = [];
+            
+            events.forEach(event => {
+                if (event.photos && event.photos.length > 0) {
+                    event.photos.forEach(photo => {
+                        allEventPhotos.push({
+                            ...photo,
+                            eventName: event.name,
+                            eventDate: event.date
+                        });
+                    });
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading available photos:', error);
+    }
+}
+
+function renderGalleryManagement() {
+    const availableGrid = document.getElementById('availablePhotosGrid');
+    const selectedGrid = document.getElementById('selectedPhotosGrid');
+    
+    if (allEventPhotos.length === 0) {
+        availableGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; grid-column: 1 / -1;">No event photos available. Upload photos to events first.</p>';
+    } else {
+        availableGrid.innerHTML = allEventPhotos.map(photo => `
+            <div class="photo-item" style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); ${selectedGalleryPhotos.find(p => p.id === photo.id) ? 'opacity: 0.5;' : ''}" 
+                 onclick="selectPhoto('${photo.id}')">
+                <img src="${photo.url}" alt="${photo.caption || 'Event photo'}" style="width: 100%; height: 120px; object-fit: cover;">
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; padding: 8px 6px 6px; font-size: 0.7rem;">
+                    <div style="font-weight: 600;">${photo.eventName}</div>
+                    <div style="opacity: 0.8;">${photo.eventDate}</div>
+                </div>
+                ${selectedGalleryPhotos.find(p => p.id === photo.id) ? '<div style="position: absolute; top: 5px; right: 5px; background: #27ae60; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div>' : ''}
+            </div>
+        `).join('');
+    }
+    
+    if (selectedGalleryPhotos.length === 0) {
+        selectedGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; grid-column: 1 / -1;">Click photos from the left to add them here</p>';
+    } else {
+        selectedGrid.innerHTML = selectedGalleryPhotos.map(photo => `
+            <div class="photo-item" style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+                 onclick="deselectPhoto('${photo.id}')">
+                <img src="${photo.url}" alt="${photo.caption || 'Event photo'}" style="width: 100%; height: 100px; object-fit: cover;">
+                <div style="position: absolute; top: 2px; right: 2px; background: #e74c3c; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer;">×</div>
+            </div>
+        `).join('');
+    }
+    
+    document.getElementById('selectedCount').textContent = selectedGalleryPhotos.length;
+}
+
+function selectPhoto(photoId) {
+    if (selectedGalleryPhotos.length >= 12) {
+        showError('Maximum 12 photos allowed in gallery', 'galleryMessageContainer');
+        return;
+    }
+    
+    const photo = allEventPhotos.find(p => p.id === photoId);
+    if (photo && !selectedGalleryPhotos.find(p => p.id === photoId)) {
+        selectedGalleryPhotos.push(photo);
+        renderGalleryManagement();
+    }
+}
+
+function deselectPhoto(photoId) {
+    selectedGalleryPhotos = selectedGalleryPhotos.filter(p => p.id !== photoId);
+    renderGalleryManagement();
+}
+
+async function saveGallerySelection() {
+    try {
+        const response = await fetch('/.netlify/functions/update-gallery', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ photos: selectedGalleryPhotos })
+        });
+        
+        if (response.ok) {
+            showMessage('Gallery updated successfully!', 'success', 'galleryMessageContainer');
+            updateGalleryStats();
+        } else {
+            throw new Error('Failed to update gallery');
+        }
+    } catch (error) {
+        console.error('Error saving gallery:', error);
+        showError('Failed to save gallery. Please try again.', 'galleryMessageContainer');
+    }
+}
+
+async function loadFaqs() {
+    try {
+        const response = await fetch('/.netlify/functions/get-faqs', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            currentFaqs = data.faqs || [];
+            updateFaqStats();
+            renderFaqs();
+        }
+    } catch (error) {
+        console.error('Error loading FAQs:', error);
+        showError('Failed to load FAQs. Please try again.', 'faqMessageContainer');
+    }
+}
+
+function renderFaqs() {
+    const container = document.getElementById('faqContainer');
+    
+    if (currentFaqs.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No FAQs found</h3>
+                <p>Start by adding your first FAQ to help visitors understand The Kartel better.</p>
+                <button class="btn btn-success" onclick="openAddFaqModal()">Add Your First FAQ</button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = currentFaqs.map(faq => `
+        <div class="faq-item" style="background: white; border: 1px solid #ecf0f1; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <h4 style="color: #2c3e50; font-weight: 600; margin: 0; flex: 1;">${faq.question}</h4>
+                <div style="display: flex; gap: 10px; margin-left: 15px;">
+                    <button class="btn btn-secondary btn-small" onclick="editFaq('${faq.id}')">Edit</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteFaq('${faq.id}')">Delete</button>
+                </div>
+            </div>
+            <p style="color: #5d6d7e; margin: 0; line-height: 1.5;">${faq.answer}</p>
+            <small style="color: #95a5a6; display: block; margin-top: 10px;">Order: ${faq.order || 'Not set'}</small>
+        </div>
+    `).join('');
+}
+
+function openAddFaqModal() {
+    document.getElementById('faqModalTitle').textContent = 'Add FAQ';
+    document.getElementById('faqId').value = '';
+    document.getElementById('faqQuestion').value = '';
+    document.getElementById('faqAnswer').value = '';
+    document.getElementById('faqOrder').value = '';
+    document.getElementById('faqModal').style.display = 'block';
+}
+
+function editFaq(faqId) {
+    const faq = currentFaqs.find(f => f.id === faqId);
+    if (faq) {
+        document.getElementById('faqModalTitle').textContent = 'Edit FAQ';
+        document.getElementById('faqId').value = faq.id;
+        document.getElementById('faqQuestion').value = faq.question;
+        document.getElementById('faqAnswer').value = faq.answer;
+        document.getElementById('faqOrder').value = faq.order || '';
+        document.getElementById('faqModal').style.display = 'block';
+    }
+}
+
+function closeFaqModal() {
+    document.getElementById('faqModal').style.display = 'none';
+}
+
+async function deleteFaq(faqId) {
+    if (!confirm('Are you sure you want to delete this FAQ?')) return;
+    
+    try {
+        const response = await fetch('/.netlify/functions/delete-faq', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ id: faqId })
+        });
+        
+        if (response.ok) {
+            showMessage('FAQ deleted successfully!', 'success', 'faqMessageContainer');
+            loadFaqs();
+        } else {
+            throw new Error('Failed to delete FAQ');
+        }
+    } catch (error) {
+        console.error('Error deleting FAQ:', error);
+        showError('Failed to delete FAQ. Please try again.', 'faqMessageContainer');
+    }
+}
+
+async function loadExperienceVideo() {
+    try {
+        const response = await fetch('/.netlify/functions/get-experience-video', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const videoId = data.vimeoId || '1092055210';
+            document.getElementById('experienceVimeoId').value = videoId;
+            updateVideoPreview(videoId);
+            updateVideoStats(videoId);
+        }
+    } catch (error) {
+        console.error('Error loading experience video:', error);
+        showError('Failed to load experience video. Please try again.', 'videoMessageContainer');
+    }
+}
+
+function updateVideoPreview(vimeoId) {
+    const preview = document.getElementById('experienceVideoPreview');
+    if (vimeoId && vimeoId.trim()) {
+        preview.innerHTML = `
+            <iframe src="https://player.vimeo.com/video/${vimeoId}" 
+                    width="100%" height="100%" frameborder="0" 
+                    allow="autoplay; fullscreen; picture-in-picture" 
+                    allowfullscreen></iframe>
+        `;
+    } else {
+        preview.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #7f8c8d;">No video selected</div>';
+    }
+}
+
+async function updateExperienceVideo() {
+    const vimeoId = document.getElementById('experienceVimeoId').value.trim();
+    
+    if (!vimeoId) {
+        showError('Please enter a Vimeo video ID', 'videoMessageContainer');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/.netlify/functions/update-experience-video', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ vimeoId })
+        });
+        
+        if (response.ok) {
+            showMessage('Experience video updated successfully!', 'success', 'videoMessageContainer');
+            updateVideoPreview(vimeoId);
+            updateVideoStats(vimeoId);
+        } else {
+            throw new Error('Failed to update experience video');
+        }
+    } catch (error) {
+        console.error('Error updating experience video:', error);
+        showError('Failed to update experience video. Please try again.', 'videoMessageContainer');
+    }
+}
+
+function updateGalleryStats() {
+    document.getElementById('totalGalleryPhotos').textContent = selectedGalleryPhotos.length;
+}
+
+function updateFaqStats() {
+    document.getElementById('totalFaqs').textContent = currentFaqs.length;
+}
+
+function updateVideoStats(videoId) {
+    document.getElementById('experienceVideoId').textContent = videoId || '-';
+    document.getElementById('contentLastUpdated').textContent = new Date().toLocaleDateString();
+}
+
+// Event listeners for CMS
+document.getElementById('faqForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const faqData = {
+        id: formData.get('faqId') || Date.now().toString(),
+        question: formData.get('faqQuestion'),
+        answer: formData.get('faqAnswer'),
+        order: parseInt(formData.get('faqOrder')) || currentFaqs.length + 1
+    };
+    
+    try {
+        const response = await fetch('/.netlify/functions/update-faq', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(faqData)
+        });
+        
+        if (response.ok) {
+            showMessage('FAQ saved successfully!', 'success', 'faqMessageContainer');
+            closeFaqModal();
+            loadFaqs();
+        } else {
+            throw new Error('Failed to save FAQ');
+        }
+    } catch (error) {
+        console.error('Error saving FAQ:', error);
+        showError('Failed to save FAQ. Please try again.', 'faqMessage');
+    }
+});
+
+// Input listener for video preview
+document.getElementById('experienceVimeoId').addEventListener('input', (e) => {
+    const vimeoId = e.target.value.trim();
+    updateVideoPreview(vimeoId);
+});
+
+// Make CMS functions globally available
+window.loadGalleryManagement = loadGalleryManagement;
+window.selectPhoto = selectPhoto;
+window.deselectPhoto = deselectPhoto;
+window.saveGallerySelection = saveGallerySelection;
+window.loadFaqs = loadFaqs;
+window.openAddFaqModal = openAddFaqModal;
+window.editFaq = editFaq;
+window.closeFaqModal = closeFaqModal;
+window.deleteFaq = deleteFaq;
+window.loadExperienceVideo = loadExperienceVideo;
+window.updateExperienceVideo = updateExperienceVideo;
 window.closeApplicantModal = closeApplicantModal;
