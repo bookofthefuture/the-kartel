@@ -1719,6 +1719,8 @@ function deselectPhoto(photoId) {
 
 async function saveGallerySelection() {
     try {
+        console.log('Saving gallery selection:', selectedGalleryPhotos);
+        
         // Prepare photos with proper URL structure for frontend
         const photosForFrontend = selectedGalleryPhotos.map(photo => ({
             id: photo.id,
@@ -1730,6 +1732,8 @@ async function saveGallerySelection() {
             uploadedAt: photo.uploadedAt
         }));
 
+        console.log('Photos prepared for frontend:', photosForFrontend);
+
         const response = await fetch('/.netlify/functions/update-gallery', {
             method: 'POST',
             headers: {
@@ -1739,15 +1743,21 @@ async function saveGallerySelection() {
             body: JSON.stringify({ photos: photosForFrontend })
         });
         
+        console.log('Response status:', response.status);
+        
         if (response.ok) {
+            const result = await response.json();
+            console.log('Success response:', result);
             showMessage('Gallery updated successfully!', 'success', 'galleryMessageContainer');
             updateGalleryStats();
         } else {
-            throw new Error('Failed to update gallery');
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Error response:', errorData);
+            throw new Error(errorData.error || `Server error: ${response.status}`);
         }
     } catch (error) {
         console.error('Error saving gallery:', error);
-        showError('Failed to save gallery. Please try again.', 'galleryMessageContainer');
+        showError(`Failed to save gallery: ${error.message}`, 'galleryMessageContainer');
     }
 }
 
