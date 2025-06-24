@@ -570,7 +570,7 @@
                                     <button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>
                                     <span class="status-badge status-approved">Registered</span>
                                 ` : `
-                                    <button class="btn btn-primary" onclick="signUpForEvent(this, '${event.id}')">Sign Up</button>
+                                    <button class="btn btn-primary" onclick="console.log('Button clicked!'); signUpForEvent(this, '${event.id}')">Sign Up</button>
                                 `}
                             ` : `
                                 ${!isPastEvent ? `<button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>` : ''}
@@ -584,8 +584,18 @@
         }
 
         async function signUpForEvent(buttonElement, eventId) {
+            console.log('signUpForEvent called with:', { buttonElement, eventId, currentMember, memberToken });
+            
             if (!currentMember || !currentMember.id) {
+                console.log('No current member or member ID');
                 showMessage('You must be logged in to sign up for events.', 'error');
+                return;
+            }
+
+            if (!memberToken) {
+                console.log('No member token available');
+                showMessage('Authentication token missing. Please log in again.', 'error');
+                showLogin();
                 return;
             }
 
@@ -594,35 +604,47 @@
             const originalText = btn.textContent;
             btn.textContent = 'Signing up...';
 
+            console.log('Sending sign-up request...');
+
             try {
+                const requestBody = { 
+                    eventId: eventId,
+                    memberId: currentMember.id,
+                    memberName: currentMember.fullName,
+                    memberEmail: currentMember.email,
+                    memberCompany: currentMember.company || '' 
+                };
+                
+                console.log('Request body:', requestBody);
+
                 const response = await fetch('/.netlify/functions/sign-up-event', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${memberToken}`
                     },
-                    body: JSON.stringify({ 
-                        eventId: eventId,
-                        memberId: currentMember.id,
-                        memberName: currentMember.fullName,
-                        memberEmail: currentMember.email,
-                        memberCompany: currentMember.company || '' 
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
+                console.log('Response status:', response.status);
+
                 if (response.status === 401) {
+                    console.log('Unauthorized response, showing login');
                     showLogin();
                     showMessage('Your session has expired. Please log in again.', 'error');
                     return;
                 }
                 
                 const result = await response.json();
+                console.log('Response result:', result);
 
                 if (response.ok && result.success) {
+                    console.log('Sign-up successful!');
                     showMessage('Successfully signed up for the event!', 'success');
                     loadEvents('upcoming'); 
                     loadEvents('my');       
                 } else {
+                    console.log('Sign-up failed:', result);
                     showMessage(result.error || 'Failed to sign up for event.', 'error');
                 }
             } catch (error) {
