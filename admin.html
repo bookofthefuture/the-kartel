@@ -8,9 +8,11 @@
         @font-face { font-family: 'League Spartan'; src: url('assets/League_Spartan/LeagueSpartan-VariableFont_wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'League Spartan', 'Arial', sans-serif; background: #f8f9fa; color: #2c3e50; }
-        .header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #1a252f; color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-family: 'League Spartan', sans-serif; }
+        .header-logo { display: flex; align-items: center; gap: 15px; }
+        .header-logo img { height: 50px; width: auto; }
+        .header-title { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #ffffff; font-family: 'League Spartan', sans-serif; margin: 0; }
         .user-info { display: flex; align-items: center; gap: 15px; font-family: 'League Spartan', sans-serif; }
         .logout-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.3s ease; font-family: 'League Spartan', sans-serif; }
         .logout-btn:hover { background: #2980b9; }
@@ -134,7 +136,10 @@
         .stat-label { font-size: 0.8rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
 
         @media (max-width: 768px) {
-            .header-content { flex-direction: column; gap: 15px; }
+            .header { padding: 12px 0; }
+            .header-content { padding: 0 15px; }
+            .header-logo img { height: 40px; }
+            .header-title { font-size: 1.4rem; letter-spacing: 1px; }
             .tab-navigation { flex-direction: column; }
             .tab-button { padding: 15px; font-size: 1rem; }
             .stats-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
@@ -148,6 +153,12 @@
             .attendee-selector { flex-direction: column; align-items: stretch; }
             .attendee-item { flex-direction: column; align-items: flex-start; gap: 10px; }
             .attendee-status { align-self: flex-end; }
+        }
+        @media (max-width: 480px) {
+            .header-logo { flex-direction: column; gap: 8px; text-align: center; }
+            .header-logo img { height: 35px; }
+            .header-title { font-size: 1.2rem; letter-spacing: 1px; }
+            .header-content { flex-direction: column; gap: 10px; }
         }
     </style>
 </head>
@@ -174,9 +185,9 @@
     <div id="dashboardSection" class="hidden">
         <header class="header">
             <div class="header-content">
-                <div class="logo" style="display: flex; align-items: center; gap: 15px;">
-                    <img src="assets/the-kartel-logo.png" alt="The Kartel Logo" style="height: 40px; width: auto;">
-                    <span>The Kartel Admin</span>
+                <div class="header-logo">
+                    <img src="assets/the-kartel-logo-crop.png" alt="The Kartel Logo" />
+                    <h1 class="header-title">The Kartel Admin</h1>
                 </div>
                 <div class="user-info">
                     <span id="userEmail">Admin</span>
