@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
     const data = JSON.parse(event.body);
     const timestamp = new Date().toISOString();
     
-    const requiredFields = ['name', 'email', 'phone'];
+    const requiredFields = ['firstName', 'lastName', 'email', 'company', 'position', 'phone'];
     for (const field of requiredFields) {
       if (!data[field]) {
         return {
@@ -31,11 +31,13 @@ exports.handler = async (event, context) => {
 
     const application = {
       id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: data.name,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      name: `${data.firstName} ${data.lastName}`, // Combined name for backward compatibility
       email: data.email,
-      company: data.company || '',
+      company: data.company,
+      position: data.position,
       phone: data.phone,
-      industry: data.industry || '',
       message: data.message || '',
       status: 'pending',
       submittedAt: timestamp,
@@ -169,11 +171,11 @@ async function sendAdminNotification(application) {
         <h3 style="color: #2c3e50; margin-bottom: 15px;">Application Details</h3>
         
         <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <p><strong>Name:</strong> ${application.name}</p>
+          <p><strong>Name:</strong> ${application.firstName} ${application.lastName}</p>
           <p><strong>Email:</strong> ${application.email}</p>
           <p><strong>Phone:</strong> ${application.phone}</p>
-          <p><strong>Company:</strong> ${application.company || 'Not provided'}</p>
-          <p><strong>Industry:</strong> ${application.industry || 'Not provided'}</p>
+          <p><strong>Company:</strong> ${application.company}</p>
+          <p><strong>Position:</strong> ${application.position}</p>
           <p><strong>Message:</strong> ${application.message || 'No message provided'}</p>
           <p><strong>ID:</strong> ${application.id}</p>
         </div>
