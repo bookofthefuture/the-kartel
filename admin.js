@@ -850,7 +850,71 @@ function checkAuth() {
     }
 }
 
+async function checkQuickActionParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    const applicationId = urlParams.get('id');
+    const actionToken = urlParams.get('token');
+    
+    if (action && applicationId && actionToken) {
+        console.log(`🚀 Processing quick action from URL: ${action} for ${applicationId}`);
+        
+        // Clear URL parameters to prevent re-processing
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Process the quick action
+        await processQuickAction(action, applicationId, actionToken);
+    }
+}
+
+async function processQuickAction(action, applicationId, actionToken) {
+    try {
+        // Show loading message
+        showMessage('Processing quick action...', 'info', 'messageContainer');
+        
+        const response = await fetch('/.netlify/functions/quick-action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: action,
+                applicationId: applicationId,
+                actionToken: actionToken
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            const actionText = action === 'approve' ? 'approved' : 'rejected';
+            showMessage(
+                `✅ Application from ${result.application?.name || 'applicant'} has been ${actionText} successfully!`, 
+                'success', 
+                'messageContainer'
+            );
+            
+            // Refresh applications list if user is logged in
+            if (authToken) {
+                loadApplications();
+            }
+        } else {
+            showMessage(
+                `❌ Quick action failed: ${result.error || 'Unknown error'}`, 
+                'error', 
+                'messageContainer'
+            );
+        }
+    } catch (error) {
+        console.error('Quick action error:', error);
+        showMessage('❌ Quick action failed due to network error', 'error', 'messageContainer');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for quick action parameters in URL
+    checkQuickActionParams();
+    
     // Login form
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
