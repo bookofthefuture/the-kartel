@@ -537,6 +537,15 @@
                             <input type="text" id="applicantSubmitted" readonly style="background: #f8f9fa; cursor: not-allowed;">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="applicantIsAdmin" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="applicantIsAdmin" name="applicantIsAdmin" style="margin: 0;">
+                                <span>Administrator Access</span>
+                            </label>
+                            <small style="color: #7f8c8d;">Grant admin privileges to this user</small>
+                        </div>
+                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-success">Save Changes</button>
                         <button type="button" class="btn btn-secondary" onclick="closeApplicantModal()">Cancel</button>

@@ -96,8 +96,17 @@ exports.handler = async (event, context) => {
       applications = [];
     }
     
-    // Sort by submission date (newest first)
-    applications.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    // Sort: admins first, then alphabetically by name
+    applications.sort((a, b) => {
+      // First, sort by admin status (admins first)
+      if (a.isAdmin && !b.isAdmin) return -1;
+      if (!a.isAdmin && b.isAdmin) return 1;
+      
+      // Then sort alphabetically by full name
+      const nameA = (a.fullName || `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.name || '').toLowerCase();
+      const nameB = (b.fullName || `${b.firstName || ''} ${b.lastName || ''}`.trim() || b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
     
     return {
       statusCode: 200,

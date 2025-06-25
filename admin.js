@@ -278,6 +278,7 @@ function renderApplicationsTable() {
         <tr>
             <td>
                 <strong>${app.fullName || `${app.firstName || ''} ${app.lastName || ''}`.trim() || app.name || 'N/A'}</strong>
+                ${app.isAdmin ? '<br><span style="color: #e74c3c; font-weight: bold; font-size: 12px;">👑 Administrator</span>' : ''}
                 ${app.importedAt ? '<br><small style="color: #6c757d;">📥 Imported</small>' : ''}
             </td>
             <td>${app.email}</td>
@@ -756,6 +757,7 @@ function showDetails(applicationId) {
     document.getElementById('applicantOriginalMessage').value = app.message || '';
     document.getElementById('applicantStatus').value = app.status || 'pending';
     document.getElementById('applicantSubmitted').value = new Date(app.submittedAt).toLocaleString();
+    document.getElementById('applicantIsAdmin').checked = app.isAdmin || false;
     
     // Clear any previous messages
     const messageContainer = document.getElementById('applicantMessage');
@@ -1122,7 +1124,8 @@ document.addEventListener('DOMContentLoaded', function() {
             company: formData.get('applicantCompany').trim(),
             position: formData.get('applicantPosition').trim(),
             phone: formData.get('applicantPhone').trim(),
-            status: formData.get('applicantStatus')
+            status: formData.get('applicantStatus'),
+            isAdmin: document.getElementById('applicantIsAdmin').checked
         };
         
         if (!applicantData.firstName || !applicantData.lastName || !applicantData.email) {
