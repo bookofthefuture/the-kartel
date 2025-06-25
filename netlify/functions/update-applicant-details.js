@@ -127,6 +127,40 @@ exports.handler = async (event, context) => {
       console.log('⚠️ Failed to update applications list:', listError.message);
     }
 
+    // Check if user was just promoted to admin and needs invitation
+    const wasPromotedToAdmin = !application.isAdmin && updatedApplication.isAdmin;
+    const needsAdminSetup = wasPromotedToAdmin && !updatedApplication.adminPasswordHash;
+    
+    if (needsAdminSetup) {
+      console.log(`📧 Sending admin invitation to newly promoted admin: ${updatedApplication.email}`);
+      
+      try {
+        // Call the send-admin-invitation function
+        const invitationResponse = await fetch(`${process.env.URL || 'https://the-kartel.com'}/.netlify/functions/send-admin-invitation`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            applicationId: updatedApplication.id,
+            firstName: updatedApplication.firstName,
+            lastName: updatedApplication.lastName,
+            email: updatedApplication.email
+          })
+        });
+
+        if (invitationResponse.ok) {
+          console.log('✅ Admin invitation sent successfully');
+        } else {
+          console.log('⚠️ Failed to send admin invitation:', await invitationResponse.text());
+        }
+      } catch (inviteError) {
+        console.log('⚠️ Error sending admin invitation:', inviteError.message);
+        // Don't fail the main operation if invitation fails
+      }
+    }
+
     console.log(`✅ Applicant details updated successfully for ${applicationId}`);
 
     return {

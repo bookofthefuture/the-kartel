@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Kartel - Admin Setup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        
+        .setup-container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; max-width: 500px; }
+        
+        .setup-header { text-align: center; margin-bottom: 30px; }
+        
+        .setup-title { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
+        
+        .setup-subtitle { color: #7f8c8d; font-size: 16px; }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        .form-group label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: bold; }
+        
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; transition: border-color 0.3s; }
+        
+        .form-group input:focus { outline: none; border-color: #e74c3c; }
+        
+        .password-requirements { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
+        
+        .password-requirements ul { margin-left: 15px; }
+        
+        .password-requirements li { margin: 2px 0; }
+        
+        .setup-btn { width: 100%; background: #e74c3c; color: white; padding: 15px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
+        
+        .setup-btn:hover { background: #c0392b; }
+        
+        .setup-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
+        .message { padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        
+        .message.success { background: #d5f4e6; color: #27ae60; border: 1px solid #27ae60; }
+        
+        .message.error { background: #fdeaea; color: #e74c3c; border: 1px solid #e74c3c; }
+        
+        .hidden { display: none; }
+        
+        .loading { text-align: center; color: #7f8c8d; }
+        
+        .welcome-section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #e74c3c; }
+        
+        .welcome-section h3 { color: #2c3e50; margin-bottom: 10px; }
+        
+        .welcome-section p { color: #555; line-height: 1.6; }
+        
+        .admin-features { margin: 15px 0; }
+        
+        .admin-features ul { margin-left: 20px; }
+        
+        .admin-features li { margin: 5px 0; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1 class="setup-title">The Kartel</h1>
+            <p class="setup-subtitle">Administrator Setup</p>
+        </div>
+
+        <div id="loadingSection" class="loading">
+            <p>Validating your invitation...</p>
+        </div>
+
+        <div id="setupSection" class="hidden">
+            <div class="welcome-section">
+                <h3>Welcome, <span id="adminName">Administrator</span>!</h3>
+                <p>You've been granted administrator access to The Kartel platform.</p>
+                
+                <div class="admin-features">
+                    <p><strong>As an administrator, you can:</strong></p>
+                    <ul>
+                        <li>Manage member applications</li>
+                        <li>Create and manage events</li>
+                        <li>Manage karting venues</li>
+                        <li>Upload and organize photos</li>
+                        <li>Manage FAQ content</li>
+                    </ul>
+                </div>
+            </div>
+
+            <form id="setupForm">
+                <div class="form-group">
+                    <label for="password">Create Admin Password</label>
+                    <input type="password" id="password" name="password" required>
+                    <div class="password-requirements">
+                        <p>Password requirements:</p>
+                        <ul>
+                            <li>At least 8 characters long</li>
+                            <li>Mix of letters and numbers recommended</li>
+                            <li>Special characters welcome</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                
+                <button type="submit" id="setupBtn" class="setup-btn">Complete Setup</button>
+            </form>
+            
+            <div id="message" class="hidden"></div>
+        </div>
+
+        <div id="errorSection" class="hidden">
+            <div class="message error">
+                <p id="errorMessage">Invalid or expired invitation link.</p>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="/admin.html" style="color: #e74c3c; text-decoration: none;">← Back to Admin Login</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        let adminData = null;
+
+        // Validate token on page load
+        async function validateToken() {
+            if (!token) {
+                showError('No setup token provided');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/.netlify/functions/validate-setup-token?token=${encodeURIComponent(token)}`);
+                const result = await response.json();
+                
+                if (response.ok && result.valid) {
+                    // Token is valid, show setup form
+                    if (result.user) {
+                        document.getElementById('adminName').textContent = `${result.user.firstName} ${result.user.lastName}`;
+                        adminData = result.user;
+                    }
+                    
+                    document.getElementById('loadingSection').classList.add('hidden');
+                    document.getElementById('setupSection').classList.remove('hidden');
+                } else {
+                    showError(result.error || 'Invalid or expired invitation link');
+                }
+                
+            } catch (error) {
+                console.error('Token validation error:', error);
+                showError('Unable to validate invitation link. Please check your connection.');
+            }
+        }
+
+        // Setup form submission
+        document.getElementById('setupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+            
+            // Validate password length
+            if (password.length < 8) {
+                showMessage('Password must be at least 8 characters long', 'error');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('setupBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Setting up...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/.netlify/functions/setup-admin-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        password: password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showMessage('Admin setup completed successfully! Redirecting to login...', 'success');
+                    
+                    // Redirect to admin login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/admin.html';
+                    }, 2000);
+                } else {
+                    showMessage(result.error || 'Setup failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Setup error:', error);
+                showMessage('Network error. Please check your connection and try again.', 'error');
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.classList.remove('hidden');
+        }
+
+        function showError(errorText) {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('setupSection').classList.add('hidden');
+            document.getElementById('errorMessage').textContent = errorText;
+            document.getElementById('errorSection').classList.remove('hidden');
+        }
+
+        // Initialize page
+        validateToken();
+    </script>
+</body>
+</html>

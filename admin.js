@@ -825,9 +825,29 @@ function showDashboard() {
     loadApplications();
 }
 
+function updateUserDisplay(user) {
+    const userEmailElement = document.getElementById('userEmail');
+    if (userEmailElement && user) {
+        userEmailElement.textContent = user.name || user.email || 'Admin';
+    }
+}
+
 function checkAuth() {
-    if (authToken) showDashboard();
-    else showLogin();
+    if (authToken) {
+        // Restore user information from localStorage
+        const storedUser = localStorage.getItem('kartel_admin_user');
+        if (storedUser) {
+            try {
+                const user = JSON.parse(storedUser);
+                updateUserDisplay(user);
+            } catch (error) {
+                console.error('Error parsing stored user data:', error);
+            }
+        }
+        showDashboard();
+    } else {
+        showLogin();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -849,6 +869,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && result.success) {
                 authToken = result.token;
                 localStorage.setItem('kartel_admin_token', authToken);
+                
+                // Store and display user information
+                if (result.user) {
+                    localStorage.setItem('kartel_admin_user', JSON.stringify(result.user));
+                    updateUserDisplay(result.user);
+                }
+                
                 showDashboard();
             } else {
                 const errorDiv = document.getElementById('loginError');
@@ -870,6 +897,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('logoutBtn').addEventListener('click', () => {
         authToken = null;
         localStorage.removeItem('kartel_admin_token');
+        localStorage.removeItem('kartel_admin_user');
         showLogin();
     });
 
