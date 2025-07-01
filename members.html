@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Kartel - Members Area</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <style>
         /* Keep all your existing styles - just adding a few new ones */
         .check-email-message { 
@@ -179,10 +182,16 @@
                 <h3>📧 Check Your Email</h3>
                 <p>We've sent a secure login link to your email address.</p>
                 <p>Click the link in the email to access your members area.</p>
-                <p class="sub-text">The link will expire in 15 minutes for security.</p>
+                <p class="sub-text">The link will expire in 30 minutes for security.</p>
                 <button onclick="showLoginForm()" style="background: none; border: none; color: #e74c3c; text-decoration: underline; cursor: pointer; margin-top: 15px;">
                     Try a different email
                 </button>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px;">Having trouble logging in?</p>
+                    <button onclick="showLoginHelp()" style="background: none; border: none; color: #3498db; text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
+                        Click here for help
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -328,6 +337,7 @@
         let allVenues = [];
 
         function showMessage(message, type = 'success', containerId = 'loginMessage') {
+            console.log(`📢 Showing message: [${type}] ${message}`);
             const container = document.getElementById(containerId);
             container.classList.remove('hidden', 'success', 'error');
             container.classList.add(type);
@@ -376,7 +386,15 @@
         }
 
         async function checkAuth() {
+            console.log('🔍 Checking existing authentication...');
+            console.log('📊 Auth state:', {
+                hasToken: !!memberToken,
+                hasStoredEmail: !!localStorage.getItem('kartel_member_email'),
+                hasStoredId: !!localStorage.getItem('kartel_member_id')
+            });
+            
             if (memberToken && localStorage.getItem('kartel_member_email')) {
+                console.log('✅ Found existing auth, loading member data...');
                 currentMember = {
                     email: localStorage.getItem('kartel_member_email'),
                     id: localStorage.getItem('kartel_member_id'),
@@ -386,8 +404,10 @@
                     position: localStorage.getItem('kartel_member_position'),
                     phone: localStorage.getItem('kartel_member_phone')
                 };
+                console.log('👤 Current member:', currentMember.email);
                 showDashboard();
             } else {
+                console.log('🔄 No existing auth found, showing login...');
                 showLogin();
             }
         }
@@ -431,24 +451,45 @@
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
             
+            console.log('🔍 Page loaded, checking for token:', token ? 'Token found' : 'No token');
+            console.log('📍 Current URL:', window.location.href);
+            console.log('🔧 URL parameters:', Object.fromEntries(urlParams));
+            
             if (token) {
+                console.log('✅ Token found, starting verification process...');
                 verifyLoginToken(token);
             } else {
+                console.log('🔄 No token found, checking existing auth...');
                 checkAuth();
             }
         });
 
         async function verifyLoginToken(token) {
+            console.log('🔐 Starting token verification process...');
+            console.log('📝 Token length:', token ? token.length : 'No token');
+            
             try {
+                console.log('📡 Making API request to verify-login-token...');
                 const response = await fetch('/.netlify/functions/verify-login-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
                 });
                 
+                console.log('📊 API Response status:', response.status);
+                console.log('📋 API Response headers:', Object.fromEntries(response.headers));
+                
                 const result = await response.json();
+                console.log('📄 API Response data:', {
+                    success: result.success,
+                    hasToken: !!result.token,
+                    memberId: result.memberId,
+                    memberEmail: result.memberEmail,
+                    error: result.error
+                });
                 
                 if (response.ok && result.success) {
+                    console.log('✅ Token verification successful!');
                     memberToken = result.token;
                     currentMember = {
                         id: result.memberId,
@@ -459,6 +500,7 @@
                         position: result.memberPosition,
                         phone: result.memberPhone
                     };
+                    console.log('💾 Storing member data in localStorage...');
                     localStorage.setItem('kartel_member_token', memberToken);
                     localStorage.setItem('kartel_member_id', currentMember.id);
                     localStorage.setItem('kartel_member_email', currentMember.email);
@@ -468,16 +510,28 @@
                     localStorage.setItem('kartel_member_position', currentMember.position || '');
                     localStorage.setItem('kartel_member_phone', currentMember.phone || '');
                     
+                    console.log('🧹 Cleaning URL and showing dashboard...');
                     window.history.replaceState({}, document.title, window.location.pathname);
                     showDashboard();
                     showMessage('Login successful! Welcome to your members area.', 'success');
                 } else {
-                    showMessage(result.error || 'Invalid or expired login link.', 'error');
+                    console.log('❌ Token verification failed:', result.error);
+                    const errorMessage = result.error || 'Invalid or expired login link.';
+                    if (result.error && result.error.includes('expired')) {
+                        showMessage(errorMessage + ' Please request a new login link.', 'error');
+                    } else {
+                        showMessage(errorMessage, 'error');
+                    }
                     showLogin();
                 }
             } catch (error) {
-                console.error('Token verification error:', error);
-                showMessage('Failed to verify login link. Please try again.', 'error');
+                console.error('💥 Token verification network error:', error);
+                console.error('Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+                showMessage('Network error during login. Please check your connection and try again.', 'error');
                 showLogin();
             }
         }
@@ -1164,12 +1218,63 @@
             }
         });
 
+        function showLoginHelp() {
+            const helpModal = document.createElement('div');
+            helpModal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.7); z-index: 2000; display: flex; 
+                align-items: center; justify-content: center; font-family: 'League Spartan', sans-serif;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white; padding: 40px; border-radius: 15px; max-width: 500px; 
+                margin: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: left;
+            `;
+            
+            modalContent.innerHTML = `
+                <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem; text-align: center;">🚑 Login Help</h3>
+                
+                <div style="color: #5d6d7e; line-height: 1.6; margin-bottom: 25px;">
+                    <p><strong>If you're having trouble logging in:</strong></p>
+                    <ul style="margin: 15px 0; padding-left: 20px;">
+                        <li>Check your email (including spam/junk folder)</li>
+                        <li>The login link expires after 30 minutes</li>
+                        <li>Each link can only be used once</li>
+                        <li>Make sure you're using the same device/browser</li>
+                        <li>Try clearing your browser cache</li>
+                    </ul>
+                    
+                    <p style="margin-top: 20px;"><strong>Still having issues?</strong></p>
+                    <p>Contact us at: <a href="mailto:hello@the-kartel.co.uk" style="color: #e74c3c;">hello@the-kartel.co.uk</a></p>
+                    <p>Or call: <a href="tel:+447123456789" style="color: #e74c3c;">+44 7123 456789</a></p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button onclick="this.closest('div').parentElement.remove()" 
+                            style="background: #95a5a6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'League Spartan', sans-serif;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            helpModal.appendChild(modalContent);
+            document.body.appendChild(helpModal);
+            
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.remove();
+                }
+            });
+        }
+
         // Expose functions to global scope for onclick attributes
         window.switchTab = switchTab;
         window.signUpForEvent = signUpForEvent;
         window.cancelSignUp = cancelSignUp;
         window.showBookingReminder = showBookingReminder;
         window.showLoginForm = showLoginForm;
+        window.showLoginHelp = showLoginHelp;
         window.showEventDetails = showEventDetails;
         window.closeEventModal = closeEventModal;
         window.openProfileModal = openProfileModal;

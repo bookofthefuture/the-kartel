@@ -83,7 +83,7 @@ exports.handler = async (event, context) => {
 
     // Generate secure login token
     const loginToken = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     // Store login token temporarily
     const tokenStore = getStore({
@@ -155,7 +155,7 @@ async function sendMagicLinkEmail(member, loginToken) {
         <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 25px 0;">
           <h4 style="margin: 0 0 10px 0; color: #856404;">🔒 Security Information</h4>
           <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px;">
-            <li>This link expires in <strong>15 minutes</strong></li>
+            <li>This link expires in <strong>30 minutes</strong></li>
             <li>It can only be used <strong>once</strong></li>
             <li>If you didn't request this, please ignore this email</li>
             <li>Never share this link with anyone</li>
