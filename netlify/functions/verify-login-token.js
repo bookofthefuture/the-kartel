@@ -107,6 +107,7 @@ exports.handler = async (event, context) => {
         memberCompany: member.company || '',
         memberPosition: member.position || '',
         memberPhone: member.phone || '',
+        memberLinkedin: member.linkedin || '',
         message: 'Login successful'
       })
     };

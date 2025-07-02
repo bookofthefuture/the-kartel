@@ -311,6 +311,11 @@
                         <label for="profilePhone">Mobile Number</label>
                         <input type="tel" id="profilePhone" name="profilePhone">
                     </div>
+                    <div class="form-group">
+                        <label for="profileLinkedin">LinkedIn Profile</label>
+                        <input type="text" id="profileLinkedin" name="profileLinkedin" placeholder="Your LinkedIn username (e.g., john-smith)">
+                        <small style="color: #7f8c8d;">Just enter your username - we'll add linkedin.com/in/ automatically</small>
+                    </div>
                     <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
                         <button type="submit" class="btn btn-success">Update Profile</button>
                         <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
@@ -327,6 +332,41 @@
         <div class="photo-modal-content">
             <img id="photoModalImage" class="photo-modal-image" src="" alt="Event Photo">
             <div id="photoModalCaption" class="photo-modal-caption"></div>
+        </div>
+    </div>
+
+    <!-- LinkedIn Prompt Modal -->
+    <div id="linkedinPromptModal" class="modal" style="z-index: 1001;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">🔗 Connect with Fellow Members</h3>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; line-height: 1.6;">Help other Kartel members connect with you by adding your LinkedIn profile to your account. This makes it easy to continue networking after events!</p>
+                
+                <div class="form-group">
+                    <label for="linkedinPromptInput">Your LinkedIn Username</label>
+                    <input type="text" id="linkedinPromptInput" placeholder="e.g., john-smith">
+                    <small style="color: #7f8c8d;">Just enter your username - we'll add linkedin.com/in/ automatically</small>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="linkedinDismissCheckbox" style="margin: 0;">
+                        <span style="font-size: 0.9rem;">I don't have a LinkedIn profile or don't want to share it</span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                    <button type="button" class="btn btn-success" onclick="saveLinkedInFromPrompt()">Add LinkedIn</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeLinkedInPrompt()">Skip for Now</button>
+                </div>
+                
+                <p style="text-align: center; margin-top: 15px; font-size: 0.9rem; color: #7f8c8d;">
+                    You can always add this later in your profile settings
+                </p>
+            </div>
+            <div id="linkedinPromptMessage" class="hidden"></div>
         </div>
     </div>
 
@@ -402,10 +442,16 @@
                     lastName: localStorage.getItem('kartel_member_lastName'),
                     company: localStorage.getItem('kartel_member_company'),
                     position: localStorage.getItem('kartel_member_position'),
-                    phone: localStorage.getItem('kartel_member_phone')
+                    phone: localStorage.getItem('kartel_member_phone'),
+                    linkedin: localStorage.getItem('kartel_member_linkedin')
                 };
                 console.log('👤 Current member:', currentMember.email);
                 showDashboard();
+                
+                // Check if LinkedIn prompt should be shown
+                if (shouldShowLinkedInPrompt()) {
+                    setTimeout(() => showLinkedInPrompt(), 1000);
+                }
             } else {
                 console.log('🔄 No existing auth found, showing login...');
                 showLogin();
@@ -498,7 +544,8 @@
                         lastName: result.memberLastName,
                         company: result.memberCompany,
                         position: result.memberPosition,
-                        phone: result.memberPhone
+                        phone: result.memberPhone,
+                        linkedin: result.memberLinkedin
                     };
                     console.log('💾 Storing member data in localStorage...');
                     localStorage.setItem('kartel_member_token', memberToken);
@@ -509,11 +556,17 @@
                     localStorage.setItem('kartel_member_company', currentMember.company || '');
                     localStorage.setItem('kartel_member_position', currentMember.position || '');
                     localStorage.setItem('kartel_member_phone', currentMember.phone || '');
+                    localStorage.setItem('kartel_member_linkedin', currentMember.linkedin || '');
                     
                     console.log('🧹 Cleaning URL and showing dashboard...');
                     window.history.replaceState({}, document.title, window.location.pathname);
                     showDashboard();
                     showMessage('Login successful! Welcome to your members area.', 'success');
+                    
+                    // Check if LinkedIn prompt should be shown
+                    if (shouldShowLinkedInPrompt()) {
+                        setTimeout(() => showLinkedInPrompt(), 2000);
+                    }
                 } else {
                     console.log('❌ Token verification failed:', result.error);
                     const errorMessage = result.error || 'Invalid or expired login link.';
@@ -1093,6 +1146,7 @@
             document.getElementById('profileCompany').value = currentMember.company || '';
             document.getElementById('profilePosition').value = currentMember.position || '';
             document.getElementById('profilePhone').value = currentMember.phone || '';
+            document.getElementById('profileLinkedin').value = currentMember.linkedin || '';
             
             // Clear any previous messages
             document.getElementById('profileMessage').classList.add('hidden');
@@ -1147,6 +1201,7 @@
                     localStorage.setItem('kartel_member_company', profileData.company);
                     localStorage.setItem('kartel_member_position', profileData.position);
                     localStorage.setItem('kartel_member_phone', profileData.phone);
+                    localStorage.setItem('kartel_member_linkedin', profileData.linkedin);
                     
                     // Update display name in header
                     document.getElementById('memberDisplayName').textContent = profileData.firstName || currentMember.email;
@@ -1191,6 +1246,7 @@
                 company: formData.get('profileCompany').trim(),
                 position: formData.get('profilePosition').trim(),
                 phone: formData.get('profilePhone').trim(),
+                linkedin: formData.get('profileLinkedin').trim(),
                 memberId: currentMember.id,
                 memberEmail: currentMember.email
             };
@@ -1268,6 +1324,85 @@
             });
         }
 
+        // LinkedIn prompt functions
+        function showLinkedInPrompt() {
+            if (!currentMember) return;
+            
+            // Clear form and message
+            document.getElementById('linkedinPromptInput').value = '';
+            document.getElementById('linkedinDismissCheckbox').checked = false;
+            document.getElementById('linkedinPromptMessage').classList.add('hidden');
+            
+            // Show modal
+            document.getElementById('linkedinPromptModal').style.display = 'block';
+        }
+
+        function closeLinkedInPrompt() {
+            // Check if user wants to dismiss permanently
+            const dismissCheckbox = document.getElementById('linkedinDismissCheckbox');
+            if (dismissCheckbox.checked) {
+                // Store dismissal preference
+                localStorage.setItem('kartel_linkedin_dismissed', 'true');
+            }
+            
+            document.getElementById('linkedinPromptModal').style.display = 'none';
+        }
+
+        async function saveLinkedInFromPrompt() {
+            const linkedinInput = document.getElementById('linkedinPromptInput');
+            const linkedin = linkedinInput.value.trim();
+            
+            if (!linkedin) {
+                showMessage('Please enter your LinkedIn username or check the dismissal option.', 'error', 'linkedinPromptMessage');
+                return;
+            }
+            
+            const submitBtn = document.querySelector('#linkedinPromptModal .btn-success');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Saving...';
+            submitBtn.disabled = true;
+            
+            try {
+                const profileData = {
+                    firstName: currentMember.firstName,
+                    lastName: currentMember.lastName,
+                    company: currentMember.company || '',
+                    position: currentMember.position || '',
+                    phone: currentMember.phone || '',
+                    linkedin: linkedin,
+                    memberId: currentMember.id,
+                    memberEmail: currentMember.email
+                };
+                
+                const success = await updateProfile(profileData);
+                if (success) {
+                    showMessage('LinkedIn profile added successfully!', 'success', 'linkedinPromptMessage');
+                    setTimeout(() => {
+                        document.getElementById('linkedinPromptModal').style.display = 'none';
+                    }, 2000);
+                }
+            } catch (error) {
+                showMessage('Failed to save LinkedIn profile. Please try again.', 'error', 'linkedinPromptMessage');
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function shouldShowLinkedInPrompt() {
+            // Don't show if user has dismissed it
+            if (localStorage.getItem('kartel_linkedin_dismissed') === 'true') {
+                return false;
+            }
+            
+            // Don't show if member already has LinkedIn profile
+            if (currentMember && currentMember.linkedin && currentMember.linkedin.trim()) {
+                return false;
+            }
+            
+            return true;
+        }
+
         // Expose functions to global scope for onclick attributes
         window.switchTab = switchTab;
         window.signUpForEvent = signUpForEvent;
@@ -1281,6 +1416,9 @@
         window.closeProfileModal = closeProfileModal;
         window.openPhotoModal = openPhotoModal;
         window.closePhotoModal = closePhotoModal;
+        window.showLinkedInPrompt = showLinkedInPrompt;
+        window.closeLinkedInPrompt = closeLinkedInPrompt;
+        window.saveLinkedInFromPrompt = saveLinkedInFromPrompt;
     </script>
 </body>
 </html>

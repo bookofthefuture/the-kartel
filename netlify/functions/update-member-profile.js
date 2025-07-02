@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { firstName, lastName, company, position, phone, memberId, memberEmail } = JSON.parse(event.body);
+    const { firstName, lastName, company, position, phone, linkedin, memberId, memberEmail } = JSON.parse(event.body);
 
     if (!firstName || !firstName.trim() || !lastName || !lastName.trim()) {
       return {
@@ -85,6 +85,7 @@ exports.handler = async (event, context) => {
       company: company?.trim() || '',
       position: position?.trim() || '',
       phone: phone?.trim() || '',
+      linkedin: linkedin?.trim() || '',
       updatedAt: new Date().toISOString()
     };
 
@@ -123,7 +124,8 @@ exports.handler = async (event, context) => {
           lastName: updatedMember.lastName,
           company: updatedMember.company,
           position: updatedMember.position,
-          phone: updatedMember.phone
+          phone: updatedMember.phone,
+          linkedin: updatedMember.linkedin
         }
       })
     };
