@@ -271,7 +271,7 @@ function updateEventStats() {
 function renderApplicationsTable() {
     const tbody = document.getElementById('applicationsTableBody');
     if (applications.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="loading">No applications found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">No applications found</td></tr>';
         return;
     }
     tbody.innerHTML = applications.map(app => `
@@ -287,6 +287,9 @@ function renderApplicationsTable() {
                 ${app.position ? `<br><small>${app.position}</small>` : ''}
             </td>
             <td>${app.phone}</td>
+            <td>
+                ${app.linkedin ? `<a href="https://linkedin.com/in/${app.linkedin}" target="_blank" style="color: #0077b5; text-decoration: none;">🔗 ${app.linkedin}</a>` : 'N/A'}
+            </td>
             <td><span class="status-badge status-${app.status}">${app.status}</span></td>
             <td>${new Date(app.submittedAt).toLocaleDateString()}</td>
             <td>
@@ -754,6 +757,7 @@ function showDetails(applicationId) {
     document.getElementById('applicantCompany').value = app.company || '';
     document.getElementById('applicantPosition').value = app.position || '';
     document.getElementById('applicantPhone').value = app.phone || '';
+    document.getElementById('applicantLinkedin').value = app.linkedin || '';
     document.getElementById('applicantOriginalMessage').value = app.message || '';
     document.getElementById('applicantStatus').value = app.status || 'pending';
     document.getElementById('applicantSubmitted').value = new Date(app.submittedAt).toLocaleString();
@@ -1216,6 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             company: formData.get('applicantCompany').trim(),
             position: formData.get('applicantPosition').trim(),
             phone: formData.get('applicantPhone').trim(),
+            linkedin: formData.get('applicantLinkedin').trim(),
             status: formData.get('applicantStatus'),
             isAdmin: document.getElementById('applicantIsAdmin').checked
         };

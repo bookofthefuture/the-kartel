@@ -281,6 +281,11 @@
                     <input type="tel" id="phone" name="phone" required placeholder="For WhatsApp group access">
                 </div>
                 <div class="form-group">
+                    <label for="linkedin">LinkedIn Profile</label>
+                    <input type="text" id="linkedin" name="linkedin" placeholder="Your LinkedIn username (e.g., john-smith)">
+                    <small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">Just enter your username - we'll add linkedin.com/in/ automatically</small>
+                </div>
+                <div class="form-group">
                     <label for="message">Why The Kartel?</label>
                     <textarea id="message" name="message" rows="4" placeholder="Tell us what you're looking to achieve through this exclusive network"></textarea>
                 </div>
@@ -630,6 +635,7 @@
                         company: formData.get('company'),
                         position: formData.get('position'),
                         phone: formData.get('phone'),
+                        linkedin: formData.get('linkedin'),
                         message: formData.get('message')
                     };
                     

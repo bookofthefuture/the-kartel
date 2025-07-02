@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { applicationId, firstName, lastName, email, company, position, phone, status, isAdmin } = JSON.parse(event.body);
+    const { applicationId, firstName, lastName, email, company, position, phone, linkedin, status, isAdmin } = JSON.parse(event.body);
     
     console.log(`🔄 Updating applicant details for ${applicationId}`);
 
@@ -102,6 +102,7 @@ exports.handler = async (event, context) => {
       company: company?.trim() || '',
       position: position?.trim() || '',
       phone: phone?.trim() || '',
+      linkedin: linkedin?.trim() || '',
       status: status || application.status,
       isAdmin: isAdmin || false,
       updatedAt: new Date().toISOString(),
@@ -180,6 +181,7 @@ exports.handler = async (event, context) => {
           company: updatedApplication.company,
           position: updatedApplication.position,
           phone: updatedApplication.phone,
+          linkedin: updatedApplication.linkedin,
           status: updatedApplication.status,
           isAdmin: updatedApplication.isAdmin
         }

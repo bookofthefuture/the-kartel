@@ -69,10 +69,10 @@
                     <div class="table-container">
                         <table class="applications-table">
                             <thead>
-                                <tr><th>Name</th><th>Email</th><th>Company & Position</th><th>Phone</th><th>Status</th><th>Submitted</th><th>Actions</th></tr>
+                                <tr><th>Name</th><th>Email</th><th>Company & Position</th><th>Phone</th><th>LinkedIn</th><th>Status</th><th>Submitted</th><th>Actions</th></tr>
                             </thead>
                             <tbody id="applicationsTableBody">
-                                <tr><td colspan="7" class="loading">Loading applications...</td></tr>
+                                <tr><td colspan="8" class="loading">Loading applications...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -517,6 +517,11 @@
                     <div class="form-group">
                         <label for="applicantPhone">Mobile Number</label>
                         <input type="tel" id="applicantPhone" name="applicantPhone">
+                    </div>
+                    <div class="form-group">
+                        <label for="applicantLinkedin">LinkedIn Profile</label>
+                        <input type="text" id="applicantLinkedin" name="applicantLinkedin" placeholder="LinkedIn username">
+                        <small style="color: #7f8c8d;">Just the username - linkedin.com/in/ will be added automatically</small>
                     </div>
                     <div class="form-group">
                         <label for="applicantOriginalMessage">Original Message</label>

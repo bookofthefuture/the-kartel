@@ -38,6 +38,7 @@ exports.handler = async (event, context) => {
       company: data.company,
       position: data.position,
       phone: data.phone,
+      linkedin: data.linkedin || '',
       message: data.message || '',
       status: 'pending',
       submittedAt: timestamp,
@@ -177,6 +178,7 @@ async function sendAdminNotification(application) {
           <p><strong>Phone:</strong> ${application.phone}</p>
           <p><strong>Company:</strong> ${application.company}</p>
           <p><strong>Position:</strong> ${application.position}</p>
+          ${application.linkedin ? `<p><strong>LinkedIn:</strong> <a href="https://linkedin.com/in/${application.linkedin}" target="_blank">linkedin.com/in/${application.linkedin}</a></p>` : ''}
           <p><strong>Message:</strong> ${application.message || 'No message provided'}</p>
           <p><strong>ID:</strong> ${application.id}</p>
         </div>
