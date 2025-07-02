@@ -31,9 +31,9 @@
       const requestBody = JSON.parse(event.body);
       console.log('📝 Received request body:', JSON.stringify(requestBody, null, 2));
       
-      const { eventId, memberId, memberName, memberEmail, memberCompany } = requestBody;
+      const { eventId, memberId, memberName, memberEmail, memberCompany, memberLinkedin } = requestBody;
       
-      console.log('📋 Extracted fields:', { eventId, memberId, memberName, memberEmail, memberCompany });
+      console.log('📋 Extracted fields:', { eventId, memberId, memberName, memberEmail, memberCompany, memberLinkedin });
 
       if (!eventId || !memberId || !memberName || !memberEmail) {
         console.log('❌ Missing required fields check:', {
@@ -97,6 +97,7 @@
         name: memberName,
         email: memberEmail,
         company: memberCompany || '', // Include company if provided
+        linkedin: memberLinkedin || '', // Include LinkedIn if provided
         registeredAt: new Date().toISOString(),
         attended: false // Default to false, can be updated by admin later
       };

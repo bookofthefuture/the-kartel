@@ -730,7 +730,8 @@
                     memberId: currentMember.id,
                     memberName: `${currentMember.firstName} ${currentMember.lastName}`,
                     memberEmail: currentMember.email,
-                    memberCompany: currentMember.company || '' 
+                    memberCompany: currentMember.company || '',
+                    memberLinkedin: currentMember.linkedin || ''
                 };
                 
                 console.log('Request body:', requestBody);
@@ -1118,21 +1119,54 @@
             const attendees = event.attendees || [];
             document.getElementById('attendeeCount').textContent = attendees.length;
             
+            // Check if event is completed and current member attended
+            const eventDate = new Date(event.date);
+            const today = new Date();
+            const isEventCompleted = eventDate < today;
+            const currentMemberAttended = attendees.some(attendee => 
+                attendee.memberId === currentMember.id && attendee.attended
+            );
+            
             const attendeesList = document.getElementById('attendeesList');
             if (attendees.length === 0) {
                 attendeesList.innerHTML = '<li style="text-align: center; color: #7f8c8d; padding: 20px;">No one has registered yet. Be the first!</li>';
             } else {
-                const attendeesHTML = attendees.map(attendee => `
-                    <li class="attendee-item">
-                        <div class="attendee-info">
-                            <div class="attendee-name">${attendee.name || attendee.memberName || attendee.email || attendee.memberEmail}</div>
-                            <div class="attendee-company">${attendee.company || 'Company not specified'}</div>
-                        </div>
-                        <span class="attendee-status ${attendee.attended ? 'status-attended' : 'status-registered'}">
-                            ${attendee.attended ? 'Attended' : 'Registered'}
-                        </span>
-                    </li>
-                `).join('');
+                const attendeesHTML = attendees.map(attendee => {
+                    const attendeeName = attendee.name || attendee.memberName || attendee.email || attendee.memberEmail;
+                    const attendeeCompany = attendee.company || 'Company not specified';
+                    
+                    // Show LinkedIn link if:
+                    // 1. Event is completed AND current member attended
+                    // 2. This attendee also attended  
+                    // 3. This attendee has a LinkedIn profile
+                    // 4. This attendee is not the current member (don't show link to self)
+                    const showLinkedInLink = isEventCompleted && 
+                                           currentMemberAttended && 
+                                           attendee.attended && 
+                                           attendee.linkedin && 
+                                           attendee.linkedin.trim() &&
+                                           attendee.memberId !== currentMember.id;
+                    
+                    return `
+                        <li class="attendee-item">
+                            <div class="attendee-info">
+                                <div class="attendee-name">${attendeeName}</div>
+                                <div class="attendee-company">${attendeeCompany}</div>
+                                ${showLinkedInLink ? `
+                                    <div style="margin-top: 8px;">
+                                        <a href="https://linkedin.com/in/${attendee.linkedin}" target="_blank" 
+                                           style="color: #0077b5; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px;">
+                                            🔗 Connect on LinkedIn
+                                        </a>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <span class="attendee-status ${attendee.attended ? 'status-attended' : 'status-registered'}">
+                                ${attendee.attended ? 'Attended' : 'Registered'}
+                            </span>
+                        </li>
+                    `;
+                }).join('');
                 attendeesList.innerHTML = attendeesHTML;
             }
 
