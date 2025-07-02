@@ -1127,6 +1127,22 @@
                 attendee.memberId === currentMember.id && attendee.attended
             );
             
+            // Debug logging
+            console.log('Event debugging:', {
+                eventName: event.name,
+                eventDate: event.date,
+                isEventCompleted,
+                currentMemberAttended,
+                currentMemberId: currentMember.id,
+                attendeesCount: attendees.length,
+                attendees: attendees.map(a => ({
+                    name: a.name,
+                    memberId: a.memberId,
+                    attended: a.attended,
+                    hasLinkedIn: !!a.linkedin
+                }))
+            });
+            
             const attendeesList = document.getElementById('attendeesList');
             if (attendees.length === 0) {
                 attendeesList.innerHTML = '<li style="text-align: center; color: #7f8c8d; padding: 20px;">No one has registered yet. Be the first!</li>';
@@ -1146,6 +1162,19 @@
                                            attendee.linkedin && 
                                            attendee.linkedin.trim() &&
                                            attendee.memberId !== currentMember.id;
+                    
+                    // Debug individual attendee
+                    if (attendee.attended) {
+                        console.log(`Attendee ${attendee.name} debug:`, {
+                            isEventCompleted,
+                            currentMemberAttended,
+                            attendeeAttended: attendee.attended,
+                            hasLinkedin: !!attendee.linkedin,
+                            linkedinValue: attendee.linkedin,
+                            isNotSelf: attendee.memberId !== currentMember.id,
+                            showLinkedInLink
+                        });
+                    }
                     
                     return `
                         <li class="attendee-item">
