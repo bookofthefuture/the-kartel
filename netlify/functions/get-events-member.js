@@ -87,6 +87,50 @@ exports.handler = async (event, context) => {
     });
     // --- END NEW ---
 
+    // --- ENRICH ATTENDEES WITH CURRENT LINKEDIN DATA ---
+    try {
+      // Get applications store to access member profiles
+      const applicationsStore = getStore({
+        name: 'applications',
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_ACCESS_TOKEN,
+        consistency: 'strong'
+      });
+
+      // Get all member applications to lookup LinkedIn data
+      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
+      
+      if (applicationsList && Array.isArray(applicationsList)) {
+        // Create a lookup map of memberId -> LinkedIn profile
+        const memberLinkedInMap = {};
+        applicationsList.forEach(member => {
+          if (member.id && member.linkedin) {
+            memberLinkedInMap[member.id] = member.linkedin;
+          }
+        });
+
+        // Enrich each event's attendees with current LinkedIn data
+        events = events.map(event => {
+          if (event.attendees && Array.isArray(event.attendees)) {
+            event.attendees = event.attendees.map(attendee => {
+              // Add current LinkedIn data if available
+              if (attendee.memberId && memberLinkedInMap[attendee.memberId]) {
+                attendee.linkedin = memberLinkedInMap[attendee.memberId];
+              }
+              return attendee;
+            });
+          }
+          return event;
+        });
+        
+        console.log('✅ Enriched attendees with LinkedIn data');
+      }
+    } catch (linkedinError) {
+      console.log('⚠️ Failed to enrich LinkedIn data:', linkedinError.message);
+      // Continue without LinkedIn enrichment
+    }
+    // --- END LINKEDIN ENRICHMENT ---
+
     // Sort by date (newest first)
     events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
