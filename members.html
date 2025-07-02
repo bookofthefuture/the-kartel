@@ -140,6 +140,13 @@
         .member-name-clickable { cursor: pointer; transition: all 0.2s ease; border-radius: 4px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); }
         .member-name-clickable:hover { background: rgba(255,255,255,0.1); text-decoration: underline; border-color: rgba(255,255,255,0.6); }
 
+        /* Generic modal styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #ecf0f1; }
+        .modal-title { font-size: 1.6rem; font-weight: 700; color: #2c3e50; margin: 0; }
+        .modal-body { line-height: 1.6; }
+
         @media (max-width: 768px) {
             .header { padding: 12px 0; }
             .header-content { padding: 0 15px; }
@@ -151,6 +158,8 @@
             .login-card { padding: 30px; }
             .event-modal-content { width: 95%; margin: 10% auto; padding: 20px; }
             .event-modal-title { font-size: 1.5rem; }
+            .modal-content { width: 95%; margin: 10% auto; padding: 20px; }
+            .modal-title { font-size: 1.4rem; }
             .attendee-item { flex-direction: column; align-items: flex-start; }
             .attendee-status { margin-top: 8px; }
         }
@@ -1224,6 +1233,7 @@
             const eventModal = document.getElementById('eventModal');
             const profileModal = document.getElementById('profileModal');
             const photoModal = document.getElementById('photoModal');
+            const linkedinPromptModal = document.getElementById('linkedinPromptModal');
             if (event.target === eventModal) {
                 closeEventModal();
             }
@@ -1232,6 +1242,9 @@
             }
             if (event.target === photoModal) {
                 closePhotoModal();
+            }
+            if (event.target === linkedinPromptModal) {
+                closeLinkedInPrompt();
             }
         }
 
