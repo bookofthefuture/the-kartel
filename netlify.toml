@@ -5,6 +5,13 @@
 [functions]
   node_bundler = "esbuild"
 
+[dev]
+  functions = "netlify/functions"
+  publish = "."
+  command = "echo 'Starting local development server...'"
+  port = 8888
+  targetPort = 8888
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -19,3 +26,20 @@
 
 [context.production.environment]
   NODE_ENV = "production"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "development"
+
+[context.branch-deploy.environment]
+  NODE_ENV = "development"
+
+# Redirects for SPA-like behavior
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/members"
+  to = "/members.html"
+  status = 200

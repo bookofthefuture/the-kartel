@@ -104,6 +104,18 @@ exports.handler = async (event, context) => {
     await eventsStore.setJSON('_list', events);
     console.log(`✅ Events list updated (${events.length} total)`);
 
+    // Send announcement email if requested
+    if (data.sendAnnouncement) {
+      try {
+        console.log('📧 Sending event announcement emails...');
+        await sendEventAnnouncement(newEvent.id, token);
+        console.log('✅ Event announcement emails sent');
+      } catch (emailError) {
+        console.error('❌ Failed to send event announcements:', emailError);
+        // Don't fail event creation if email fails
+      }
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -113,7 +125,8 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ 
         success: true, 
         message: 'Event created successfully',
-        event: newEvent
+        event: newEvent,
+        announcementSent: data.sendAnnouncement || false
       })
     };
 

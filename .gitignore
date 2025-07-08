@@ -38,3 +38,5 @@ pids
 *.tmp
 *.temp
 test-commit.txt
+# Local Netlify folder
+.netlify

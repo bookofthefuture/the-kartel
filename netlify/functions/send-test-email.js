@@ -1,0 +1,301 @@
+// netlify/functions/send-test-email.js
+const { getStore } = require('@netlify/blobs');
+const crypto = require('crypto');
+
+exports.handler = async (event, context) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // Check authentication
+  const authHeader = event.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Unauthorized' })
+    };
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token || token.length < 32) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Invalid token' })
+    };
+  }
+
+  try {
+    const { eventId, adminEmail, eventData } = JSON.parse(event.body);
+    
+    if (!adminEmail) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing adminEmail' })
+      };
+    }
+
+    console.log(`📧 Sending test email for event ${eventId} to ${adminEmail}`);
+
+    let eventDetails, venueDetails;
+
+    // If eventData is provided (new event), use it directly
+    if (eventData) {
+      eventDetails = eventData;
+      
+      // Get venue details from store if we have a venue ID
+      if (eventDetails.venueId) {
+        try {
+          // Check environment variables
+          if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+            console.log('Netlify Blobs not configured, using basic venue info');
+            venueDetails = {
+              name: eventDetails.venue,
+              address: eventDetails.venueAddress,
+              website: null
+            };
+          } else {
+            const venuesStore = getStore({
+              name: 'venues',
+              siteID: process.env.NETLIFY_SITE_ID,
+              token: process.env.NETLIFY_ACCESS_TOKEN,
+              consistency: 'strong'
+            });
+            
+            venueDetails = await venuesStore.get(eventDetails.venueId, { type: 'json' });
+          }
+        } catch (venueError) {
+          console.log('Error getting venue details, using basic info:', venueError);
+          venueDetails = {
+            name: eventDetails.venue,
+            address: eventDetails.venueAddress,
+            website: null
+          };
+        }
+      } else {
+        venueDetails = {
+          name: eventDetails.venue,
+          address: eventDetails.venueAddress,
+          website: null
+        };
+      }
+    } else if (eventId) {
+      // Existing event - get from store
+      if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: 'Server configuration error' })
+        };
+      }
+
+      const eventsStore = getStore({
+        name: 'events',
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_ACCESS_TOKEN,
+        consistency: 'strong'
+      });
+
+      const venuesStore = getStore({
+        name: 'venues',
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_ACCESS_TOKEN,
+        consistency: 'strong'
+      });
+
+      // Get event details
+      eventDetails = await eventsStore.get(eventId, { type: 'json' });
+      if (!eventDetails) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({ error: 'Event not found' })
+        };
+      }
+
+      // Get venue details
+      venueDetails = await venuesStore.get(eventDetails.venue, { type: 'json' });
+    } else {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing eventId or eventData' })
+      };
+    }
+    
+    // Create mock member for test email
+    const testMember = {
+      email: adminEmail,
+      firstName: 'Admin',
+      lastName: 'Test',
+      fullName: 'Admin Test',
+      company: 'The Kartel Admin',
+      position: 'Administrator',
+      linkedin: 'admin-test'
+    };
+
+    // Send test email
+    await sendTestAnnouncementEmail(testMember, eventDetails, venueDetails);
+
+    console.log(`✅ Test email sent to ${adminEmail}`);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        success: true, 
+        message: `Test email sent to ${adminEmail}`,
+        recipient: adminEmail
+      })
+    };
+
+  } catch (error) {
+    console.error('💥 Error sending test email:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message
+      })
+    };
+  }
+};
+
+async function sendTestAnnouncementEmail(member, eventDetails, venueDetails) {
+  const baseUrl = process.env.SITE_URL || 'https://the-kartel.com';
+  
+  // Generate test registration token (non-functional for test)
+  const registrationToken = 'TEST_TOKEN_DO_NOT_USE';
+  const quickRegisterUrl = `${baseUrl}/.netlify/functions/quick-register-event`;
+  
+  // Format date and time
+  const eventDate = new Date(eventDetails.date);
+  const formattedDate = eventDate.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  const formattedTime = eventDetails.time || 'TBC';
+  
+  // Get TeamSport booking link if available
+  const teamSportLink = venueDetails?.website || '#';
+  const venueName = venueDetails?.name || eventDetails.venue;
+  const venueAddress = venueDetails?.address || eventDetails.venueAddress || '';
+  
+  const subject = `🧪 TEST EMAIL - Kartel Event: ${eventDetails.name}`;
+  
+  const htmlBody = `
+    <div style="font-family: 'League Spartan', 'Arial', sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;">
+      <!-- Test Warning Banner -->
+      <div style="background: #e74c3c; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px;">
+        🧪 THIS IS A TEST EMAIL - NOT SENT TO MEMBERS
+      </div>
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 30px; text-align: center;">
+        <img src="${baseUrl}/assets/the-kartel-logo.png" alt="The Kartel Logo" style="height: 60px; width: auto; margin-bottom: 15px;">
+        <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px; font-family: 'League Spartan', 'Arial', sans-serif;">The Kartel</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; font-family: 'League Spartan', 'Arial', sans-serif;">New Event Announcement</p>
+      </div>
+      
+      <!-- Test Info -->
+      <div style="padding: 20px; background: #fff3cd; border-left: 4px solid #f1c40f;">
+        <h3 style="color: #8b6914; margin-top: 0; font-family: 'League Spartan', 'Arial', sans-serif;">📋 Test Email Information</h3>
+        <p style="color: #8b6914; margin: 10px 0; font-size: 14px;">
+          <strong>Test recipient:</strong> ${member.email}<br>
+          <strong>Event ID:</strong> ${eventDetails.id}<br>
+          <strong>Venue ID:</strong> ${eventDetails.venue}<br>
+          <strong>Test sent:</strong> ${new Date().toLocaleString('en-GB')}
+        </p>
+        <p style="color: #8b6914; margin: 0; font-size: 12px; font-style: italic;">
+          The registration button below is disabled for test emails.
+        </p>
+      </div>
+      
+      <!-- Event Details -->
+      <div style="padding: 30px; background: white; border-left: 4px solid #3498db;">
+        <h2 style="color: #2c3e50; margin-top: 0; font-size: 24px; font-family: 'League Spartan', 'Arial', sans-serif;">${eventDetails.name}</h2>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 10px 0; font-size: 16px;"><strong>📅 Date:</strong> ${formattedDate}</p>
+          <p style="margin: 0 0 10px 0; font-size: 16px;"><strong>🕐 Time:</strong> ${formattedTime}</p>
+          <p style="margin: 0 0 10px 0; font-size: 16px;"><strong>🏁 Venue:</strong> ${venueName}</p>
+          ${venueAddress ? `<p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">📍 ${venueAddress}</p>` : ''}
+          ${eventDetails.maxAttendees ? `<p style="margin: 0; font-size: 14px; color: #666;">👥 Max Attendees: ${eventDetails.maxAttendees}</p>` : ''}
+        </div>
+        
+        ${eventDetails.description ? `<p style="font-size: 16px; line-height: 1.6; color: #2c3e50; margin: 20px 0;">${eventDetails.description}</p>` : ''}
+      </div>
+      
+      <!-- Quick Registration (Disabled for Test) -->
+      <div style="padding: 30px; background: #ecf0f1; text-align: center;">
+        <h3 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Register Now</h3>
+        
+        <div style="margin-bottom: 30px;">
+          <button disabled style="background: #95a5a6; color: white; padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: not-allowed; text-transform: uppercase; letter-spacing: 1px; font-family: 'League Spartan', 'Arial', sans-serif;">
+            🎫 Register for Event (DISABLED - TEST)
+          </button>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-bottom: 0;">
+          <strong>Note:</strong> In real emails, this button would allow one-click registration.
+        </p>
+      </div>
+      
+      <!-- TeamSport Booking -->
+      <div style="padding: 30px; background: #fff3cd; border-left: 4px solid #f1c40f;">
+        <h3 style="color: #8b6914; margin-top: 0; font-family: 'League Spartan', 'Arial', sans-serif;">⚠️ Important: TeamSport Booking Required</h3>
+        <p style="color: #8b6914; margin-bottom: 20px; font-size: 16px; line-height: 1.6;">
+          <strong>Don't forget:</strong> You also need to book directly with TeamSport to secure your karting session. 
+          Registration with The Kartel is just the first step!
+        </p>
+        
+        <div style="text-align: center;">
+          <a href="${teamSportLink}" target="_blank" 
+             style="background: #f1c40f; color: #8b6914; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-family: 'League Spartan', 'Arial', sans-serif;">
+            🏎️ Book with TeamSport
+          </a>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="padding: 20px; text-align: center; color: #666; font-size: 14px;">
+        <p style="margin: 0;">
+          Questions? Contact us via the 
+          <a href="${baseUrl}/members.html" style="color: #3498db; text-decoration: none;">members area</a>
+        </p>
+      </div>
+      
+      <!-- Test Footer -->
+      <div style="background: #e74c3c; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        🧪 End of test email - Registration button was disabled for safety
+      </div>
+    </div>
+  `;
+
+  try {
+    if (!process.env.SENDGRID_API_KEY || !process.env.FROM_EMAIL) {
+      console.log('SendGrid not configured, skipping test email');
+      throw new Error('SendGrid not configured');
+    }
+
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    await sgMail.send({
+      to: member.email,
+      from: process.env.FROM_EMAIL,
+      subject: subject,
+      html: htmlBody,
+    });
+
+    console.log(`✅ Test email sent to ${member.email}`);
+  } catch (emailError) {
+    console.error(`❌ Failed to send test email to ${member.email}:`, emailError);
+    throw emailError;
+  }
+}

@@ -1327,6 +1327,11 @@ document.addEventListener('DOMContentLoaded', function() {
         await confirmAndCreateEvent();
     });
 
+    // Send test email button handler
+    document.getElementById('sendTestEmailBtn').addEventListener('click', async function() {
+        await sendTestEmail();
+    });
+
     // Modal close on outside click
     window.onclick = function(event) {
         const venueModal = document.getElementById('venueModal');
@@ -2318,6 +2323,83 @@ async function loadApprovedMembersCount() {
     } catch (error) {
         console.error('Error loading approved members:', error);
         return 0;
+    }
+}
+
+async function sendTestEmail() {
+    if (!pendingEventData) {
+        showError('No event data found', 'eventsMessageContainer');
+        return;
+    }
+
+    // Get admin's email - first try to get from stored user data, then prompt
+    let adminEmail = null;
+    
+    // Try to get from stored user data
+    try {
+        const storedUser = localStorage.getItem('kartel_admin_user');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            adminEmail = user.email;
+        }
+    } catch (error) {
+        console.error('Error getting stored user data:', error);
+    }
+
+    // If no stored email, prompt for it
+    if (!adminEmail) {
+        adminEmail = prompt('Enter your email address for the test email:');
+        if (!adminEmail) {
+            return; // User cancelled
+        }
+        
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(adminEmail)) {
+            showError('Please enter a valid email address', 'eventsMessageContainer');
+            return;
+        }
+    }
+
+    const testBtn = document.getElementById('sendTestEmailBtn');
+    const originalText = testBtn.textContent;
+    testBtn.textContent = 'Sending...';
+    testBtn.disabled = true;
+
+    try {
+        // Create a temporary event to get an ID for the test
+        const testEventData = {
+            ...pendingEventData,
+            id: `test-${Date.now()}`, // Temporary ID for test
+            createdAt: new Date().toISOString()
+        };
+
+        const response = await fetch('/.netlify/functions/send-test-email', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId: testEventData.id,
+                adminEmail: adminEmail,
+                eventData: testEventData
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage(`Test email sent successfully to ${adminEmail}!`, 'success', 'eventsMessageContainer');
+        } else {
+            showError(result.error || 'Failed to send test email', 'eventsMessageContainer');
+        }
+    } catch (error) {
+        console.error('Test email error:', error);
+        showError('Failed to send test email. Please try again.', 'eventsMessageContainer');
+    } finally {
+        testBtn.textContent = originalText;
+        testBtn.disabled = false;
     }
 }
 
