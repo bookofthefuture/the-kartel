@@ -1312,6 +1312,43 @@
             }
         }
 
+        // LinkedIn URL parsing function
+        function parseLinkedInProfile(input) {
+            if (!input) return '';
+            
+            // Remove whitespace
+            const cleaned = input.trim();
+            
+            // If empty after trimming, return empty
+            if (!cleaned) return '';
+            
+            // Common LinkedIn URL patterns to match (including uk.linkedin.com)
+            const patterns = [
+                /^https?:\/\/(www\.)?linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^https?:\/\/(www\.)?uk\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^https?:\/\/(www\.)?linkedin\.com\/pub\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^https?:\/\/(www\.)?uk\.linkedin\.com\/pub\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^uk\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^www\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^www\.uk\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+                /^([a-zA-Z0-9\-]+)$/  // Just the username
+            ];
+            
+            // Try each pattern
+            for (const pattern of patterns) {
+                const match = cleaned.match(pattern);
+                if (match) {
+                    // Return the captured group (username)
+                    return match[match.length - 1]; // Last capture group
+                }
+            }
+            
+            // If no pattern matches, return the cleaned input as-is
+            // This handles edge cases or new formats
+            return cleaned;
+        }
+
         // Profile form submission handler
         document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -1323,7 +1360,7 @@
                 company: formData.get('profileCompany').trim(),
                 position: formData.get('profilePosition').trim(),
                 phone: formData.get('profilePhone').trim(),
-                linkedin: formData.get('profileLinkedin').trim(),
+                linkedin: parseLinkedInProfile(formData.get('profileLinkedin')),
                 memberId: currentMember.id,
                 memberEmail: currentMember.email
             };
@@ -1427,7 +1464,7 @@
 
         async function saveLinkedInFromPrompt() {
             const linkedinInput = document.getElementById('linkedinPromptInput');
-            const linkedin = linkedinInput.value.trim();
+            const linkedin = parseLinkedInProfile(linkedinInput.value);
             
             if (!linkedin) {
                 showMessage('Please enter your LinkedIn username or check the dismissal option.', 'error', 'linkedinPromptMessage');

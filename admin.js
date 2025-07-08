@@ -2,6 +2,53 @@ let authToken = localStorage.getItem('kartel_admin_token');
 let applications = [], events = [], venues = [], csvData = [];
 let currentTab = 'applications', editingVenueId = null;
 
+// LinkedIn URL parsing function
+function parseLinkedInProfile(input) {
+    if (!input) return '';
+    
+    // Remove whitespace
+    const cleaned = input.trim();
+    
+    // If empty after trimming, return empty
+    if (!cleaned) return '';
+    
+    // Common LinkedIn URL patterns to match (including uk.linkedin.com)
+    const patterns = [
+        /^https?:\/\/(www\.)?linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^https?:\/\/(www\.)?uk\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^https?:\/\/(www\.)?linkedin\.com\/pub\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^https?:\/\/(www\.)?uk\.linkedin\.com\/pub\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^uk\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^www\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^www\.uk\.linkedin\.com\/in\/([a-zA-Z0-9\-]+)\/?.*$/,
+        /^([a-zA-Z0-9\-]+)$/  // Just the username
+    ];
+    
+    for (const pattern of patterns) {
+        const match = cleaned.match(pattern);
+        if (match) {
+            // For full URLs, extract the username from group 2
+            // For just username, it's in group 1
+            return match[2] || match[1];
+        }
+    }
+    
+    // If no pattern matches, try to extract from any LinkedIn URL
+    const fallbackMatch = cleaned.match(/(uk\.)?linkedin\.com\/in\/([a-zA-Z0-9\-]+)/);
+    if (fallbackMatch) {
+        return fallbackMatch[2];
+    }
+    
+    // If it looks like a username (no spaces, no special chars except hyphens)
+    if (/^[a-zA-Z0-9\-]+$/.test(cleaned)) {
+        return cleaned;
+    }
+    
+    // Return as-is if we can't parse it
+    return cleaned;
+}
+
 function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
@@ -1220,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', function() {
             company: formData.get('applicantCompany').trim(),
             position: formData.get('applicantPosition').trim(),
             phone: formData.get('applicantPhone').trim(),
-            linkedin: formData.get('applicantLinkedin').trim(),
+            linkedin: parseLinkedInProfile(formData.get('applicantLinkedin')),
             status: formData.get('applicantStatus'),
             isAdmin: document.getElementById('applicantIsAdmin').checked
         };
