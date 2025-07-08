@@ -374,6 +374,7 @@ function renderEventsTable() {
             <td><span class="status-badge status-${evt.status}">${evt.status}</span></td>
             <td>
                 <button class="action-btn edit-btn" onclick="editEvent('${evt.id}')">Edit</button>
+                <button class="action-btn announcement-btn" onclick="sendEventAnnouncement('${evt.id}')">Send Announcement</button>
                 <button class="action-btn delete-btn" onclick="deleteEvent('${evt.id}')">Delete</button>
             </td>
         </tr>
@@ -865,6 +866,46 @@ function deleteEvent(eventId) {
     alert('Event deletion feature coming soon!');
 }
 
+async function sendEventAnnouncement(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+        showError('Event not found', 'eventsMessageContainer');
+        return;
+    }
+    
+    const confirmMessage = `Send announcement email to all approved members about "${event.name}" on ${new Date(event.date).toLocaleDateString()}?`;
+    if (!confirm(confirmMessage)) return;
+    
+    try {
+        const response = await fetch('/.netlify/functions/send-event-announcement', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId: eventId,
+                eventName: event.name,
+                eventDate: event.date,
+                eventTime: event.time,
+                eventVenue: event.venue,
+                eventDescription: event.description
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(`Announcement sent successfully! ${result.emailsSent} emails sent.`, 'success', 'eventsMessageContainer');
+        } else {
+            const error = await response.json();
+            showError(error.error || 'Failed to send announcement', 'eventsMessageContainer');
+        }
+    } catch (error) {
+        console.error('Error sending announcement:', error);
+        showError('Failed to send announcement. Please try again.', 'eventsMessageContainer');
+    }
+}
+
 function showLogin() {
     document.getElementById('loginSection').classList.remove('hidden');
     document.getElementById('dashboardSection').classList.add('hidden');
@@ -1178,26 +1219,12 @@ document.addEventListener('DOMContentLoaded', function() {
             venue: selectedVenue ? selectedVenue.name : '',
             venueAddress: selectedVenue ? selectedVenue.address : '',
             maxAttendees: formData.get('eventMaxAttendees'),
-            description: formData.get('eventDescription')
+            description: formData.get('eventDescription'),
+            sendAnnouncement: formData.get('sendAnnouncement') === 'on'
         };
-        try {
-            const response = await fetch('/.netlify/functions/create-event', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(eventData)
-            });
-            const result = await response.json();
-            if (response.ok && result.success) {
-                showMessage('Event created successfully!', 'success', 'eventsMessageContainer');
-                document.getElementById('eventForm').reset();
-                loadEvents();
-            } else {
-                showError(result.error || 'Failed to create event', 'eventsMessageContainer');
-            }
-        } catch (error) {
-            console.error('Event creation error:', error);
-            showError('Failed to create event. Please try again.', 'eventsMessageContainer');
-        }
+        
+        // Show confirmation modal instead of creating event directly
+        await showEventConfirmationModal(eventData);
     });
 
     // Edit event form submission
@@ -1295,14 +1322,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Event confirmation modal button handler
+    document.getElementById('confirmCreateEventBtn').addEventListener('click', async function() {
+        await confirmAndCreateEvent();
+    });
+
     // Modal close on outside click
     window.onclick = function(event) {
         const venueModal = document.getElementById('venueModal');
         const eventModal = document.getElementById('eventModal');
         const applicantModal = document.getElementById('applicantModal');
+        const eventConfirmationModal = document.getElementById('eventConfirmationModal');
         if (event.target === venueModal) closeVenueModal();
         if (event.target === eventModal) closeEventModal();
         if (event.target === applicantModal) closeApplicantModal();
+        if (event.target === eventConfirmationModal) closeEventConfirmationModal();
     }
 
     // Video upload functionality
@@ -1745,6 +1779,7 @@ window.showDetails = showDetails;
 window.editEvent = editEvent;
 window.closeEventModal = closeEventModal;
 window.deleteEvent = deleteEvent;
+window.sendEventAnnouncement = sendEventAnnouncement;
 window.loadEventPhotos = loadEventPhotos;
 window.displayEventPhotos = displayEventPhotos;
 window.loadEventVideos = loadEventVideos;
@@ -2188,6 +2223,104 @@ document.getElementById('experienceVimeoId').addEventListener('input', (e) => {
     updateVideoPreview(vimeoId);
 });
 
+// Event Confirmation Modal Functions
+let pendingEventData = null;
+
+async function showEventConfirmationModal(eventData) {
+    pendingEventData = eventData;
+    
+    // Populate the confirmation modal with event details
+    document.getElementById('confirmEventName').textContent = eventData.name || 'Not specified';
+    document.getElementById('confirmEventDate').textContent = eventData.date ? new Date(eventData.date).toLocaleDateString() : 'Not specified';
+    document.getElementById('confirmEventTime').textContent = eventData.time || 'Not specified';
+    document.getElementById('confirmEventVenue').textContent = eventData.venue || 'Not specified';
+    document.getElementById('confirmEventMaxAttendees').textContent = eventData.maxAttendees || 'No limit';
+    document.getElementById('confirmEventDescription').textContent = eventData.description || 'No description';
+    
+    // Handle announcement info
+    const announcementInfo = document.getElementById('announcementInfo');
+    const confirmButtonText = document.getElementById('confirmButtonText');
+    
+    if (eventData.sendAnnouncement) {
+        announcementInfo.style.display = 'block';
+        confirmButtonText.textContent = 'Confirm & Send';
+        
+        // Load approved member count
+        try {
+            const approvedMembers = await loadApprovedMembersCount();
+            document.getElementById('approvedMemberCount').textContent = approvedMembers;
+        } catch (error) {
+            console.error('Error loading approved members count:', error);
+            document.getElementById('approvedMemberCount').textContent = 'Unknown';
+        }
+    } else {
+        announcementInfo.style.display = 'none';
+        confirmButtonText.textContent = 'Confirm & Create Event';
+    }
+    
+    // Show the modal
+    document.getElementById('eventConfirmationModal').style.display = 'block';
+}
+
+function closeEventConfirmationModal() {
+    document.getElementById('eventConfirmationModal').style.display = 'none';
+    pendingEventData = null;
+}
+
+async function confirmAndCreateEvent() {
+    if (!pendingEventData) {
+        showError('No event data found', 'eventsMessageContainer');
+        return;
+    }
+    
+    const confirmBtn = document.getElementById('confirmCreateEventBtn');
+    const originalText = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = 'Creating...';
+    confirmBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/.netlify/functions/create-event', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(pendingEventData)
+        });
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            closeEventConfirmationModal();
+            showMessage('Event created successfully!', 'success', 'eventsMessageContainer');
+            document.getElementById('eventForm').reset();
+            loadEvents();
+        } else {
+            showError(result.error || 'Failed to create event', 'eventsMessageContainer');
+        }
+    } catch (error) {
+        console.error('Event creation error:', error);
+        showError('Failed to create event. Please try again.', 'eventsMessageContainer');
+    } finally {
+        confirmBtn.innerHTML = originalText;
+        confirmBtn.disabled = false;
+    }
+}
+
+async function loadApprovedMembersCount() {
+    try {
+        const response = await fetch('/.netlify/functions/get-applications', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const approvedMembers = data.applications.filter(app => app.status === 'approved');
+            return approvedMembers.length;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error loading approved members:', error);
+        return 0;
+    }
+}
+
 // Make CMS functions globally available
 window.loadGalleryManagement = loadGalleryManagement;
 window.selectPhoto = selectPhoto;
@@ -2202,3 +2335,4 @@ window.seedFaqs = seedFaqs;
 window.loadExperienceVideo = loadExperienceVideo;
 window.updateExperienceVideo = updateExperienceVideo;
 window.closeApplicantModal = closeApplicantModal;
+window.closeEventConfirmationModal = closeEventConfirmationModal;

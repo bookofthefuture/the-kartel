@@ -61,6 +61,7 @@ body { font-family: 'League Spartan', 'Arial', sans-serif; background: #f8f9fa; 
 .delete-btn { background: #dc3545; color: white; } .delete-btn:hover { background: #c82333; }
 .details-btn { background: #3498db; color: white; } .details-btn:hover { background: #2980b9; }
 .edit-btn { background: #f39c12; color: white; } .edit-btn:hover { background: #e67e22; }
+.announcement-btn { background: #9b59b6; color: white; } .announcement-btn:hover { background: #8e44ad; }
 .quick-approve-btn { background: #f39c12; color: white; font-size: 0.9rem; padding: 8px 16px; } .quick-approve-btn:hover { background: #e67e22; }
 .loading { text-align: center; padding: 40px; color: #7f8c8d; }
 .error { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin: 20px 0; border: 1px solid #f5c6cb; }
@@ -97,6 +98,13 @@ body { font-family: 'League Spartan', 'Arial', sans-serif; background: #f8f9fa; 
 .close:hover { color: #e74c3c; }
 .modal-body { padding: 30px; }
 .form-actions { display: flex; gap: 15px; justify-content: center; margin-top: 30px; }
+.event-details-preview { background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #dee2e6; }
+.event-details-preview .detail-row { display: flex; margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #ecf0f1; }
+.event-details-preview .detail-row:last-child { border-bottom: none; margin-bottom: 0; }
+.event-details-preview .detail-label { font-weight: 600; color: #2c3e50; min-width: 140px; }
+.event-details-preview .detail-value { color: #5d6d7e; flex: 1; }
+.confirmation-content { max-height: 70vh; overflow-y: auto; }
+.announcement-info { margin-top: 25px; }
 .photo-upload-section { background: #f8f9fa; border-radius: 10px; padding: 25px; margin-top: 20px; border: 2px dashed #bdc3c7;}
 .photo-upload-section h4 { color: #2c3e50; margin-bottom: 15px; font-weight: 700;}
 .photo-preview { max-width: 200px; max-height: 200px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}

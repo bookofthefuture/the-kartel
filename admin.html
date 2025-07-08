@@ -122,6 +122,13 @@
                                 <label for="eventDescription">Description</label>
                                 <textarea id="eventDescription" name="eventDescription" rows="3" placeholder="Monthly championship round..."></textarea>
                             </div>
+                            <div class="form-group">
+                                <label for="sendAnnouncement" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="sendAnnouncement" name="sendAnnouncement" style="margin: 0;">
+                                    <span>Send Announcement Email to All Members</span>
+                                </label>
+                                <small style="color: #7f8c8d;">Notify all approved members about this new event</small>
+                            </div>
                             <button type="submit" class="btn btn-success">Create Event</button>
                         </form>
                     </div>
@@ -591,6 +598,72 @@
                     </div>
                 </form>
                 <div id="faqMessage" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Creation Confirmation Modal -->
+    <div id="eventConfirmationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Event Creation</h3>
+                <button class="close" onclick="closeEventConfirmationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirmation-content">
+                    <p style="color: #7f8c8d; margin-bottom: 25px;">Please review the event details before creating:</p>
+                    
+                    <div class="event-details-preview">
+                        <div class="detail-row">
+                            <span class="detail-label">Event Name:</span>
+                            <span class="detail-value" id="confirmEventName"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Date:</span>
+                            <span class="detail-value" id="confirmEventDate"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Time:</span>
+                            <span class="detail-value" id="confirmEventTime"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Venue:</span>
+                            <span class="detail-value" id="confirmEventVenue"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Max Attendees:</span>
+                            <span class="detail-value" id="confirmEventMaxAttendees"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Description:</span>
+                            <span class="detail-value" id="confirmEventDescription"></span>
+                        </div>
+                    </div>
+
+                    <div id="announcementInfo" class="announcement-info" style="display: none;">
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                            <h4 style="color: #856404; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                                📧 Email Announcement
+                            </h4>
+                            <p style="color: #856404; margin-bottom: 15px;">
+                                An announcement email will be sent to all approved members.
+                            </p>
+                            <div style="background: white; border-radius: 6px; padding: 15px; border: 1px solid #f1c40f;">
+                                <div style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Recipients:</div>
+                                <div style="color: #7f8c8d; font-size: 1.1rem;">
+                                    <span id="approvedMemberCount">Loading...</span> approved members
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-success" id="confirmCreateEventBtn">
+                        <span id="confirmButtonText">Confirm & Create Event</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEventConfirmationModal()">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
