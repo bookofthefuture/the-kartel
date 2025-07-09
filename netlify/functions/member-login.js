@@ -56,12 +56,16 @@ exports.handler = async (event, context) => {
       applications = [];
     }
 
+    console.log(`🔍 Searching for member with email: ${email}`);
+    console.log(`📋 Total applications found: ${applications.length}`);
+    
     const memberApplication = applications.find(
       app => app.email.toLowerCase() === email.toLowerCase() && app.status === 'approved'
     );
 
     if (!memberApplication) {
       console.log(`❌ Failed login attempt for: ${email} (Not found or not approved)`);
+      console.log(`📧 Available emails:`, applications.slice(0, 5).map(app => `${app.email} (${app.status})`));
       return {
         statusCode: 401,
         headers: {
@@ -74,6 +78,8 @@ exports.handler = async (event, context) => {
 
     // Handle password authentication
     if (isPasswordAuth) {
+      console.log(`🔑 Password auth for ${email}, has hash: ${!!memberApplication.memberPasswordHash}, has salt: ${!!memberApplication.memberPasswordSalt}`);
+      
       // Check if member has password set
       if (!memberApplication.memberPasswordHash || !memberApplication.memberPasswordSalt) {
         console.log(`❌ Password login attempted for ${email} but no password set`);
