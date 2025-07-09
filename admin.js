@@ -374,7 +374,6 @@ function renderEventsTable() {
             <td><span class="status-badge status-${evt.status}">${evt.status}</span></td>
             <td>
                 <button class="action-btn edit-btn" onclick="editEvent('${evt.id}')">Edit</button>
-                <button class="action-btn announcement-btn" onclick="sendEventAnnouncement('${evt.id}')">Send Announcement</button>
                 <button class="action-btn delete-btn" onclick="deleteEvent('${evt.id}')">Delete</button>
             </td>
         </tr>
@@ -419,6 +418,18 @@ function editEvent(eventId) {
     // Load attendees and approved members
     loadEventAttendees(event.id);
     loadApprovedMembers();
+    
+    // Load member count for email section
+    loadModalMemberCount();
+    
+    // Set up email button event listeners for this event
+    setupEmailButtons(event.id);
+    
+    // Show email section for existing events
+    const emailSection = document.querySelector('.email-section');
+    if (emailSection) {
+        emailSection.style.display = 'block';
+    }
     
     // Show the modal
     document.getElementById('eventModal').style.display = 'block';
@@ -739,6 +750,11 @@ function displayEventVideos(videos) {
 
 function closeEventModal() {
     document.getElementById('eventModal').style.display = 'none';
+    // Reset email section visibility
+    const emailSection = document.querySelector('.email-section');
+    if (emailSection) {
+        emailSection.style.display = 'none';
+    }
 }
 
 function populateEditEventVenueDropdown() {
@@ -866,45 +882,6 @@ function deleteEvent(eventId) {
     alert('Event deletion feature coming soon!');
 }
 
-async function sendEventAnnouncement(eventId) {
-    const event = events.find(e => e.id === eventId);
-    if (!event) {
-        showError('Event not found', 'eventsMessageContainer');
-        return;
-    }
-    
-    const confirmMessage = `Send announcement email to all approved members about "${event.name}" on ${new Date(event.date).toLocaleDateString()}?`;
-    if (!confirm(confirmMessage)) return;
-    
-    try {
-        const response = await fetch('/.netlify/functions/send-event-announcement', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                eventId: eventId,
-                eventName: event.name,
-                eventDate: event.date,
-                eventTime: event.time,
-                eventVenue: event.venue,
-                eventDescription: event.description
-            })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            showMessage(`Announcement sent successfully! ${result.emailsSent} emails sent.`, 'success', 'eventsMessageContainer');
-        } else {
-            const error = await response.json();
-            showError(error.error || 'Failed to send announcement', 'eventsMessageContainer');
-        }
-    } catch (error) {
-        console.error('Error sending announcement:', error);
-        showError('Failed to send announcement. Please try again.', 'eventsMessageContainer');
-    }
-}
 
 function showLogin() {
     document.getElementById('loginSection').classList.remove('hidden');
@@ -1784,7 +1761,6 @@ window.showDetails = showDetails;
 window.editEvent = editEvent;
 window.closeEventModal = closeEventModal;
 window.deleteEvent = deleteEvent;
-window.sendEventAnnouncement = sendEventAnnouncement;
 window.loadEventPhotos = loadEventPhotos;
 window.displayEventPhotos = displayEventPhotos;
 window.loadEventVideos = loadEventVideos;
@@ -2323,6 +2299,157 @@ async function loadApprovedMembersCount() {
     } catch (error) {
         console.error('Error loading approved members:', error);
         return 0;
+    }
+}
+
+async function loadModalMemberCount() {
+    try {
+        const approvedMembers = await loadApprovedMembersCount();
+        document.getElementById('modalApprovedMemberCount').textContent = approvedMembers;
+    } catch (error) {
+        console.error('Error loading member count for modal:', error);
+        document.getElementById('modalApprovedMemberCount').textContent = 'Unknown';
+    }
+}
+
+function setupEmailButtons(eventId) {
+    // Remove existing event listeners to avoid duplicates
+    const announceBtn = document.getElementById('sendAnnouncementEmailBtn');
+    const testBtn = document.getElementById('modalSendTestEmailBtn');
+    
+    // Clone buttons to remove all event listeners
+    const newAnnounceBtn = announceBtn.cloneNode(true);
+    const newTestBtn = testBtn.cloneNode(true);
+    
+    announceBtn.parentNode.replaceChild(newAnnounceBtn, announceBtn);
+    testBtn.parentNode.replaceChild(newTestBtn, testBtn);
+    
+    // Add new event listeners
+    newAnnounceBtn.addEventListener('click', async function() {
+        await sendEventAnnouncementFromModal(eventId);
+    });
+    
+    newTestBtn.addEventListener('click', async function() {
+        await sendTestEmailFromModal(eventId);
+    });
+}
+
+async function sendEventAnnouncementFromModal(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+        showError('Event not found', 'eventsMessageContainer');
+        return;
+    }
+    
+    const confirmMessage = `Send announcement email to all approved members about "${event.name}" on ${new Date(event.date).toLocaleDateString()}?`;
+    if (!confirm(confirmMessage)) return;
+    
+    const btn = document.getElementById('sendAnnouncementEmailBtn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch('/.netlify/functions/send-event-announcement', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId: eventId,
+                eventName: event.name,
+                eventDate: event.date,
+                eventTime: event.time,
+                eventVenue: event.venue,
+                eventDescription: event.description
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(`Announcement sent successfully! ${result.emailsSent} emails sent.`, 'success', 'eventsMessageContainer');
+        } else {
+            const error = await response.json();
+            showError(`Failed to send announcement: ${error.error}`, 'eventsMessageContainer');
+        }
+    } catch (error) {
+        console.error('Error sending announcement:', error);
+        showError('An error occurred while sending the announcement', 'eventsMessageContainer');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function sendTestEmailFromModal(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+        showError('Event not found', 'eventsMessageContainer');
+        return;
+    }
+
+    // Get admin's email - first try to get from stored user data, then prompt
+    let adminEmail = null;
+    
+    // Try to get from stored user data
+    try {
+        const storedUser = localStorage.getItem('kartel_admin_user');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            adminEmail = user.email;
+        }
+    } catch (error) {
+        console.error('Error getting stored user data:', error);
+    }
+
+    // If no stored email, prompt for it
+    if (!adminEmail) {
+        adminEmail = prompt('Enter your email address for the test email:');
+        if (!adminEmail) {
+            return; // User cancelled
+        }
+        
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(adminEmail)) {
+            showError('Please enter a valid email address', 'eventsMessageContainer');
+            return;
+        }
+    }
+
+    const testBtn = document.getElementById('modalSendTestEmailBtn');
+    const originalText = testBtn.textContent;
+    testBtn.textContent = 'Sending...';
+    testBtn.disabled = true;
+
+    try {
+        const response = await fetch('/.netlify/functions/send-test-email', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId: eventId,
+                adminEmail: adminEmail,
+                eventData: event
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage(`Test email sent successfully to ${adminEmail}!`, 'success', 'eventsMessageContainer');
+        } else {
+            showError(`Failed to send test email: ${result.error}`, 'eventsMessageContainer');
+        }
+    } catch (error) {
+        console.error('Error sending test email:', error);
+        showError('An error occurred while sending the test email', 'eventsMessageContainer');
+    } finally {
+        testBtn.textContent = originalText;
+        testBtn.disabled = false;
     }
 }
 
