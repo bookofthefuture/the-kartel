@@ -34,6 +34,9 @@ exports.handler = async (event, context) => {
       };
     }
 
+    console.log('🔧 Environment check - Site ID:', process.env.NETLIFY_SITE_ID ? 'exists' : 'missing');
+    console.log('🔧 Environment check - Access Token:', process.env.NETLIFY_ACCESS_TOKEN ? 'exists' : 'missing');
+
     // 3. Create store with consistent config
     const applicationsStore = getStore({
       name: 'applications',
@@ -42,17 +45,25 @@ exports.handler = async (event, context) => {
       consistency: 'strong'
     });
 
+    console.log('🏪 Applications store created successfully');
+
     // 4. Business logic: Check for approved member
     console.log(`🔒 Attempting member login for: ${email} (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
 
     let applications = [];
     try {
+      console.log('🔄 Attempting to load applications list...');
       const applicationsList = await applicationsStore.get('_list', { type: 'json' });
+      console.log('✅ Applications list loaded:', applicationsList ? 'exists' : 'null', typeof applicationsList);
       if (applicationsList && Array.isArray(applicationsList)) {
         applications = applicationsList;
+        console.log(`📋 Successfully loaded ${applications.length} applications`);
+      } else {
+        console.log('⚠️ Applications list exists but is not an array:', typeof applicationsList);
       }
     } catch (error) {
       console.log('📝 No applications list found, treating as empty for login check.');
+      console.log('❌ Error details:', error.message);
       applications = [];
     }
 
