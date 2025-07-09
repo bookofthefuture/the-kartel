@@ -93,12 +93,14 @@ exports.handler = async (event, context) => {
       const expiry = Date.now() + (30 * 60 * 1000); // 30 minutes
       
       // Store reset token
-      await tokensStore.set(token, {
+      await tokensStore.setJSON(token, {
         email: email,
         memberId: memberApplication.id,
         expiry: expiry,
         used: false
       });
+      
+      console.log(`💾 Reset token stored: ${token.substring(0, 8)}...`);
 
       // Send reset email
       if (process.env.SENDGRID_API_KEY) {
@@ -167,9 +169,11 @@ exports.handler = async (event, context) => {
       // Verify reset token
       let tokenData;
       try {
+        console.log(`🔍 Looking up reset token: ${resetToken.substring(0, 8)}...`);
         tokenData = await tokensStore.get(resetToken, { type: 'json' });
+        console.log(`✅ Token data found:`, tokenData ? 'exists' : 'null');
       } catch (error) {
-        console.log(`❌ Invalid reset token: ${resetToken}`);
+        console.log(`❌ Invalid reset token: ${resetToken}`, error.message);
         return {
           statusCode: 401,
           headers: {
@@ -219,7 +223,7 @@ exports.handler = async (event, context) => {
       await applicationsStore.set('_list', updatedApplications);
 
       // Mark token as used
-      await tokensStore.set(resetToken, { ...tokenData, used: true });
+      await tokensStore.setJSON(resetToken, { ...tokenData, used: true });
 
       console.log(`✅ Password reset completed for: ${email}`);
 
