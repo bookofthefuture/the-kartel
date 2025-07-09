@@ -1,6 +1,7 @@
 // netlify/functions/member-login.js
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto'); // Used for generating a simple token
+const { verifyPassword } = require('./password-utils');
 
 exports.handler = async (event, context) => {
   // 1. HTTP method validation
@@ -12,7 +13,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email } = JSON.parse(event.body);
+    const { email, password } = JSON.parse(event.body);
 
     if (!email) {
       return {
@@ -20,6 +21,9 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'Email is required' })
       };
     }
+
+    // Determine authentication method based on password presence
+    const isPasswordAuth = password !== undefined;
 
     // 2. Environment variable check
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
@@ -39,7 +43,7 @@ exports.handler = async (event, context) => {
     });
 
     // 4. Business logic: Check for approved member
-    console.log(`🔒 Attempting member login for: ${email}`);
+    console.log(`🔒 Attempting member login for: ${email} (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
 
     let applications = [];
     try {
@@ -56,28 +60,7 @@ exports.handler = async (event, context) => {
       app => app.email.toLowerCase() === email.toLowerCase() && app.status === 'approved'
     );
 
-    if (memberApplication) {
-      // Generate a simple token (similar to admin-login for consistency)
-      const token = crypto.randomBytes(32).toString('hex');
-      console.log(`✅ Member logged in: ${email}`);
-
-      // 5. Standard success response
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          success: true,
-          token: token,
-          memberId: memberApplication.id, // Return member ID
-          memberEmail: memberApplication.email,
-          memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
-          message: 'Login successful'
-        })
-      };
-    } else {
+    if (!memberApplication) {
       console.log(`❌ Failed login attempt for: ${email} (Not found or not approved)`);
       return {
         statusCode: 401,
@@ -88,6 +71,60 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'Invalid credentials or application not approved' })
       };
     }
+
+    // Handle password authentication
+    if (isPasswordAuth) {
+      // Check if member has password set
+      if (!memberApplication.memberPasswordHash || !memberApplication.memberPasswordSalt) {
+        console.log(`❌ Password login attempted for ${email} but no password set`);
+        return {
+          statusCode: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Password not set. Please use magic link login or contact admin.' })
+        };
+      }
+
+      // Verify password
+      if (!verifyPassword(password, memberApplication.memberPasswordSalt, memberApplication.memberPasswordHash)) {
+        console.log(`❌ Invalid password for member: ${email}`);
+        return {
+          statusCode: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Invalid credentials' })
+        };
+      }
+
+      console.log(`✅ Member password login successful for: ${email}`);
+    } else {
+      // Magic link only authentication (existing behavior)
+      console.log(`✅ Member magic link login successful for: ${email}`);
+    }
+
+    // Generate a simple token (similar to admin-login for consistency)
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // 5. Standard success response
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        token: token,
+        memberId: memberApplication.id, // Return member ID
+        memberEmail: memberApplication.email,
+        memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
+        message: 'Login successful'
+      })
+    };
 
   } catch (error) {
     // 6. Standard error response

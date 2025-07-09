@@ -108,6 +108,7 @@ exports.handler = async (event, context) => {
         memberPosition: member.position || '',
         memberPhone: member.phone || '',
         memberLinkedin: member.linkedin || '',
+        hasPassword: !!(member.memberPasswordHash && member.memberPasswordSalt),
         message: 'Login successful'
       })
     };

@@ -1,5 +1,6 @@
 // netlify/functions/update-member-profile.js
 const { getStore } = require('@netlify/blobs');
+const { hashPassword } = require('./password-utils');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -26,7 +27,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { firstName, lastName, company, position, phone, linkedin, memberId, memberEmail } = JSON.parse(event.body);
+    const { firstName, lastName, company, position, phone, linkedin, memberId, memberEmail, newPassword } = JSON.parse(event.body);
 
     if (!firstName || !firstName.trim() || !lastName || !lastName.trim()) {
       return {
@@ -77,6 +78,18 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Handle password update if provided
+    let passwordFields = {};
+    if (newPassword) {
+      console.log(`🔑 Setting password for member ${memberId}`);
+      const { salt, hash } = hashPassword(newPassword);
+      passwordFields = {
+        memberPasswordHash: hash,
+        memberPasswordSalt: salt,
+        passwordSetAt: new Date().toISOString()
+      };
+    }
+
     // Update member profile
     const updatedMember = {
       ...member,
@@ -86,6 +99,7 @@ exports.handler = async (event, context) => {
       position: position?.trim() || '',
       phone: phone?.trim() || '',
       linkedin: linkedin?.trim() || '',
+      ...passwordFields,
       updatedAt: new Date().toISOString()
     };
 
@@ -118,7 +132,9 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         success: true, 
-        message: 'Profile updated successfully',
+        message: newPassword ? 'Profile and password updated successfully' : 'Profile updated successfully',
+        passwordSet: !!newPassword,
+        hasPassword: !!(updatedMember.memberPasswordHash && updatedMember.memberPasswordSalt),
         member: {
           firstName: updatedMember.firstName,
           lastName: updatedMember.lastName,

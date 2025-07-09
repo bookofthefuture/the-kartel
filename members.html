@@ -104,6 +104,13 @@
         .video-container { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .video-container iframe { border-radius: 8px; }
         
+        /* Login method toggle styles */
+        .login-method-btn { flex: 1; padding: 10px 15px; border: none; background: transparent; color: #7f8c8d; cursor: pointer; border-radius: 4px; font-weight: 600; transition: all 0.3s ease; font-family: 'League Spartan', sans-serif; }
+        .login-method-btn.active { background: #2c3e50; color: white; }
+        .login-method-btn:hover:not(.active) { background: rgba(44, 62, 80, 0.1); }
+        .password-form { transition: all 0.3s ease; }
+        .password-form.hidden { opacity: 0; transform: translateY(-10px); }
+        
         /* Photo modal styles */
         .photo-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); }
         .photo-modal-content { position: relative; margin: auto; display: block; width: 90%; max-width: 800px; max-height: 90%; margin-top: 5%; }
@@ -176,14 +183,46 @@
     <div id="loginSection" class="login-container">
         <div class="login-card">
             <h1 class="login-title">The Kartel Members</h1>
-            <p id="loginInstruction" style="margin-bottom: 30px; color: #7f8c8d;">Enter your email to receive a secure login link</p>
+            <p id="loginInstruction" style="margin-bottom: 20px; color: #7f8c8d;">Choose your preferred login method</p>
             
+            <!-- Login Method Toggle -->
+            <div class="login-method-toggle" style="display: flex; margin-bottom: 25px; background: #f8f9fa; border-radius: 8px; padding: 4px;">
+                <button type="button" id="magicLinkTab" class="login-method-btn active" onclick="showMagicLinkForm()">
+                    📧 Magic Link
+                </button>
+                <button type="button" id="passwordTab" class="login-method-btn" onclick="showPasswordForm()">
+                    🔑 Password
+                </button>
+            </div>
+            
+            <!-- Magic Link Form -->
             <form id="magicLinkForm" class="magic-link-form">
                 <div class="form-group">
                     <label for="memberEmail">Email Address</label>
                     <input type="email" id="memberEmail" name="memberEmail" required placeholder="your@email.com">
                 </div>
                 <button type="submit" id="magicLinkBtn" class="login-btn">Send Login Link</button>
+                <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px; text-align: center;">
+                    We'll send a secure link to your email
+                </p>
+            </form>
+            
+            <!-- Password Form -->
+            <form id="passwordForm" class="password-form hidden">
+                <div class="form-group">
+                    <label for="passwordEmail">Email Address</label>
+                    <input type="email" id="passwordEmail" name="passwordEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="memberPassword">Password</label>
+                    <input type="password" id="memberPassword" name="memberPassword" required placeholder="Enter your password">
+                </div>
+                <button type="submit" id="passwordBtn" class="login-btn">Sign In</button>
+                <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px; text-align: center;">
+                    <button type="button" onclick="showForgotPassword()" style="background: none; border: none; color: #3498db; text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
+                        Forgot your password?
+                    </button>
+                </p>
             </form>
             
             <div id="loginMessage" class="hidden"></div>
@@ -326,6 +365,24 @@
                         <input type="text" id="profileLinkedin" name="profileLinkedin" placeholder="Your LinkedIn username (e.g., john-smith)">
                         <small style="color: #7f8c8d;">Just enter your username - we'll add linkedin.com/in/ automatically</small>
                     </div>
+                    
+                    <!-- Password Setup Section -->
+                    <div class="form-group" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;">
+                        <h4 style="color: #2c3e50; margin-bottom: 15px;">Password Setup</h4>
+                        <div class="form-group">
+                            <label for="profilePassword">New Password</label>
+                            <input type="password" id="profilePassword" name="profilePassword" minlength="8" placeholder="Leave blank to keep current password">
+                            <small style="color: #7f8c8d;">Must be at least 8 characters long</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="profileConfirmPassword">Confirm New Password</label>
+                            <input type="password" id="profileConfirmPassword" name="profileConfirmPassword" minlength="8" placeholder="Confirm your new password">
+                        </div>
+                        <small style="color: #7f8c8d;">
+                            <span id="passwordStatus">Password not set - use magic link login only</span>
+                        </small>
+                    </div>
+                    
                     <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
                         <button type="submit" class="btn btn-success">Update Profile</button>
                         <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
@@ -411,6 +468,140 @@
             document.getElementById('loginMessage').classList.add('hidden');
         }
 
+        function showMagicLinkForm() {
+            document.getElementById('magicLinkTab').classList.add('active');
+            document.getElementById('passwordTab').classList.remove('active');
+            document.getElementById('magicLinkForm').classList.remove('hidden');
+            document.getElementById('passwordForm').classList.add('hidden');
+            document.getElementById('loginInstruction').textContent = 'Enter your email to receive a secure login link';
+            document.getElementById('checkEmailMessage').classList.add('hidden');
+            document.getElementById('loginMessage').classList.add('hidden');
+        }
+
+        function showPasswordForm() {
+            document.getElementById('passwordTab').classList.add('active');
+            document.getElementById('magicLinkTab').classList.remove('active');
+            document.getElementById('passwordForm').classList.remove('hidden');
+            document.getElementById('magicLinkForm').classList.add('hidden');
+            document.getElementById('loginInstruction').textContent = 'Sign in with your email and password';
+            document.getElementById('checkEmailMessage').classList.add('hidden');
+            document.getElementById('loginMessage').classList.add('hidden');
+        }
+
+        function showForgotPassword() {
+            showMagicLinkForm();
+            document.getElementById('loginInstruction').textContent = 'Enter your email to receive a password reset link';
+            document.getElementById('memberEmail').value = document.getElementById('passwordEmail').value;
+            
+            // Update the magic link form to handle password reset
+            const magicLinkForm = document.getElementById('magicLinkForm');
+            const magicLinkBtn = document.getElementById('magicLinkBtn');
+            
+            magicLinkBtn.textContent = 'Send Reset Link';
+            magicLinkForm.setAttribute('data-reset-mode', 'true');
+        }
+
+        function showPasswordResetForm(resetToken) {
+            // Clear URL parameters
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Create password reset form
+            const loginCard = document.querySelector('.login-card');
+            loginCard.innerHTML = `
+                <h1 class="login-title">Reset Your Password</h1>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">Enter your email and new password</p>
+                
+                <form id="passwordResetForm">
+                    <div class="form-group">
+                        <label for="resetEmail">Email Address</label>
+                        <input type="email" id="resetEmail" name="resetEmail" required placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" name="newPassword" required placeholder="Enter new password" minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirm new password" minlength="8">
+                    </div>
+                    <button type="submit" id="resetPasswordBtn" class="login-btn">Reset Password</button>
+                </form>
+                
+                <div id="resetMessage" class="hidden"></div>
+                
+                <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 20px; text-align: center;">
+                    <a href="/members.html" style="color: #3498db; text-decoration: underline;">Back to Login</a>
+                </p>
+            `;
+            
+            // Add event listener for password reset form
+            document.getElementById('passwordResetForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('resetEmail').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const resetBtn = document.getElementById('resetPasswordBtn');
+                
+                if (newPassword !== confirmPassword) {
+                    showResetMessage('Passwords do not match. Please try again.', 'error');
+                    return;
+                }
+                
+                if (newPassword.length < 8) {
+                    showResetMessage('Password must be at least 8 characters long.', 'error');
+                    return;
+                }
+                
+                resetBtn.disabled = true;
+                resetBtn.textContent = 'Resetting...';
+                
+                try {
+                    const response = await fetch('/.netlify/functions/reset-member-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            email, 
+                            resetToken, 
+                            newPassword 
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        showResetMessage('Password reset successful! You can now log in with your new password.', 'success');
+                        
+                        // Redirect to login after 3 seconds
+                        setTimeout(() => {
+                            window.location.href = '/members.html';
+                        }, 3000);
+                    } else {
+                        showResetMessage(result.error || 'Failed to reset password. Please try again.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Password reset error:', error);
+                    showResetMessage('Network error. Please check your connection and try again.', 'error');
+                } finally {
+                    resetBtn.disabled = false;
+                    resetBtn.textContent = 'Reset Password';
+                }
+            });
+        }
+
+        function showResetMessage(message, type = 'info') {
+            const messageContainer = document.getElementById('resetMessage');
+            messageContainer.className = type;
+            messageContainer.textContent = message;
+            messageContainer.classList.remove('hidden');
+            
+            if (type === 'error') {
+                setTimeout(() => {
+                    messageContainer.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
         function showDashboard() {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
@@ -453,7 +644,8 @@
                     company: localStorage.getItem('kartel_member_company'),
                     position: localStorage.getItem('kartel_member_position'),
                     phone: localStorage.getItem('kartel_member_phone'),
-                    linkedin: localStorage.getItem('kartel_member_linkedin')
+                    linkedin: localStorage.getItem('kartel_member_linkedin'),
+                    hasPassword: localStorage.getItem('kartel_member_hasPassword') === 'true'
                 };
                 console.log('👤 Current member:', currentMember.email);
                 showDashboard();
@@ -473,12 +665,15 @@
             e.preventDefault();
             const email = document.getElementById('memberEmail').value;
             const magicLinkBtn = document.getElementById('magicLinkBtn');
+            const magicLinkForm = document.getElementById('magicLinkForm');
+            const isResetMode = magicLinkForm.getAttribute('data-reset-mode') === 'true';
             
             magicLinkBtn.disabled = true;
             magicLinkBtn.textContent = 'Sending...';
             
             try {
-                const response = await fetch('/.netlify/functions/request-login-link', {
+                const endpoint = isResetMode ? '/.netlify/functions/reset-member-password' : '/.netlify/functions/request-login-link';
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -489,16 +684,75 @@
                 if (response.ok && result.success) {
                     document.getElementById('magicLinkForm').classList.add('hidden');
                     document.getElementById('loginInstruction').classList.add('hidden');
-                    document.getElementById('checkEmailMessage').classList.remove('hidden');
+                    
+                    // Update the email check message based on mode
+                    const checkEmailMessage = document.getElementById('checkEmailMessage');
+                    const checkEmailTitle = checkEmailMessage.querySelector('h3');
+                    const checkEmailText = checkEmailMessage.querySelector('p');
+                    
+                    if (isResetMode) {
+                        checkEmailTitle.textContent = '📧 Check Your Email';
+                        checkEmailText.textContent = 'We\'ve sent a password reset link to your email address.';
+                    } else {
+                        checkEmailTitle.textContent = '📧 Check Your Email';
+                        checkEmailText.textContent = 'We\'ve sent a secure login link to your email address.';
+                    }
+                    
+                    checkEmailMessage.classList.remove('hidden');
                 } else {
-                    showMessage(result.error || 'Failed to send login link. Please try again.', 'error');
+                    showMessage(result.error || (isResetMode ? 'Failed to send reset link. Please try again.' : 'Failed to send login link. Please try again.'), 'error');
                 }
             } catch (error) {
-                console.error('Magic link request error:', error);
+                console.error('Magic link/reset request error:', error);
                 showMessage('Network error. Please check your connection and try again.', 'error');
             } finally {
                 magicLinkBtn.disabled = false;
-                magicLinkBtn.textContent = 'Send Login Link';
+                magicLinkBtn.textContent = isResetMode ? 'Send Reset Link' : 'Send Login Link';
+            }
+        });
+
+        // Password Form Handler
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('passwordEmail').value;
+            const password = document.getElementById('memberPassword').value;
+            const passwordBtn = document.getElementById('passwordBtn');
+            
+            passwordBtn.disabled = true;
+            passwordBtn.textContent = 'Signing in...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/member-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    memberToken = result.token;
+                    currentMember = {
+                        id: result.memberId,
+                        email: result.memberEmail,
+                        firstName: result.memberFullName.split(' ')[0] || result.memberEmail,
+                        fullName: result.memberFullName,
+                        hasPassword: true // User just logged in with password, so they have one
+                    };
+                    
+                    localStorage.setItem('kartel_member_token', memberToken);
+                    localStorage.setItem('kartel_member_data', JSON.stringify(currentMember));
+                    
+                    showDashboard();
+                } else {
+                    showMessage(result.error || 'Invalid credentials. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Password login error:', error);
+                showMessage('Network error. Please check your connection and try again.', 'error');
+            } finally {
+                passwordBtn.disabled = false;
+                passwordBtn.textContent = 'Sign In';
             }
         });
 
@@ -506,12 +760,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
+            const resetToken = urlParams.get('reset');
             
             console.log('🔍 Page loaded, checking for token:', token ? 'Token found' : 'No token');
+            console.log('🔍 Page loaded, checking for reset token:', resetToken ? 'Reset token found' : 'No reset token');
             console.log('📍 Current URL:', window.location.href);
             console.log('🔧 URL parameters:', Object.fromEntries(urlParams));
             
-            if (token) {
+            if (resetToken) {
+                console.log('✅ Reset token found, showing password reset form...');
+                showPasswordResetForm(resetToken);
+            } else if (token) {
                 console.log('✅ Token found, starting verification process...');
                 verifyLoginToken(token);
             } else {
@@ -555,7 +814,8 @@
                         company: result.memberCompany,
                         position: result.memberPosition,
                         phone: result.memberPhone,
-                        linkedin: result.memberLinkedin
+                        linkedin: result.memberLinkedin,
+                        hasPassword: result.hasPassword
                     };
                     console.log('💾 Storing member data in localStorage...');
                     localStorage.setItem('kartel_member_token', memberToken);
@@ -567,6 +827,7 @@
                     localStorage.setItem('kartel_member_position', currentMember.position || '');
                     localStorage.setItem('kartel_member_phone', currentMember.phone || '');
                     localStorage.setItem('kartel_member_linkedin', currentMember.linkedin || '');
+                    localStorage.setItem('kartel_member_hasPassword', currentMember.hasPassword || false);
                     
                     console.log('🧹 Cleaning URL and showing dashboard...');
                     window.history.replaceState({}, document.title, window.location.pathname);
@@ -1221,6 +1482,20 @@
             document.getElementById('profilePhone').value = currentMember.phone || '';
             document.getElementById('profileLinkedin').value = currentMember.linkedin || '';
             
+            // Clear password fields
+            document.getElementById('profilePassword').value = '';
+            document.getElementById('profileConfirmPassword').value = '';
+            
+            // Update password status display
+            const passwordStatus = document.getElementById('passwordStatus');
+            if (currentMember.hasPassword) {
+                passwordStatus.textContent = 'Password set - you can use both login methods';
+                passwordStatus.style.color = '#27ae60';
+            } else {
+                passwordStatus.textContent = 'Password not set - use magic link login only';
+                passwordStatus.style.color = '#e74c3c';
+            }
+            
             // Clear any previous messages
             document.getElementById('profileMessage').classList.add('hidden');
             
@@ -1269,6 +1544,12 @@
                 if (response.ok && result.success) {
                     // Update local member data
                     currentMember = { ...currentMember, ...profileData };
+                    
+                    // Update password status if returned from API
+                    if (result.hasPassword !== undefined) {
+                        currentMember.hasPassword = result.hasPassword;
+                    }
+                    
                     localStorage.setItem('kartel_member_firstName', profileData.firstName);
                     localStorage.setItem('kartel_member_lastName', profileData.lastName);
                     localStorage.setItem('kartel_member_company', profileData.company);
@@ -1278,6 +1559,9 @@
                     
                     // Update display name in header
                     document.getElementById('memberDisplayName').textContent = profileData.firstName || currentMember.email;
+                    
+                    // Update password status display
+                    updatePasswordStatusDisplay();
                     
                     showMessage('Profile updated successfully!', 'success', 'profileMessage');
                     return true;
@@ -1289,6 +1573,20 @@
                 console.error('Profile update error:', error);
                 showMessage('Failed to update profile due to network error. Please try again.', 'error', 'profileMessage');
                 return false;
+            }
+        }
+
+        // Function to update password status display
+        function updatePasswordStatusDisplay() {
+            const passwordStatus = document.getElementById('passwordStatus');
+            if (passwordStatus) {
+                if (currentMember.hasPassword) {
+                    passwordStatus.textContent = 'Password set - you can use both login methods';
+                    passwordStatus.style.color = '#27ae60';
+                } else {
+                    passwordStatus.textContent = 'Password not set - use magic link login only';
+                    passwordStatus.style.color = '#e74c3c';
+                }
             }
         }
 
@@ -1354,6 +1652,27 @@
             e.preventDefault();
             
             const formData = new FormData(this);
+            const newPassword = formData.get('profilePassword').trim();
+            const confirmPassword = formData.get('profileConfirmPassword').trim();
+            
+            // Validate password fields if provided
+            if (newPassword || confirmPassword) {
+                if (!newPassword || !confirmPassword) {
+                    showMessage('Both password fields are required when setting a password.', 'error', 'profileMessage');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    showMessage('Passwords do not match. Please try again.', 'error', 'profileMessage');
+                    return;
+                }
+                
+                if (newPassword.length < 8) {
+                    showMessage('Password must be at least 8 characters long.', 'error', 'profileMessage');
+                    return;
+                }
+            }
+            
             const profileData = {
                 firstName: formData.get('profileFirstName').trim(),
                 lastName: formData.get('profileLastName').trim(),
@@ -1364,6 +1683,11 @@
                 memberId: currentMember.id,
                 memberEmail: currentMember.email
             };
+            
+            // Include password if provided
+            if (newPassword) {
+                profileData.newPassword = newPassword;
+            }
             
             if (!profileData.firstName || !profileData.lastName) {
                 showMessage('First name and last name are required.', 'error', 'profileMessage');
@@ -1377,6 +1701,12 @@
             
             try {
                 const success = await updateProfile(profileData);
+                if (success && newPassword) {
+                    showMessage('Profile and password updated successfully!', 'success', 'profileMessage');
+                } else if (success) {
+                    showMessage('Profile updated successfully!', 'success', 'profileMessage');
+                }
+                
                 if (success) {
                     setTimeout(() => {
                         closeProfileModal();
@@ -1524,6 +1854,9 @@
         window.showBookingReminder = showBookingReminder;
         window.showLoginForm = showLoginForm;
         window.showLoginHelp = showLoginHelp;
+        window.showMagicLinkForm = showMagicLinkForm;
+        window.showPasswordForm = showPasswordForm;
+        window.showForgotPassword = showForgotPassword;
         window.showEventDetails = showEventDetails;
         window.closeEventModal = closeEventModal;
         window.openProfileModal = openProfileModal;
