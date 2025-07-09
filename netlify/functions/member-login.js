@@ -53,7 +53,25 @@ exports.handler = async (event, context) => {
     let applications = [];
     try {
       console.log('🔄 Attempting to load applications list...');
-      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
+      // Try both methods to see which one works
+      let applicationsList;
+      try {
+        applicationsList = await applicationsStore.get('_list', { type: 'json' });
+        console.log('✅ JSON method worked');
+      } catch (jsonError) {
+        console.log('⚠️ JSON method failed, trying text method:', jsonError.message);
+        const rawData = await applicationsStore.get('_list');
+        console.log('📄 Raw data type:', typeof rawData);
+        console.log('📄 Raw data preview:', String(rawData).substring(0, 100));
+        try {
+          applicationsList = JSON.parse(rawData);
+          console.log('✅ Manual JSON parse worked');
+        } catch (parseError) {
+          console.log('❌ Manual JSON parse failed:', parseError.message);
+          throw parseError;
+        }
+      }
+      
       console.log('✅ Applications list loaded:', applicationsList ? 'exists' : 'null', typeof applicationsList);
       if (applicationsList && Array.isArray(applicationsList)) {
         applications = applicationsList;
