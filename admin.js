@@ -1038,6 +1038,46 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('refreshBtn').addEventListener('click', loadApplications);
     document.getElementById('refreshEventsBtn').addEventListener('click', loadEvents);
     document.getElementById('refreshVenuesBtn').addEventListener('click', loadVenues);
+    
+    // Recovery button
+    document.getElementById('recoverBtn').addEventListener('click', async () => {
+        if (!confirm('⚠️ RECOVER DATA\n\nThis will attempt to rebuild the applications list from individual member records.\n\nThis is safe to run and will not delete any data.\n\nProceed?')) {
+            return;
+        }
+        
+        const recoverBtn = document.getElementById('recoverBtn');
+        const originalText = recoverBtn.textContent;
+        recoverBtn.textContent = '🔄 Recovering...';
+        recoverBtn.disabled = true;
+        
+        try {
+            const response = await fetch('/.netlify/functions/recover-applications-list', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showMessage(`✅ Recovery successful! Recovered ${result.recovered} members. Status: ${JSON.stringify(result.statusBreakdown)}`, 'success');
+                // Refresh the applications list
+                setTimeout(() => {
+                    loadApplications();
+                }, 1000);
+            } else {
+                showError(`❌ Recovery failed: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Recovery error:', error);
+            showError('❌ Recovery failed due to network error');
+        } finally {
+            recoverBtn.textContent = originalText;
+            recoverBtn.disabled = false;
+        }
+    });
 
     // Venue form submission
     document.getElementById('venueForm').addEventListener('submit', async function(e) {
