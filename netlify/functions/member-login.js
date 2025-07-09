@@ -53,26 +53,8 @@ exports.handler = async (event, context) => {
     let applications = [];
     try {
       console.log('🔄 Attempting to load applications list...');
-      // Try both methods to see which one works
-      let applicationsList;
-      try {
-        applicationsList = await applicationsStore.get('_list', { type: 'json' });
-        console.log('✅ JSON method worked');
-      } catch (jsonError) {
-        console.log('⚠️ JSON method failed, trying text method:', jsonError.message);
-        const rawData = await applicationsStore.get('_list');
-        console.log('📄 Raw data type:', typeof rawData);
-        console.log('📄 Raw data preview:', String(rawData).substring(0, 100));
-        try {
-          applicationsList = JSON.parse(rawData);
-          console.log('✅ Manual JSON parse worked');
-        } catch (parseError) {
-          console.log('❌ Manual JSON parse failed:', parseError.message);
-          throw parseError;
-        }
-      }
-      
-      console.log('✅ Applications list loaded:', applicationsList ? 'exists' : 'null', typeof applicationsList);
+      // Use the same method as reset function that works
+      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
       if (applicationsList && Array.isArray(applicationsList)) {
         applications = applicationsList;
         console.log(`📋 Successfully loaded ${applications.length} applications`);
@@ -80,7 +62,7 @@ exports.handler = async (event, context) => {
         console.log('⚠️ Applications list exists but is not an array:', typeof applicationsList);
       }
     } catch (error) {
-      console.log('📝 No applications list found, treating as empty for login check.');
+      console.log('📝 Applications list corrupted or not found, will need data recovery');
       console.log('❌ Error details:', error.message);
       applications = [];
     }

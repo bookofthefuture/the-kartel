@@ -220,7 +220,7 @@ exports.handler = async (event, context) => {
       );
 
       // Save updated applications
-      await applicationsStore.set('_list', updatedApplications);
+      await applicationsStore.setJSON('_list', updatedApplications);
 
       // Mark token as used
       await tokensStore.setJSON(resetToken, { ...tokenData, used: true });
