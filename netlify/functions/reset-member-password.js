@@ -60,12 +60,16 @@ exports.handler = async (event, context) => {
     }
 
     // Find approved member
+    console.log(`🔍 Searching for member with email: ${email}`);
+    console.log(`📋 Total applications found: ${applications.length}`);
+    
     const memberApplication = applications.find(
       app => app.email.toLowerCase() === email.toLowerCase() && app.status === 'approved'
     );
 
     if (!memberApplication) {
       console.log(`❌ Password reset requested for non-existent member: ${email}`);
+      console.log(`📧 Available emails:`, applications.map(app => `${app.email} (${app.status})`));
       // Always return success to prevent email enumeration
       return {
         statusCode: 200,
@@ -168,14 +172,29 @@ exports.handler = async (event, context) => {
         console.log(`❌ Invalid reset token: ${resetToken}`);
         return {
           statusCode: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
           body: JSON.stringify({ error: 'Invalid or expired reset token' })
         };
       }
 
       if (!tokenData || tokenData.used || Date.now() > tokenData.expiry || tokenData.email !== email) {
-        console.log(`❌ Invalid/expired reset token for: ${email}`);
+        console.log(`❌ Invalid/expired reset token for: ${email}`, {
+          tokenData: tokenData ? 'exists' : 'missing',
+          used: tokenData?.used,
+          expired: tokenData ? Date.now() > tokenData.expiry : 'unknown',
+          emailMatch: tokenData ? tokenData.email === email : 'unknown',
+          providedEmail: email,
+          storedEmail: tokenData?.email
+        });
         return {
           statusCode: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
           body: JSON.stringify({ error: 'Invalid or expired reset token' })
         };
       }

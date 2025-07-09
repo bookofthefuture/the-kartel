@@ -511,7 +511,7 @@
                 <h1 class="login-title">Reset Your Password</h1>
                 <p style="margin-bottom: 20px; color: #7f8c8d;">Enter your email and new password</p>
                 
-                <form id="passwordResetForm">
+                <form id="passwordResetForm" data-reset-token="${resetToken}">
                     <div class="form-group">
                         <label for="resetEmail">Email Address</label>
                         <input type="email" id="resetEmail" name="resetEmail" required placeholder="your@email.com">
@@ -542,6 +542,7 @@
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
                 const resetBtn = document.getElementById('resetPasswordBtn');
+                const resetToken = document.getElementById('passwordResetForm').getAttribute('data-reset-token');
                 
                 if (newPassword !== confirmPassword) {
                     showResetMessage('Passwords do not match. Please try again.', 'error');
