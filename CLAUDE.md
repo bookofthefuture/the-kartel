@@ -66,6 +66,8 @@ The Kartel is a static website for an exclusive business networking group based 
 - **Intersection Observer**: Scroll-triggered animations for cards and timeline items
 - **LinkedIn URL Parsing**: Automatically cleans and normalizes LinkedIn profile entries
 - **Event Registration**: One-click registration from email announcements
+- **Dual Authentication System**: Toggle between magic link and password login methods
+- **Password Management**: Setup, change, and reset functionality through profile interface
 
 ### Styling Architecture
 - **CSS Custom Properties**: Consistent color scheme (primary: #2c3e50, accent: #e74c3c, highlight: #f1c40f)
@@ -94,11 +96,13 @@ The Kartel is a static website for an exclusive business networking group based 
 - **Data Import/Export**: CSV import for member data
 
 ### Members Area Features
+- **Dual Authentication**: Magic link and username/password login options
 - **Event Registration**: Sign up for upcoming events
 - **LinkedIn Networking**: Connect with fellow attendees after events
-- **Profile Management**: Update member information and LinkedIn profiles
+- **Profile Management**: Update member information and LinkedIn profiles with password setup
 - **Event History**: View past and upcoming events
 - **Quick Registration**: One-click signup from email announcements
+- **Password Management**: Set, change, and reset passwords through secure email flow
 
 ## File Organization
 
@@ -134,9 +138,9 @@ The Kartel is a static website for an exclusive business networking group based 
 │       ├── get-events.js
 │       ├── update-event.js
 │       ├── delete-event.js
-│       ├── send-event-announcement.js  # NEW: Email announcements
-│       ├── send-test-email.js          # NEW: Test email functionality
-│       ├── quick-register-event.js     # NEW: One-click registration
+│       ├── send-event-announcement.js  # Email announcements
+│       ├── send-test-email.js          # Test email functionality
+│       ├── quick-register-event.js     # One-click registration
 │       ├── create-venue.js
 │       ├── get-venues.js
 │       ├── update-venue.js
@@ -146,8 +150,12 @@ The Kartel is a static website for an exclusive business networking group based 
 │       ├── get-photo.js
 │       ├── import-members.js
 │       ├── quick-action.js
-│       ├── member-login.js             # NEW: Member authentication
-│       ├── sign-up-event.js           # NEW: Event registration
+│       ├── member-login.js             # Dual authentication (magic link + password)
+│       ├── sign-up-event.js           # Event registration
+│       ├── password-utils.js          # NEW: Shared password hashing utilities
+│       ├── reset-member-password.js   # NEW: Secure password reset system
+│       ├── set-member-password.js     # NEW: Password setup for members
+│       ├── recover-applications-list.js # NEW: Data recovery system
 │       └── [20+ other functions]      # Various member and admin functions
 └── photos/                 # Event photography
     ├── the-kartel-logo.png
@@ -179,10 +187,40 @@ The Kartel is a static website for an exclusive business networking group based 
 - **Dependencies**: Node.js packages for @netlify/blobs, @sendgrid/mail, and netlify-cli
 - **Storage**: All member data, events, and venues stored in Netlify Blobs
 - **Authentication**: Dual authentication system for admin and member access
+- **Password Security**: PBKDF2 hashing with secure token-based reset system
+- **PWA Ready**: Token-based authentication with localStorage persistence for mobile app development
+- **Data Recovery**: Built-in recovery system for applications list corruption
 - **Performance**: Optimized with inline assets and minimal dependencies
 - **Accessibility**: Semantic HTML5 structure throughout all interfaces
 - **Testing**: Jest test suite with function testing utilities
 - **Deployment**: Preview and production deployment workflows with safety checks
+
+## Authentication System
+
+### Member Authentication
+- **Magic Link**: Email-based secure login with 30-minute expiry tokens
+- **Password Login**: Traditional email/password authentication with PBKDF2 hashing
+- **Dual Support**: Members can use either method or both
+- **Password Reset**: Secure email-based password reset with token validation
+- **Profile Setup**: Members can set/change passwords through profile interface
+
+### Admin Authentication  
+- **Password Login**: Email/password authentication with PBKDF2 hashing
+- **Legacy Fallback**: Environment variable-based credentials for emergency access
+- **Token-based Sessions**: Persistent authentication across page reloads
+
+### Security Features
+- **PBKDF2 Hashing**: 10,000 iterations with 64-byte keys and SHA-512
+- **Secure Tokens**: Cryptographically strong random tokens for all authentication
+- **Session Management**: localStorage-based token persistence for PWA compatibility
+- **Password Validation**: Minimum 8 characters with confirmation matching
+- **Email Security**: Reset tokens expire in 30 minutes with one-time use validation
+
+### Data Recovery
+- **Applications List Recovery**: Built-in recovery system for blob storage corruption
+- **Individual Record Scanning**: Rebuilds applications list from individual member records
+- **Admin Interface**: One-click recovery button with detailed status reporting
+- **Safe Operation**: Recovery process doesn't delete existing data
 
 ## Development Workflow
 
@@ -192,3 +230,4 @@ The Kartel is a static website for an exclusive business networking group based 
 4. **Email Testing**: Use admin test email functionality before mass announcements
 5. **Production**: Deploy with `npm run deploy:prod` after thorough testing
 6. **Environment Variables**: Configure via `.env` file using `.env.example` template
+7. **Data Recovery**: Use admin recovery button if applications list becomes corrupted
