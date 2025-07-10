@@ -9,12 +9,17 @@ class KartelAuth {
                      localStorage.getItem('kartel_member_token') || 
                      localStorage.getItem('kartel_admin_token');
         
-        // Initialize when DOM is ready
+        // Initialize when DOM is ready - with better debugging
+        console.log('🔧 Auth constructor - DOM state:', document.readyState);
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
+            console.log('⏳ DOM loading, waiting for DOMContentLoaded...');
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('✅ DOMContentLoaded fired, initializing auth...');
+                this.init();
+            });
         } else {
-            // DOM already loaded
-            setTimeout(() => this.init(), 10);
+            console.log('✅ DOM already ready, initializing auth with delay...');
+            setTimeout(() => this.init(), 50);
         }
     }
 
