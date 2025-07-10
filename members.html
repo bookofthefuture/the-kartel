@@ -572,7 +572,7 @@
             document.getElementById('loadingSection').classList.add('hidden');
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
-            document.getElementById('memberDisplayName').textContent = currentMember.firstName || currentMember.email;
+            // Member display name is now handled by unified top bar module
             // Load venues in background for booking reminders
             loadVenuesData();
             
@@ -1500,8 +1500,10 @@
                     localStorage.setItem('kartel_member_phone', profileData.phone);
                     localStorage.setItem('kartel_member_linkedin', profileData.linkedin);
                     
-                    // Update display name in header
-                    document.getElementById('memberDisplayName').textContent = profileData.firstName || currentMember.email;
+                    // Update display name in header (now handled by unified top bar)
+                    if (window.kartelTopBar) {
+                        window.kartelTopBar.updateUser(currentMember, currentMember.isAdmin);
+                    }
                     
                     // Update password status display
                     updatePasswordStatusDisplay();
@@ -2098,36 +2100,14 @@
         }
 
         function checkIfAdmin() {
-            // Check if current member has admin privileges
-            const isAdmin = localStorage.getItem('kartel_member_isAdmin') === 'true';
-            const memberEmail = localStorage.getItem('kartel_member_email');
+            // Admin checking is now handled by unified top bar system
+            console.log('🔍 Admin check - delegating to unified top bar system');
             
-            console.log('🔍 Checking admin privileges for unified auth:', {
-                isAdmin: isAdmin,
-                memberEmail: memberEmail,
-                hasCurrentMember: !!currentMember,
-                currentMemberIsAdmin: currentMember?.isAdmin
-            });
-            
-            // Also check currentMember object for admin status
-            const hasAdminAccess = isAdmin || (currentMember && currentMember.isAdmin);
-            
-            if (hasAdminAccess) {
-                console.log('👨‍💼 Admin privileges detected, showing admin switch button');
-                const switchBtn = document.getElementById('switchToAdminBtn');
-                console.log('🔧 Switch button element:', switchBtn);
-                if (switchBtn) {
-                    switchBtn.classList.remove('hidden');
-                    console.log('✅ Admin switch button shown');
-                } else {
-                    console.error('❌ Switch button element not found');
-                }
-            } else {
-                console.log('ℹ️ No admin privileges found for current user');
-                const switchBtn = document.getElementById('switchToAdminBtn');
-                if (switchBtn) {
-                    switchBtn.classList.add('hidden');
-                }
+            // Update the top bar with current user information
+            if (window.kartelTopBar && currentMember) {
+                const isAdmin = currentMember.isAdmin || localStorage.getItem('kartel_member_isAdmin') === 'true';
+                window.kartelTopBar.updateUser(currentMember, isAdmin);
+                console.log('✅ Top bar updated with admin status:', isAdmin);
             }
         }
 
