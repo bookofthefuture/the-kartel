@@ -4,7 +4,10 @@ class KartelAuth {
         this.currentUser = null;
         this.isLoggedIn = false;
         this.isAdmin = false;
-        this.token = localStorage.getItem('kartel_auth_token');
+        // Check for unified token first, then legacy tokens
+        this.token = localStorage.getItem('kartel_auth_token') || 
+                     localStorage.getItem('kartel_member_token') || 
+                     localStorage.getItem('kartel_admin_token');
         
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
@@ -119,6 +122,12 @@ class KartelAuth {
         localStorage.setItem('kartel_user_data', JSON.stringify(this.currentUser));
         localStorage.setItem('kartel_is_admin', this.isAdmin.toString());
         
+        // Also store in legacy locations for compatibility
+        localStorage.setItem('kartel_member_token', this.token);
+        if (this.isAdmin) {
+            localStorage.setItem('kartel_admin_token', this.token);
+        }
+        
         console.log('✅ User authenticated:', {
             name: this.currentUser.fullName,
             email: this.currentUser.email,
@@ -180,7 +189,7 @@ class KartelAuth {
         this.isAdmin = false;
         this.token = null;
         
-        // Clear localStorage
+        // Clear localStorage - both unified and legacy tokens
         localStorage.removeItem('kartel_auth_token');
         localStorage.removeItem('kartel_user_data');
         localStorage.removeItem('kartel_is_admin');
