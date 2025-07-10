@@ -7,8 +7,8 @@ process.env.NETLIFY_ACCESS_TOKEN = 'test-access-token';
 process.env.ADMIN_USERNAME = 'test-admin';
 process.env.ADMIN_PASSWORD = 'test-password';
 process.env.SENDGRID_API_KEY = 'test-sendgrid-key';
-process.env.FROM_EMAIL = 'test@kartel.com';
-process.env.ADMIN_EMAIL = 'admin@kartel.com';
+process.env.TEST_FROM_EMAIL = 'test@kartel.com';
+process.env.TEST_ADMIN_EMAIL = 'admin@kartel.com';
 process.env.SITE_URL = 'https://test-kartel.netlify.app';
 
 // Global test timeout

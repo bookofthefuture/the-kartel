@@ -45,7 +45,7 @@ The Kartel is a static website for an exclusive business networking group based 
 
 **Setup:**
 - `npm install` - Install all dependencies including Netlify CLI
-- Copy `.env.example` to `.env` and configure environment variables
+- Create `.env` file and configure required environment variables
 - See `DEVELOPMENT.md` for complete local setup guide
 
 ## CSS Formatting Convention

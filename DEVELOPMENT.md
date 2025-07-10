@@ -18,8 +18,9 @@
 
 2. **Set up environment variables:**
    ```bash
-   cp .env.example .env
-   # Edit .env with your actual values
+   # Create .env file with your configuration
+   touch .env
+   # Add required environment variables (see documentation below)
    ```
 
 3. **Link to Netlify (if not already done):**
