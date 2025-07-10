@@ -1,0 +1,3 @@
+# Netlify redirect rules
+/members    /members.html   200
+/admin      /admin.html     200

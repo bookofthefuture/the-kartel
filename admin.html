@@ -722,11 +722,16 @@
             authToken = kartelAuth.getToken();
             
             // Ensure top bar is rendered properly for admin
+            console.log('🔧 Setting up admin top bar...');
             if (window.kartelTopBar) {
                 setTimeout(() => {
+                    console.log('🎯 Rendering admin top bar');
                     window.kartelTopBar.render();
                     window.kartelTopBar.updateUser(user, isAdmin);
+                    console.log('✅ Admin top bar setup complete');
                 }, 100);
+            } else {
+                console.error('❌ kartelTopBar not available');
             }
             
             // Initialize admin dashboard
