@@ -1542,7 +1542,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    checkAuth();
+    // checkAuth() is now handled by unified authentication system
+    console.log('🔧 Admin.js loaded, waiting for unified auth...');
 });
 
 // Load approved members for attendee selection

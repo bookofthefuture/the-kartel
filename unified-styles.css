@@ -1,0 +1,345 @@
+/* unified-styles.css - Shared styles for authentication and top bar */
+
+/* Authentication Styles */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    margin: 20px;
+}
+
+.login-title {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-weight: 800;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.login-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 2px solid #ecf0f1;
+}
+
+.login-tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.login-tab.active {
+    background: #3498db;
+    color: white;
+}
+
+.login-tab:hover {
+    background: #e9ecef;
+}
+
+.login-tab.active:hover {
+    background: #2980b9;
+}
+
+.login-form {
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #2c3e50;
+    font-weight: 600;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.login-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background 0.3s ease;
+    width: 100%;
+    font-family: 'League Spartan', sans-serif;
+    margin-bottom: 10px;
+}
+
+.login-btn:hover {
+    background: #2980b9;
+}
+
+.login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.forgot-password-btn {
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    width: 100%;
+    padding: 5px;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.forgot-password-btn:hover {
+    color: #2980b9;
+}
+
+.check-email-message {
+    text-align: center;
+    margin-top: 20px;
+    padding: 25px;
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+    border: 2px solid #4caf50;
+    border-radius: 10px;
+    color: #2e7d32;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+}
+
+.check-email-message h3 {
+    margin: 0 0 15px 0;
+    color: #2e7d32;
+    font-size: 1.4rem;
+}
+
+.check-email-message p {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.check-email-message .sub-text {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-top: 15px;
+}
+
+/* Top Bar Styles */
+.header {
+    background: #1a252f;
+    color: white;
+    padding: 15px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 1000;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-logo img {
+    height: 50px;
+    width: auto;
+}
+
+.header-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #ffffff;
+    font-family: 'League Spartan', sans-serif;
+    margin: 0;
+}
+
+.header-navigation {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.page-indicator {
+    color: #bdc3c7;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.switch-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 0.9rem;
+}
+
+.switch-btn:hover {
+    background: #c0392b;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-name {
+    color: #ecf0f1;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.logout-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 0.9rem;
+}
+
+.logout-btn:hover {
+    background: #2980b9;
+}
+
+/* Message Styles */
+.error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+    border: 1px solid #f5c6cb;
+}
+
+.success {
+    background: #d4edda;
+    color: #155724;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+    border: 1px solid #c3e6cb;
+}
+
+.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+    border: 1px solid #b8daff;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-navigation {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .login-card {
+        margin: 10px;
+        padding: 30px 20px;
+    }
+    
+    .login-tabs {
+        font-size: 0.9rem;
+    }
+    
+    .user-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-logo {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .header-title {
+        font-size: 1.4rem;
+    }
+    
+    .header-navigation {
+        gap: 10px;
+    }
+    
+    .switch-btn, .logout-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}

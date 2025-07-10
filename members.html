@@ -17,6 +17,10 @@
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.svg">
     <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
     
+    <!-- Unified Modules -->
+    <link rel="stylesheet" href="unified-styles.css">
+    <script src="auth-module.js"></script>
+    <script src="topbar-module.js"></script>
     <script src="/notification-manager.js"></script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -209,83 +213,14 @@
     </div>
 
     <div id="loginSection" class="login-container hidden">
-        <div class="login-card">
-            <h1 class="login-title">The Kartel Members</h1>
-            <p id="loginInstruction" style="margin-bottom: 20px; color: #7f8c8d;">Choose your preferred login method</p>
-            
-            <!-- Login Method Toggle -->
-            <div class="login-method-toggle" style="display: flex; margin-bottom: 25px; background: #f8f9fa; border-radius: 8px; padding: 4px;">
-                <button type="button" id="magicLinkTab" class="login-method-btn active" onclick="showMagicLinkForm()">
-                    📧 Magic Link
-                </button>
-                <button type="button" id="passwordTab" class="login-method-btn" onclick="showPasswordForm()">
-                    🔑 Password
-                </button>
-            </div>
-            
-            <!-- Magic Link Form -->
-            <form id="magicLinkForm" class="magic-link-form">
-                <div class="form-group">
-                    <label for="memberEmail">Email Address</label>
-                    <input type="email" id="memberEmail" name="memberEmail" required placeholder="your@email.com">
-                </div>
-                <button type="submit" id="magicLinkBtn" class="login-btn">Send Login Link</button>
-                <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px; text-align: center;">
-                    We'll send a secure link to your email
-                </p>
-            </form>
-            
-            <!-- Password Form -->
-            <form id="passwordForm" class="password-form hidden">
-                <div class="form-group">
-                    <label for="passwordEmail">Email Address</label>
-                    <input type="email" id="passwordEmail" name="passwordEmail" required placeholder="your@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="memberPassword">Password</label>
-                    <input type="password" id="memberPassword" name="memberPassword" required placeholder="Enter your password">
-                </div>
-                <button type="submit" id="passwordBtn" class="login-btn">Sign In</button>
-                <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 10px; text-align: center;">
-                    <button type="button" onclick="showForgotPassword()" style="background: none; border: none; color: #3498db; text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
-                        Forgot your password?
-                    </button>
-                </p>
-            </form>
-            
-            <div id="loginMessage" class="hidden"></div>
-            
-            <div id="checkEmailMessage" class="check-email-message hidden">
-                <h3>📧 Check Your Email</h3>
-                <p>We've sent a secure login link to your email address.</p>
-                <p>Click the link in the email to access your members area.</p>
-                <p class="sub-text">The link will expire in 30 minutes for security.</p>
-                <button onclick="showLoginForm()" style="background: none; border: none; color: #e74c3c; text-decoration: underline; cursor: pointer; margin-top: 15px;">
-                    Try a different email
-                </button>
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-                    <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px;">Having trouble logging in?</p>
-                    <button onclick="showLoginHelp()" style="background: none; border: none; color: #3498db; text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
-                        Click here for help
-                    </button>
-                </div>
-            </div>
+        <div id="loginContainer">
+            <!-- Login form will be rendered by auth module -->
         </div>
     </div>
 
     <div id="dashboardSection" class="hidden">
         <header class="header">
-            <div class="header-content">
-                <div class="header-logo">
-                    <img src="assets/the-kartel-logo-crop.png" alt="The Kartel Logo" />
-                    <h1 class="header-title">The Kartel Members</h1>
-                </div>
-                <div class="user-info">
-                    <span id="memberDisplayName" class="member-name-clickable" onclick="openProfileModal()"></span>
-                    <button id="switchToAdminBtn" class="switch-btn hidden" onclick="switchToAdminView()">🔧 Admin View</button>
-                    <button id="logoutBtn" class="logout-btn">Logout</button>
-                </div>
-            </div>
+            <!-- Header content will be rendered by topbar module -->
         </header>
 
         <div class="container">
@@ -847,44 +782,47 @@
         });
 
         // Handle magic link token from URL
+        // Unified Authentication Integration for Members
+        window.onAuthSuccess = function(user, isAdmin) {
+            console.log('🎉 Member auth success:', user, isAdmin);
+            
+            // Set current member data
+            currentMember = user;
+            
+            // Initialize member dashboard
+            showDashboard();
+            
+            // Handle URL parameters after auth is complete
+            setTimeout(handleUrlParameters, 200);
+        };
+
+        // Override existing functions to work with unified auth
+        window.logout = function() {
+            kartelAuth.logout();
+        };
+        
+        window.switchToAdminView = function() {
+            if (kartelAuth.isUserAdmin()) {
+                window.location.href = '/admin.html';
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Members page DOMContentLoaded - unified auth will handle initialization');
+            
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
             const resetToken = urlParams.get('reset');
-            const registered = urlParams.get('registered');
-            const error = urlParams.get('error');
-            const info = urlParams.get('info');
             
-            console.log('🔍 Page loaded, checking for token:', token ? 'Token found' : 'No token');
-            console.log('🔍 Page loaded, checking for reset token:', resetToken ? 'Reset token found' : 'No reset token');
-            console.log('🔍 Page loaded, checking for registration params:', { registered, error, info });
-            console.log('📍 Current URL:', window.location.href);
-            console.log('🔧 URL parameters:', Object.fromEntries(urlParams));
-            
-            // Check if user came from admin switch
-            const switchedFromAdmin = sessionStorage.getItem('switched_from_admin');
-            console.log('🔄 Switched from admin:', switchedFromAdmin);
-            
+            // Handle password reset separately since it doesn't require auth
             if (resetToken) {
                 console.log('✅ Reset token found, showing password reset form...');
                 showPasswordResetForm(resetToken);
-            } else if (token) {
-                console.log('✅ Token found, starting verification process...');
-                verifyLoginToken(token);
-            } else if (registered || error || info || urlParams.has('register')) {
-                console.log('✅ Registration/error/info parameters found, checking auth first then handling messages...');
-                // Check auth first, then handle URL parameters
-                checkAuth();
-                // Handle URL parameters after a short delay to ensure auth is processed
-                setTimeout(handleUrlParameters, 200);
-            } else if (switchedFromAdmin) {
-                console.log('👨‍💼 User switched from admin, attempting auto-login...');
-                sessionStorage.removeItem('switched_from_admin');
-                attemptAdminToMemberAutoLogin();
-            } else {
-                console.log('🔄 No token found, checking existing auth...');
-                checkAuth();
+                return;
             }
+            
+            // Let unified auth system handle all other initialization
+            // URL parameter handling will be triggered by onAuthSuccess callback
+            console.log('🔄 Allowing unified auth system to handle initialization...');
         });
 
         async function verifyLoginToken(token) {
