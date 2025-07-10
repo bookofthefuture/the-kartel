@@ -82,11 +82,10 @@ class KartelTopBar {
         const userName = this.currentUser.fullName || this.currentUser.firstName || this.currentUser.email;
         const displayName = this.currentUser.firstName || this.currentUser.email;
         
-        // Only show profile editing on member pages
+        // Show clickable profile name on both member and admin pages
         const isMemberPage = this.currentPage === 'members';
-        const profileButton = isMemberPage ? 
-            `<span class="member-name-clickable" onclick="openProfileModal()">${displayName}</span>` :
-            `<span class="user-name">Welcome, ${userName}</span>`;
+        const profileAction = isMemberPage ? 'openProfileModal()' : 'kartelTopBar.switchToMembers()';
+        const profileButton = `<span class="member-name-clickable" onclick="${profileAction}">${displayName}</span>`;
         
         return `
             <div class="user-info">
