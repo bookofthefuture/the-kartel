@@ -919,6 +919,13 @@ function openAdminProfile() {
 }
 
 function checkAuth() {
+    // Check if user switched from member view
+    const switchedFromMember = sessionStorage.getItem('switched_from_member');
+    if (switchedFromMember) {
+        console.log('👤 User switched from member view, ensuring admin context...');
+        sessionStorage.removeItem('switched_from_member');
+    }
+    
     if (authToken) {
         // Restore user information from localStorage
         const storedUser = localStorage.getItem('kartel_admin_user');
@@ -930,6 +937,8 @@ function checkAuth() {
             } catch (error) {
                 console.error('Error parsing stored user data:', error);
             }
+        } else {
+            console.log('⚠️ No admin user data found, display may show default');
         }
         showDashboard();
     } else {

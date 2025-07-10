@@ -2236,6 +2236,33 @@
         // Admin switch functionality
         function switchToAdminView() {
             console.log('🔧 Switching to admin view');
+            
+            // Ensure admin user data is stored for the admin area
+            const adminToken = localStorage.getItem('kartel_admin_token');
+            const adminUser = localStorage.getItem('kartel_admin_user');
+            
+            console.log('👨‍💼 Admin credentials check:', {
+                hasAdminToken: !!adminToken,
+                hasAdminUser: !!adminUser
+            });
+            
+            // If admin user data isn't stored, reconstruct it from current member data
+            if (!adminUser && currentMember && currentMember.isAdmin) {
+                console.log('🔧 Reconstructing admin user data from current member...');
+                const adminUserData = {
+                    id: currentMember.id,
+                    email: currentMember.email,
+                    name: currentMember.fullName || `${currentMember.firstName} ${currentMember.lastName}`.trim(),
+                    firstName: currentMember.firstName,
+                    lastName: currentMember.lastName
+                };
+                localStorage.setItem('kartel_admin_user', JSON.stringify(adminUserData));
+                console.log('✅ Admin user data stored:', adminUserData);
+            }
+            
+            // Mark that we're switching from member to admin (for potential auto-login)
+            sessionStorage.setItem('switched_from_member', 'true');
+            
             window.location.href = '/admin.html';
         }
 
