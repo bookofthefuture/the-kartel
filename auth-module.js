@@ -42,6 +42,8 @@ class KartelAuth {
 
     async verifyToken() {
         try {
+            console.log('🔐 Verifying token:', this.token ? 'Token exists' : 'No token');
+            
             const response = await fetch('/.netlify/functions/verify-login-token', {
                 method: 'POST',
                 headers: {
@@ -51,12 +53,15 @@ class KartelAuth {
                 body: JSON.stringify({ token: this.token })
             });
 
+            console.log('📊 Verify response:', response.status);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('✅ Token valid, user data:', data.memberEmail);
                 this.setUserData(data);
                 this.onAuthSuccess();
             } else {
-                console.log('❌ Token verification failed');
+                console.log('❌ Token verification failed:', response.status);
                 this.clearAuth();
                 this.showLogin();
             }
@@ -117,13 +122,19 @@ class KartelAuth {
         this.isLoggedIn = true;
         this.isAdmin = data.isAdmin || false;
         
-        // Store in localStorage for persistence
+        // Store in localStorage for persistence - use ALL storage methods to ensure compatibility
         localStorage.setItem('kartel_auth_token', this.token);
         localStorage.setItem('kartel_user_data', JSON.stringify(this.currentUser));
         localStorage.setItem('kartel_is_admin', this.isAdmin.toString());
         
-        // Also store in legacy locations for compatibility
+        // Store in legacy locations for full compatibility
         localStorage.setItem('kartel_member_token', this.token);
+        localStorage.setItem('kartel_member_email', this.currentUser.email);
+        localStorage.setItem('kartel_member_id', this.currentUser.id);
+        localStorage.setItem('kartel_member_firstName', this.currentUser.firstName || '');
+        localStorage.setItem('kartel_member_lastName', this.currentUser.lastName || '');
+        localStorage.setItem('kartel_member_isAdmin', this.isAdmin.toString());
+        
         if (this.isAdmin) {
             localStorage.setItem('kartel_admin_token', this.token);
         }
