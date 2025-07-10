@@ -1,8 +1,36 @@
 #!/bin/bash
 
-# Deploy to preview with optional message
+# Preview deployment script with automatic git sync
+set -e  # Exit on any error
+
+echo "🔍 Starting preview deployment with git sync..."
+
+# Set deployment message
 if [ -n "$1" ]; then
-    netlify deploy --message "$1"
+    DEPLOY_MSG="$1"
 else
-    netlify deploy --message "Preview deployment - $(date '+%Y-%m-%d %H:%M')"
+    DEPLOY_MSG="Preview deployment - $(date '+%Y-%m-%d %H:%M')"
 fi
+
+echo "📝 Deploy message: $DEPLOY_MSG"
+
+# Check if there are any changes to commit
+if [ -n "$(git status --porcelain)" ]; then
+    echo "📦 Staging and committing changes..."
+    git add .
+    git commit -m "$DEPLOY_MSG
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+    
+    echo "📤 Pushing to GitHub..."
+    git push
+else
+    echo "✅ No changes to commit"
+fi
+
+echo "🔍 Deploying to Netlify preview..."
+netlify deploy --message "$DEPLOY_MSG"
+
+echo "✅ Preview deployment complete!"
