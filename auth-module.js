@@ -33,8 +33,21 @@ class KartelAuth {
         
         // Check for existing authentication
         if (this.token) {
-            console.log('🔍 Found existing token, verifying...');
-            await this.verifyToken();
+            console.log('🔍 Found existing token, checking stored user data...');
+            const storedUserData = localStorage.getItem('kartel_user_data');
+            const storedIsAdmin = localStorage.getItem('kartel_is_admin') === 'true';
+            
+            if (storedUserData) {
+                console.log('✅ Found stored user data, restoring session...');
+                this.currentUser = JSON.parse(storedUserData);
+                this.isLoggedIn = true;
+                this.isAdmin = storedIsAdmin;
+                this.onAuthSuccess();
+            } else {
+                console.log('❌ No stored user data, requiring fresh login...');
+                this.clearAuth();
+                this.showLogin();
+            }
         } else {
             console.log('🔄 No existing token found, showing login...');
             this.showLogin();
@@ -44,6 +57,11 @@ class KartelAuth {
     async verifyToken() {
         try {
             console.log('🔐 Verifying token:', this.token ? `Token exists (${this.token.substring(0,10)}...)` : 'No token');
+            console.log('🔍 Token source check:', {
+                auth_token: !!localStorage.getItem('kartel_auth_token'),
+                member_token: !!localStorage.getItem('kartel_member_token'),
+                admin_token: !!localStorage.getItem('kartel_admin_token')
+            });
             
             if (!this.token) {
                 console.log('❌ No token to verify');
