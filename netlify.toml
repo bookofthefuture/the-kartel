@@ -6,9 +6,8 @@
   node_bundler = "esbuild"
 
 [dev]
-  functions = "netlify/functions"
   publish = "."
-  command = "echo 'Starting local development server...'"
+  functions = "netlify/functions"
   port = 8888
 
 [[headers]]
