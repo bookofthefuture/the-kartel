@@ -43,7 +43,13 @@ class KartelAuth {
 
     async verifyToken() {
         try {
-            console.log('🔐 Verifying token:', this.token ? 'Token exists' : 'No token');
+            console.log('🔐 Verifying token:', this.token ? `Token exists (${this.token.substring(0,10)}...)` : 'No token');
+            
+            if (!this.token) {
+                console.log('❌ No token to verify');
+                this.showLogin();
+                return;
+            }
             
             const response = await fetch('/.netlify/functions/verify-login-token', {
                 method: 'POST',
