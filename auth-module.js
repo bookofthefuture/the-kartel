@@ -6,12 +6,26 @@ class KartelAuth {
         this.isAdmin = false;
         this.token = localStorage.getItem('kartel_auth_token');
         
-        // Initialize authentication state
-        this.init();
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
     }
 
     async init() {
         console.log('🚀 Initializing Kartel Authentication System');
+        
+        // Check for magic link token in URL first
+        const urlParams = new URLSearchParams(window.location.search);
+        const magicToken = urlParams.get('token');
+        
+        if (magicToken) {
+            console.log('🔗 Magic link token found in URL, verifying...');
+            await this.verifyMagicToken(magicToken);
+            return;
+        }
         
         // Check for existing authentication
         if (this.token) {
@@ -46,6 +60,39 @@ class KartelAuth {
         } catch (error) {
             console.error('💥 Token verification error:', error);
             this.clearAuth();
+            this.showLogin();
+        }
+    }
+
+    async verifyMagicToken(magicToken) {
+        try {
+            console.log('🔐 Verifying magic link token...');
+            const response = await fetch('/.netlify/functions/verify-login-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: magicToken })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.token = data.token;
+                    this.setUserData(data);
+                    
+                    // Clear URL parameters
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    this.onAuthSuccess();
+                    return;
+                }
+            }
+            
+            console.log('❌ Magic token verification failed');
+            this.showMessage('Invalid or expired login link', 'error');
+            this.showLogin();
+        } catch (error) {
+            console.error('💥 Magic token verification error:', error);
+            this.showMessage('Login verification failed', 'error');
             this.showLogin();
         }
     }

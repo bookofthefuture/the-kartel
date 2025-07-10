@@ -6,7 +6,13 @@ class KartelTopBar {
         this.currentPage = this.detectCurrentPage();
         
         console.log('🎯 Initializing Kartel Top Bar for page:', this.currentPage);
-        this.render();
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.render());
+        } else {
+            this.render();
+        }
     }
 
     detectCurrentPage() {
