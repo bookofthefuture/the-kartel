@@ -32,7 +32,7 @@ class KartelAuth {
             console.log('🔍 Found existing token, verifying...');
             await this.verifyToken();
         } else {
-            console.log('🔄 No existing token found');
+            console.log('🔄 No existing token found, showing login...');
             this.showLogin();
         }
     }
@@ -200,9 +200,16 @@ class KartelAuth {
     }
 
     showLogin() {
+        console.log('🔑 Showing login form...');
         const loginSection = document.getElementById('loginSection');
         const dashboardSection = document.getElementById('dashboardSection');
         const loadingSection = document.getElementById('loadingSection');
+        
+        console.log('📍 Elements found:', {
+            loginSection: !!loginSection,
+            dashboardSection: !!dashboardSection,
+            loadingSection: !!loadingSection
+        });
         
         if (loginSection) loginSection.classList.remove('hidden');
         if (dashboardSection) dashboardSection.classList.add('hidden');
@@ -255,7 +262,12 @@ class KartelAuth {
 
     renderLoginForm() {
         const loginContainer = document.getElementById('loginContainer');
-        if (!loginContainer) return;
+        if (!loginContainer) {
+            console.error('❌ loginContainer element not found - cannot render login form');
+            return;
+        }
+        
+        console.log('📝 Rendering login form in container:', loginContainer);
         
         loginContainer.innerHTML = `
             <div class="login-card">
