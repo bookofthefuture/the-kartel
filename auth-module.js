@@ -54,8 +54,7 @@ class KartelAuth {
             const response = await fetch('/.netlify/functions/verify-login-token', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ token: this.token })
             });
