@@ -5,7 +5,7 @@ const webpush = require('web-push');
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  'mailto:admin@thekartel.co.uk',
+  `mailto:${process.env.ADMIN_EMAIL}`,
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );

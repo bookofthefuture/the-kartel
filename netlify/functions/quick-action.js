@@ -142,7 +142,7 @@ async function sendApprovalEmail(application) {
 
   const msg = {
     to: application.email,
-    from: 'noreply@the-kartel.com',
+    from: process.env.FROM_EMAIL,
     subject: 'Welcome to The Kartel - Application Approved!',
     html: `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -195,7 +195,7 @@ async function sendRejectionEmail(application) {
 
   const msg = {
     to: application.email,
-    from: 'noreply@the-kartel.com',
+    from: process.env.FROM_EMAIL,
     subject: 'The Kartel - Application Update',
     html: `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
