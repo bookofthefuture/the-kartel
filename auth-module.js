@@ -13,7 +13,8 @@ class KartelAuth {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
-            this.init();
+            // DOM already loaded
+            setTimeout(() => this.init(), 10);
         }
     }
 
