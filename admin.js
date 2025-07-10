@@ -1011,71 +1011,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check for quick action parameters in URL
     checkQuickActionParams();
     
-    // Login form - now uses unified member-login with admin validation
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const loginBtn = document.getElementById('loginBtn');
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Logging in...';
-        try {
-            const response = await fetch('/.netlify/functions/member-login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const result = await response.json();
-            if (response.ok && result.success) {
-                // Check if user has admin privileges
-                if (!result.isAdmin) {
-                    const errorDiv = document.getElementById('loginError');
-                    errorDiv.textContent = 'Admin access required. This account does not have administrative privileges.';
-                    errorDiv.classList.remove('hidden');
-                    return;
-                }
-                
-                authToken = result.token;
-                localStorage.setItem('kartel_admin_token', authToken);
-                
-                // Store admin user information
-                if (result.adminUser) {
-                    localStorage.setItem('kartel_admin_user', JSON.stringify(result.adminUser));
-                    updateUserDisplay(result.adminUser);
-                }
-                
-                // Store member information for potential member view switching
-                localStorage.setItem('kartel_member_token', result.token);
-                localStorage.setItem('kartel_member_email', result.memberEmail);
-                localStorage.setItem('kartel_member_id', result.memberId);
-                localStorage.setItem('kartel_member_firstName', result.adminUser?.firstName || '');
-                localStorage.setItem('kartel_member_lastName', result.adminUser?.lastName || '');
-                
-                console.log('👑 Admin login successful, unified auth tokens stored');
-                showDashboard();
-            } else {
-                const errorDiv = document.getElementById('loginError');
-                errorDiv.textContent = result.error || 'Invalid credentials';
-                errorDiv.classList.remove('hidden');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            const errorDiv = document.getElementById('loginError');
-            errorDiv.textContent = 'Login failed. Please try again.';
-            errorDiv.classList.remove('hidden');
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Login';
-        }
-    });
-
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        authToken = null;
-        localStorage.removeItem('kartel_admin_token');
-        localStorage.removeItem('kartel_admin_user');
-        showLogin();
-    });
+    // Login is now handled by unified auth system
+    console.log('📝 Admin.js loaded - authentication handled by unified system');
 
     // Refresh buttons
     document.getElementById('refreshBtn').addEventListener('click', loadApplications);
