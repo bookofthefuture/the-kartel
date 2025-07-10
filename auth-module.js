@@ -54,7 +54,7 @@ class KartelAuth {
                 this.showLogin();
             }
         } else {
-            console.log('🔄 No existing token found, showing login...');
+            console.log('🔄 No existing token found, showing login form now...');
             this.showLogin();
         }
     }
