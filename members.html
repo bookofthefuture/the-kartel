@@ -666,8 +666,9 @@
         window.onAuthSuccess = function(user, isAdmin) {
             console.log('🎉 Member auth success:', user, isAdmin);
             
-            // Set current member data
+            // Set current member data for compatibility with existing code
             currentMember = user;
+            memberToken = kartelAuth.getToken();
             
             // Initialize member dashboard
             showDashboard();
@@ -790,19 +791,7 @@
             }
         }
 
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            memberToken = null;
-            currentMember = null;
-            localStorage.removeItem('kartel_member_token');
-            localStorage.removeItem('kartel_member_id');
-            localStorage.removeItem('kartel_member_email');
-            localStorage.removeItem('kartel_member_firstName');
-            localStorage.removeItem('kartel_member_lastName');
-            localStorage.removeItem('kartel_member_company');
-            localStorage.removeItem('kartel_member_position');
-            localStorage.removeItem('kartel_member_phone');
-            window.location.href = 'index.html';
-        });
+        // Logout button now handled by unified auth module
 
         // Keep all your existing event and venue loading functions here
         async function loadEvents(type) {

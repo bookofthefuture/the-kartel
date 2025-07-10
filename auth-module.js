@@ -241,8 +241,9 @@ class KartelAuth {
         if (loadingSection) loadingSection.classList.add('hidden');
         if (dashboardSection) dashboardSection.classList.remove('hidden');
         
-        // Update top bar
+        // Update top bar - render it first if it hasn't been rendered yet
         if (window.kartelTopBar) {
+            window.kartelTopBar.render(); // Ensure it's rendered
             window.kartelTopBar.updateUser(this.currentUser, this.isAdmin);
         }
         

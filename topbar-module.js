@@ -32,7 +32,7 @@ class KartelTopBar {
     render() {
         const header = document.querySelector('.header');
         if (!header) {
-            console.warn('⚠️ No .header element found to render top bar');
+            console.log('📍 No .header element found yet - will render when user is authenticated');
             return;
         }
 
