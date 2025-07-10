@@ -721,6 +721,14 @@
             // Set global variables for existing admin code
             authToken = kartelAuth.getToken();
             
+            // Ensure top bar is rendered properly for admin
+            if (window.kartelTopBar) {
+                setTimeout(() => {
+                    window.kartelTopBar.render();
+                    window.kartelTopBar.updateUser(user, isAdmin);
+                }, 100);
+            }
+            
             // Initialize admin dashboard
             showDashboard();
             loadApplications();

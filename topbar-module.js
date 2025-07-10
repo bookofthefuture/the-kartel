@@ -80,10 +80,17 @@ class KartelTopBar {
         if (!this.currentUser) return '';
 
         const userName = this.currentUser.fullName || this.currentUser.firstName || this.currentUser.email;
+        const displayName = this.currentUser.firstName || this.currentUser.email;
+        
+        // Only show profile editing on member pages
+        const isMemberPage = this.currentPage === 'members';
+        const profileButton = isMemberPage ? 
+            `<span class="member-name-clickable" onclick="openProfileModal()">${displayName}</span>` :
+            `<span class="user-name">Welcome, ${userName}</span>`;
         
         return `
             <div class="user-info">
-                <span class="user-name">Welcome, ${userName}</span>
+                ${profileButton}
                 <button class="logout-btn" onclick="kartelTopBar.logout()">Logout</button>
             </div>
         `;

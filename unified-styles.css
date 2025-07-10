@@ -246,6 +246,23 @@
     font-size: 0.95rem;
 }
 
+.member-name-clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 6px 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #ecf0f1;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.member-name-clickable:hover {
+    background: rgba(255,255,255,0.1);
+    text-decoration: underline;
+    border-color: rgba(255,255,255,0.6);
+}
+
 .logout-btn {
     background: #3498db;
     color: white;
