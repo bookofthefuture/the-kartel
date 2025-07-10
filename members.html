@@ -670,6 +670,12 @@
             currentMember = user;
             memberToken = kartelAuth.getToken();
             
+            console.log('🔧 Variables set:', { 
+                memberToken: !!memberToken, 
+                currentMember: !!currentMember,
+                userId: currentMember?.id 
+            });
+            
             // Initialize member dashboard
             showDashboard();
             
@@ -795,23 +801,41 @@
 
         // Keep all your existing event and venue loading functions here
         async function loadEvents(type) {
+            console.log(`📅 Loading ${type} events...`);
+            console.log('🔑 Using token:', memberToken ? 'Token available' : 'No token');
+            
             const container = type === 'upcoming' ? document.getElementById('upcomingEventsContainer') : document.getElementById('myEventsContainer');
+            
+            if (!container) {
+                console.error(`❌ Container not found for ${type} events`);
+                return;
+            }
+            
             container.innerHTML = '<div class="loading">Loading events...</div>';
 
             try {
+                console.log('📡 Making API request to get-events-member...');
                 const response = await fetch('/.netlify/functions/get-events-member', {
                     headers: { 'Authorization': `Bearer ${memberToken}` }
                 });
 
+                console.log('📊 API Response:', response.status, response.statusText);
+                
                 if (response.status === 401) {
+                    console.error('❌ Unauthorized - token may be invalid');
                     showLogin();
                     showMessage('Your session has expired. Please log in again.', 'error');
                     return;
                 }
-                if (!response.ok) throw new Error('Failed to load events');
+                if (!response.ok) {
+                    console.error('❌ API Error:', response.status, response.statusText);
+                    throw new Error(`Failed to load events: ${response.status}`);
+                }
 
                 const data = await response.json();
+                console.log('📄 Events data received:', data);
                 allEvents = data.events || [];
+                console.log(`✅ Found ${allEvents.length} events`);
                 renderEvents(type, container);
 
             } catch (error) {
