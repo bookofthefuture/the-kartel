@@ -7,8 +7,12 @@ body { font-family: 'League Spartan', 'Arial', sans-serif; background: #f8f9fa; 
 .header-logo img { height: 50px; width: auto; }
 .header-title { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #ffffff; font-family: 'League Spartan', sans-serif; margin: 0; }
 .user-info { display: flex; align-items: center; gap: 15px; font-family: 'League Spartan', sans-serif; }
+.member-name-clickable { cursor: pointer; transition: all 0.2s ease; border-radius: 4px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); }
+.member-name-clickable:hover { background: rgba(255,255,255,0.1); text-decoration: underline; border-color: rgba(255,255,255,0.6); }
 .logout-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.3s ease; font-family: 'League Spartan', sans-serif; }
 .logout-btn:hover { background: #2980b9; }
+.switch-btn { background: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.3s ease; font-family: 'League Spartan', sans-serif; margin-right: 10px; }
+.switch-btn:hover { background: #229954; }
 .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
 .dashboard-header { text-align: center; margin-bottom: 40px; }
 .dashboard-title { font-size: 2.5rem; color: #2c3e50; margin-bottom: 10px; font-weight: 800; font-family: 'League Spartan', sans-serif; }

@@ -102,13 +102,18 @@ exports.handler = async (event, context) => {
         token: sessionToken,
         memberId: member.id,
         memberEmail: member.email,
-        memberFirstName: member.firstName || '',
-        memberLastName: member.lastName || '',
-        memberCompany: member.company || '',
-        memberPosition: member.position || '',
-        memberPhone: member.phone || '',
-        memberLinkedin: member.linkedin || '',
-        hasPassword: !!(member.memberPasswordHash && member.memberPasswordSalt),
+        memberFullName: member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email,
+        isAdmin: !!member.isAdmin,
+        // Complete member profile data (consistent with member-login.js)
+        memberProfile: {
+          firstName: member.firstName,
+          lastName: member.lastName,
+          company: member.company,
+          position: member.position,
+          phone: member.phone,
+          linkedin: member.linkedin,
+          hasPassword: !!(member.memberPasswordHash && member.memberPasswordSalt)
+        },
         message: 'Login successful'
       })
     };

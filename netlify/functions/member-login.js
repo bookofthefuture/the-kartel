@@ -126,21 +126,46 @@ exports.handler = async (event, context) => {
     // Generate a simple token (similar to admin-login for consistency)
     const token = crypto.randomBytes(32).toString('hex');
 
-    // 5. Standard success response
+    // 5. Enhanced success response with complete member profile
+    const response = {
+      success: true,
+      token: token,
+      memberId: memberApplication.id,
+      memberEmail: memberApplication.email,
+      memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
+      isAdmin: !!memberApplication.isAdmin,
+      // Complete member profile data
+      memberProfile: {
+        firstName: memberApplication.firstName,
+        lastName: memberApplication.lastName,
+        company: memberApplication.company,
+        position: memberApplication.position,
+        phone: memberApplication.phone,
+        linkedin: memberApplication.linkedin,
+        hasPassword: !!(memberApplication.memberPasswordHash && memberApplication.memberPasswordSalt)
+      },
+      message: 'Login successful'
+    };
+
+    // Add admin-specific data if user is an admin
+    if (memberApplication.isAdmin) {
+      console.log(`👑 Admin login detected for: ${memberApplication.email}`);
+      response.adminUser = {
+        id: memberApplication.id,
+        email: memberApplication.email,
+        name: response.memberFullName,
+        firstName: memberApplication.firstName,
+        lastName: memberApplication.lastName
+      };
+    }
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({
-        success: true,
-        token: token,
-        memberId: memberApplication.id, // Return member ID
-        memberEmail: memberApplication.email,
-        memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
-        message: 'Login successful'
-      })
+      body: JSON.stringify(response)
     };
 
   } catch (error) {

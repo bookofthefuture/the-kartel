@@ -37,8 +37,10 @@ The Kartel is a static website for an exclusive business networking group based 
 - `npm run test:watch` - Run tests in watch mode
 
 **Deployment:**
-- `npm run deploy:preview` - Deploy to Netlify preview URL for testing
-- `npm run deploy:prod` - Deploy to production
+- `npm run deploy:preview` - Deploy to Netlify preview URL for testing (with deploy message)
+- `npm run deploy:prod` - Deploy to production (with deploy message)
+- `./scripts/deploy-preview.sh "Custom message"` - Deploy to preview with custom message
+- `./scripts/deploy-prod.sh "Custom message"` - Deploy to production with custom message
 - `npm run functions:serve` - Serve functions only
 
 **Setup:**
@@ -103,6 +105,43 @@ The Kartel is a static website for an exclusive business networking group based 
 - **Event History**: View past and upcoming events
 - **Quick Registration**: One-click signup from email announcements
 - **Password Management**: Set, change, and reset passwords through secure email flow
+- **Admin-Member Switching**: Seamless view switching for admin users between admin and member interfaces
+- **Progressive Web App**: Installable app with offline functionality and push notifications
+
+## Recent Major Features (2025)
+
+### Email Registration System
+- **One-Click Registration**: Direct registration links in event announcement emails
+- **Smart Authentication Flow**: Auto-detects admin/member authentication status
+- **Cross-Authentication Support**: Admin users can seamlessly register for events as members
+- **URL Parameter Handling**: Clean registration flow with proper error/success messaging
+- **Test Email Integration**: Real registration links in admin test emails for proper testing
+
+### Progressive Web App (PWA)
+- **Member PWA**: Installable member app with custom go-kart themed icons
+- **Admin PWA**: Separate installable admin app with distinct branding
+- **Push Notifications**: Web push notifications for event announcements and new applications
+- **Offline Functionality**: Service worker caching for improved performance
+- **Installation Prompts**: Native app-like installation experience
+
+### Dual Authentication System
+- **Magic Link Authentication**: Secure email-based login (original system)
+- **Username/Password Authentication**: Traditional login with PBKDF2 password hashing
+- **Password Reset Flow**: Secure email-based password reset with token validation
+- **Backward Compatibility**: Existing members seamlessly transition between authentication methods
+- **Cross-Platform Session Management**: Admin credentials detected in member area for easy switching
+
+### Admin-Member Navigation
+- **Smart View Switching**: Admin users can switch between admin and member views
+- **Contextual UI**: Admin switch button only appears for authenticated admin users
+- **Session Preservation**: Maintains authentication state across view switches
+- **Visual Distinction**: Different colored buttons for admin→member vs member→admin navigation
+
+### Data Recovery & Resilience
+- **Application List Recovery**: System to rebuild corrupted application lists from individual records
+- **Emergency Admin Access**: Fallback authentication using environment variables
+- **Blob Storage Management**: Robust handling of Netlify Blobs storage with error recovery
+- **Data Validation**: Comprehensive error handling and data integrity checks
 
 ## File Organization
 
@@ -122,7 +161,10 @@ The Kartel is a static website for an exclusive business networking group based 
 │   │   └── static/         # Individual font weights
 │   └── the-kartel-logo.png # Logo asset
 ├── scripts/
-│   └── test-functions.js   # Local function testing utility
+│   ├── test-functions.js   # Local function testing utility
+│   ├── deploy-preview.sh   # Preview deployment with custom messages
+│   ├── deploy-prod.sh      # Production deployment with custom messages
+│   └── generate-icons.js   # PWA icon generation script
 ├── tests/                  # Jest test suite
 │   ├── setup.js
 │   ├── validation.test.js
@@ -184,11 +226,11 @@ The Kartel is a static website for an exclusive business networking group based 
 - **Local Development**: Full Netlify CLI setup with function simulation and testing
 - **Email System**: Complete announcement system with test functionality and safety features
 - **LinkedIn Integration**: Automatic URL parsing and member networking features
-- **Dependencies**: Node.js packages for @netlify/blobs, @sendgrid/mail, and netlify-cli
+- **Dependencies**: Node.js packages for @netlify/blobs, @sendgrid/mail, web-push, and netlify-cli
 - **Storage**: All member data, events, and venues stored in Netlify Blobs
 - **Authentication**: Dual authentication system for admin and member access
 - **Password Security**: PBKDF2 hashing with secure token-based reset system
-- **PWA Ready**: Token-based authentication with localStorage persistence for mobile app development
+- **PWA Implementation**: Full Progressive Web App with manifests, service workers, and push notifications
 - **Data Recovery**: Built-in recovery system for applications list corruption
 - **Performance**: Optimized with inline assets and minimal dependencies
 - **Accessibility**: Semantic HTML5 structure throughout all interfaces
@@ -231,3 +273,57 @@ The Kartel is a static website for an exclusive business networking group based 
 5. **Production**: Deploy with `npm run deploy:prod` after thorough testing
 6. **Environment Variables**: Configure via `.env` file using `.env.example` template
 7. **Data Recovery**: Use admin recovery button if applications list becomes corrupted
+
+## Progressive Web App (PWA) Features
+
+### PWA Manifests
+- **Members App**: `/manifest.json` with member-focused shortcuts and icons
+- **Admin App**: `/admin-manifest.json` with admin-specific shortcuts and icons
+- **App Icons**: Complete icon sets (72px to 512px) with maskable variants for both apps
+- **Installation**: Browser-native install prompts with custom UI for enhanced UX
+- **Shortcuts**: App-specific shortcuts for quick access to key features
+
+### Service Worker Implementation
+- **Caching Strategy**: Cache-first for static assets, network-first for dynamic content
+- **Offline Support**: Core functionality available without internet connection
+- **Auto-Updates**: Automatic service worker updates with user notification
+- **Asset Management**: Separate caches for member and admin app resources
+- **Background Sync**: Prepared for offline form submission capabilities
+
+### Push Notifications
+- **VAPID Authentication**: Secure push notification setup with environment variable keys
+- **User Targeting**: Separate notification channels for members and admins
+- **Event Announcements**: Automatic push notifications when new events are created
+- **Application Alerts**: Instant admin notifications for new membership applications
+- **Subscription Management**: Automatic cleanup of invalid subscriptions
+- **Cross-Platform**: Works on mobile and desktop browsers supporting Web Push API
+
+### PWA Infrastructure Files
+```
+/the-kartel/
+├── manifest.json              # Members PWA manifest
+├── admin-manifest.json        # Admin PWA manifest
+├── sw.js                      # Service worker for both apps
+├── notification-manager.js    # Push notification management class
+├── icons/                     # PWA icons directory
+│   ├── icon-*.svg            # Member app icons (72px-512px + maskable)
+│   ├── admin-icon-*.svg      # Admin app icons (72px-512px + maskable)
+│   └── *-shortcut-*.svg      # Shortcut icons for app features
+├── scripts/
+│   └── generate-icons.js     # Icon generation utility
+└── netlify/functions/
+    ├── subscribe-notifications.js    # Push subscription management
+    ├── send-push-notification.js     # Manual push notification sending
+    └── get-vapid-key.js             # VAPID public key distribution
+```
+
+### Enhanced Dependencies
+- **web-push**: Server-side push notification delivery
+- **@netlify/blobs**: Push subscription storage and management
+- **notification-manager.js**: Client-side notification permission and subscription handling
+
+### PWA Environment Variables
+Required for push notifications:
+- `VAPID_PUBLIC_KEY`: Public VAPID key for client subscription
+- `VAPID_PRIVATE_KEY`: Private VAPID key for server-side push sending
+- `ADMIN_EMAIL`: Admin contact email for VAPID identification

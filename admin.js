@@ -897,7 +897,24 @@ function showDashboard() {
 function updateUserDisplay(user) {
     const userEmailElement = document.getElementById('userEmail');
     if (userEmailElement && user) {
-        userEmailElement.textContent = user.name || user.email || 'Admin';
+        // Show just the first name like the member area
+        const firstName = user.firstName || user.name?.split(' ')[0] || user.email || 'Admin';
+        userEmailElement.textContent = firstName;
+    }
+}
+
+function openAdminProfile() {
+    // For now, just show an alert - could be enhanced with a proper modal later
+    const storedUser = localStorage.getItem('kartel_admin_user');
+    if (storedUser) {
+        try {
+            const user = JSON.parse(storedUser);
+            alert(`Admin Profile\n\nName: ${user.name || 'Not set'}\nEmail: ${user.email || 'Not set'}\n\nAdmin profile management coming soon!`);
+        } catch (error) {
+            alert('Admin profile information is not available.');
+        }
+    } else {
+        alert('Admin profile information is not available.');
     }
 }
 
@@ -908,6 +925,7 @@ function checkAuth() {
         if (storedUser) {
             try {
                 const user = JSON.parse(storedUser);
+                console.log('🔍 Restoring admin user display:', user);
                 updateUserDisplay(user);
             } catch (error) {
                 console.error('Error parsing stored user data:', error);
@@ -984,31 +1002,47 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check for quick action parameters in URL
     checkQuickActionParams();
     
-    // Login form
+    // Login form - now uses unified member-login with admin validation
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const loginBtn = document.getElementById('loginBtn');
         loginBtn.disabled = true;
         loginBtn.textContent = 'Logging in...';
         try {
-            const response = await fetch('/.netlify/functions/admin-login', {
+            const response = await fetch('/.netlify/functions/member-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
             const result = await response.json();
             if (response.ok && result.success) {
+                // Check if user has admin privileges
+                if (!result.isAdmin) {
+                    const errorDiv = document.getElementById('loginError');
+                    errorDiv.textContent = 'Admin access required. This account does not have administrative privileges.';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                
                 authToken = result.token;
                 localStorage.setItem('kartel_admin_token', authToken);
                 
-                // Store and display user information
-                if (result.user) {
-                    localStorage.setItem('kartel_admin_user', JSON.stringify(result.user));
-                    updateUserDisplay(result.user);
+                // Store admin user information
+                if (result.adminUser) {
+                    localStorage.setItem('kartel_admin_user', JSON.stringify(result.adminUser));
+                    updateUserDisplay(result.adminUser);
                 }
                 
+                // Store member information for potential member view switching
+                localStorage.setItem('kartel_member_token', result.token);
+                localStorage.setItem('kartel_member_email', result.memberEmail);
+                localStorage.setItem('kartel_member_id', result.memberId);
+                localStorage.setItem('kartel_member_firstName', result.adminUser?.firstName || '');
+                localStorage.setItem('kartel_member_lastName', result.adminUser?.lastName || '');
+                
+                console.log('👑 Admin login successful, unified auth tokens stored');
                 showDashboard();
             } else {
                 const errorDiv = document.getElementById('loginError');
@@ -2480,13 +2514,13 @@ async function sendTestEmailFromModal(eventId) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            showMessage(`Test email sent successfully to ${adminEmail}!`, 'success', 'eventsMessageContainer');
+            showMessage(`Test email sent successfully to ${adminEmail}!`, 'success', 'eventModalMessageContainer');
         } else {
-            showError(`Failed to send test email: ${result.error}`, 'eventsMessageContainer');
+            showError(`Failed to send test email: ${result.error}`, 'eventModalMessageContainer');
         }
     } catch (error) {
         console.error('Error sending test email:', error);
-        showError('An error occurred while sending the test email', 'eventsMessageContainer');
+        showError('An error occurred while sending the test email', 'eventModalMessageContainer');
     } finally {
         testBtn.textContent = originalText;
         testBtn.disabled = false;
@@ -2585,3 +2619,29 @@ window.loadExperienceVideo = loadExperienceVideo;
 window.updateExperienceVideo = updateExperienceVideo;
 window.closeApplicantModal = closeApplicantModal;
 window.closeEventConfirmationModal = closeEventConfirmationModal;
+
+// Switch to member view function
+function switchToMemberView() {
+    const adminUser = localStorage.getItem('kartel_admin_user');
+    
+    if (adminUser) {
+        try {
+            const user = JSON.parse(adminUser);
+            console.log('👨‍💼 Switching to member view for admin:', user.email);
+            
+            // Store a marker that we switched from admin
+            sessionStorage.setItem('switched_from_admin', 'true');
+            
+            // Navigate to members area
+            window.location.href = '/members.html';
+        } catch (error) {
+            console.error('Error parsing admin user data:', error);
+            // Fallback - just navigate to members
+            window.location.href = '/members.html';
+        }
+    } else {
+        window.location.href = '/members.html';
+    }
+}
+
+window.switchToMemberView = switchToMemberView;

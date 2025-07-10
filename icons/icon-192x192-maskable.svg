@@ -1,0 +1,30 @@
+
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Full background for maskable -->
+  <rect width="192" height="192" fill="#1a2332"/>
+  
+  <!-- Centered and scaled go-kart design -->
+  <g transform="translate(19.200000000000003, 19.200000000000003) scale(0.8)">
+    <!-- Go-kart body -->
+    <path d="M48 108 L132 108 C138 108 144 102 144 96 L144 84 C144 78 138 72 132 72 L48 72 C42 72 36 78 36 84 L36 96 C36 102 42 108 48 108 Z" fill="#2b9ce6"/>
+    
+    <!-- Driver helmet -->
+    <circle cx="108" cy="60" r="21" fill="#2b9ce6"/>
+    <path d="M96 48 L120 48 C123 48 126 51 126 54 L126 60 C126 63 123 66 120 66 L96 66 C93 66 90 63 90 60 L90 54 C90 51 93 48 96 48 Z" fill="white"/>
+    
+    <!-- Wheels -->
+    <circle cx="60" cy="120" r="15" fill="#1a2332" stroke="#2b9ce6" stroke-width="6"/>
+    <circle cx="120" cy="120" r="15" fill="#1a2332" stroke="#2b9ce6" stroke-width="6"/>
+    
+    <!-- Speed lines -->
+    <path d="M24 84 L36 84" stroke="#f59e0b" stroke-width="9" stroke-linecap="round"/>
+    <path d="M18 96 L30 96" stroke="#f59e0b" stroke-width="9" stroke-linecap="round"/>
+    
+    <!-- Checkered flag -->
+    <rect x="144" y="48" width="24" height="18" fill="white"/>
+    <rect x="144" y="48" width="12" height="9" fill="#1a2332"/>
+    <rect x="156" y="57" width="12" height="9" fill="#1a2332"/>
+    
+    
+  </g>
+</svg>

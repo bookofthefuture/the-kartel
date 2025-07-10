@@ -166,9 +166,15 @@ exports.handler = async (event, context) => {
 async function sendTestAnnouncementEmail(member, eventDetails, venueDetails) {
   const baseUrl = process.env.SITE_URL || 'https://the-kartel.com';
   
-  // Generate test registration token (non-functional for test)
-  const registrationToken = 'TEST_TOKEN_DO_NOT_USE';
+  // Generate REAL registration token for testing HTTPS links
+  const registrationToken = crypto.createHash('sha256')
+    .update(`${eventDetails.id}:${member.email}:${process.env.NETLIFY_ACCESS_TOKEN}`)
+    .digest('hex')
+    .substring(0, 32);
   const quickRegisterUrl = `${baseUrl}/.netlify/functions/quick-register-event`;
+  
+  console.log(`📧 Test email URL: ${quickRegisterUrl}`);
+  console.log(`🔑 Test email token: ${registrationToken}`);
   
   // Format date and time
   const eventDate = new Date(eventDetails.date);
@@ -231,18 +237,29 @@ async function sendTestAnnouncementEmail(member, eventDetails, venueDetails) {
         ${eventDetails.description ? `<p style="font-size: 16px; line-height: 1.6; color: #2c3e50; margin: 20px 0;">${eventDetails.description}</p>` : ''}
       </div>
       
-      <!-- Quick Registration (Disabled for Test) -->
+      <!-- Quick Registration (LIVE for Testing) -->
       <div style="padding: 30px; background: #ecf0f1; text-align: center;">
         <h3 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Register Now</h3>
         
         <div style="margin-bottom: 30px;">
-          <button disabled style="background: #95a5a6; color: white; padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: not-allowed; text-transform: uppercase; letter-spacing: 1px; font-family: 'League Spartan', 'Arial', sans-serif;">
-            🎫 Register for Event (DISABLED - TEST)
-          </button>
+          <a href="${baseUrl}/members.html?register=${eventDetails.id}&token=${registrationToken}&email=${encodeURIComponent(member.email)}#events" 
+             style="display: inline-block; background: #27ae60; color: white; padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-family: 'League Spartan', 'Arial', sans-serif; text-decoration: none; transition: background-color 0.3s ease;"
+             onmouseover="this.style.backgroundColor='#229954'"
+             onmouseout="this.style.backgroundColor='#27ae60'">
+            🎫 Register for Event (TEST LINK)
+          </a>
+          
+          <!-- Debug info for test email -->
+          <div style="margin-top: 10px; font-size: 12px; color: #666; font-family: monospace;">
+            <strong>Debug:</strong> Link URL: ${baseUrl}/members.html#events?register=${eventDetails.id}&token=${registrationToken}&email=${encodeURIComponent(member.email)}<br>
+            <strong>Token:</strong> ${registrationToken}<br>
+            <strong>Event ID:</strong> ${eventDetails.id}<br>
+            <strong>Member Email:</strong> ${member.email}
+          </div>
         </div>
         
         <p style="font-size: 14px; color: #666; margin-bottom: 0;">
-          <strong>Note:</strong> In real emails, this button would allow one-click registration.
+          <strong>Test:</strong> This link will take you to the event for instant registration.
         </p>
       </div>
       
@@ -272,7 +289,7 @@ async function sendTestAnnouncementEmail(member, eventDetails, venueDetails) {
       
       <!-- Test Footer -->
       <div style="background: #e74c3c; color: white; padding: 15px; text-align: center; font-size: 12px;">
-        🧪 End of test email - Registration button was disabled for safety
+        🧪 End of test email - Registration button is LIVE and functional for testing HTTPS links
       </div>
     </div>
   `;

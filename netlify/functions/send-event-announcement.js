@@ -1,6 +1,14 @@
 // netlify/functions/send-event-announcement.js
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const webpush = require('web-push');
+
+// Configure web-push with VAPID keys
+webpush.setVapidDetails(
+  'mailto:admin@thekartel.co.uk',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -86,6 +94,9 @@ exports.handler = async (event, context) => {
     const approvedMembers = applications.filter(app => app.status === 'approved');
 
     console.log(`📬 Found ${approvedMembers.length} approved members to email`);
+
+    // Send push notification to all members first
+    await sendPushNotification(eventDetails, venueDetails);
 
     // Send emails to all approved members
     const emailPromises = approvedMembers.map(member => 
@@ -187,19 +198,16 @@ async function sendEventAnnouncementEmail(member, eventDetails, venueDetails) {
         <h3 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Register Now</h3>
         
         <div style="margin-bottom: 30px;">
-          <form action="${quickRegisterUrl}" method="POST" style="display: inline-block;">
-            <input type="hidden" name="eventId" value="${eventDetails.id}">
-            <input type="hidden" name="memberEmail" value="${member.email}">
-            <input type="hidden" name="token" value="${registrationToken}">
-            
-            <button type="submit" style="background: #27ae60; color: white; padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-family: 'League Spartan', 'Arial', sans-serif;">
-              🎫 Register for Event
-            </button>
-          </form>
+          <a href="${baseUrl}/members.html?register=${eventDetails.id}&token=${registrationToken}&email=${encodeURIComponent(member.email)}#events" 
+             style="display: inline-block; background: #27ae60; color: white; padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-family: 'League Spartan', 'Arial', sans-serif; text-decoration: none; transition: background-color 0.3s ease;"
+             onmouseover="this.style.backgroundColor='#229954'"
+             onmouseout="this.style.backgroundColor='#27ae60'">
+            🎫 Register for Event
+          </a>
         </div>
         
         <p style="font-size: 14px; color: #666; margin-bottom: 0;">
-          By clicking above, you'll be automatically registered for this event.
+          Click above to view the event and register instantly.
         </p>
       </div>
       
@@ -249,5 +257,104 @@ async function sendEventAnnouncementEmail(member, eventDetails, venueDetails) {
   } catch (emailError) {
     console.error(`❌ Failed to send to ${member.email}:`, emailError);
     throw emailError;
+  }
+}
+
+// Function to send push notifications for events
+async function sendPushNotification(eventDetails, venueDetails) {
+  try {
+    // Skip if VAPID keys not configured
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.log('📱 VAPID keys not configured, skipping push notifications');
+      return;
+    }
+
+    const subscriptionsStore = getStore('push-subscriptions');
+    let memberSubscriptions = [];
+    
+    try {
+      const allSubscriptions = await subscriptionsStore.get('all-subscriptions');
+      if (allSubscriptions) {
+        const parsed = JSON.parse(allSubscriptions);
+        memberSubscriptions = parsed.filter(sub => sub.userType === 'member' && sub.active);
+      }
+    } catch (error) {
+      console.log('📱 No push subscriptions found');
+      return;
+    }
+
+    if (memberSubscriptions.length === 0) {
+      console.log('📱 No member push subscriptions found');
+      return;
+    }
+
+    // Format date for notification
+    const eventDate = new Date(eventDetails.date);
+    const formattedDate = eventDate.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+
+    // Prepare notification payload
+    const notificationPayload = {
+      title: '🏎️ New Kartel Event!',
+      body: `${eventDetails.name} - ${formattedDate}`,
+      icon: '/icons/icon-192x192.svg',
+      badge: '/icons/icon-96x96.svg',
+      data: {
+        eventId: eventDetails.id,
+        url: '/members.html#events',
+        timestamp: Date.now()
+      },
+      requireInteraction: true,
+      actions: [
+        { action: 'view', title: 'View Event' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    };
+
+    // Send notifications
+    const notificationPromises = memberSubscriptions.map(async (subscriptionData) => {
+      try {
+        await webpush.sendNotification(
+          subscriptionData.subscription,
+          JSON.stringify(notificationPayload)
+        );
+        console.log(`📱 Push notification sent to member: ${subscriptionData.id}`);
+        return { success: true, id: subscriptionData.id };
+      } catch (error) {
+        console.error(`📱 Failed to send push notification to ${subscriptionData.id}:`, error);
+        
+        // If subscription is invalid (410 Gone), remove it
+        if (error.statusCode === 410) {
+          console.log(`📱 Removing invalid subscription: ${subscriptionData.id}`);
+          try {
+            await subscriptionsStore.delete(subscriptionData.id);
+            // Update the all-subscriptions list
+            const updatedSubscriptions = memberSubscriptions.filter(
+              sub => sub.id !== subscriptionData.id
+            );
+            await subscriptionsStore.set('all-subscriptions', JSON.stringify(updatedSubscriptions));
+          } catch (cleanupError) {
+            console.error('Error cleaning up invalid subscription:', cleanupError);
+          }
+        }
+        
+        return { success: false, id: subscriptionData.id, error: error.message };
+      }
+    });
+
+    const results = await Promise.allSettled(notificationPromises);
+    const successful = results.filter(result => 
+      result.status === 'fulfilled' && result.value.success
+    ).length;
+    const failed = results.length - successful;
+
+    console.log(`📱 Push notifications: ${successful} sent, ${failed} failed`);
+
+  } catch (error) {
+    console.error('📱 Error sending push notifications:', error);
+    // Don't throw - continue with email sending even if push notifications fail
   }
 }

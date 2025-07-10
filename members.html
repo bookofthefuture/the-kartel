@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Kartel - Members Area</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
+    <!-- PWA Manifest and Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="background-color" content="#1a252f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="The Kartel">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.svg">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
+    
+    <script src="/notification-manager.js"></script>
+    
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -55,6 +69,8 @@
         .user-info { display: flex; align-items: center; gap: 15px; font-family: 'League Spartan', sans-serif; }
         .logout-btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.3s ease; font-family: 'League Spartan', sans-serif; }
         .logout-btn:hover { background: #2980b9; }
+        .switch-btn { background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.3s ease; font-family: 'League Spartan', sans-serif; margin-right: 10px; }
+        .switch-btn:hover { background: #c0392b; }
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         .dashboard-header { text-align: center; margin-bottom: 40px; }
         .dashboard-title { font-size: 2.5rem; color: #2c3e50; margin-bottom: 10px; font-weight: 800; font-family: 'League Spartan', sans-serif; }
@@ -78,6 +94,7 @@
         .form-group input:focus { outline: none; border-color: #3498db; }
         .error { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin: 20px 0; border: 1px solid #f5c6cb; }
         .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin: 20px 0; border: 1px solid #c3e6cb; }
+        .info { background: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 4px; margin: 20px 0; border: 1px solid #b8daff; }
         .hidden { display: none; }
         .events-grid, .venues-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
         .event-card, .venue-card { background: #fff; border: 1px solid #ecf0f1; border-radius: 10px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
@@ -180,7 +197,18 @@
     </style>
 </head>
 <body>
-    <div id="loginSection" class="login-container">
+    <!-- Initial loading state to prevent login flash -->
+    <div id="loadingSection" class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">The Kartel Members</h1>
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 2rem; margin-bottom: 20px;">⏳</div>
+                <p style="color: #7f8c8d;">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginSection" class="login-container hidden">
         <div class="login-card">
             <h1 class="login-title">The Kartel Members</h1>
             <p id="loginInstruction" style="margin-bottom: 20px; color: #7f8c8d;">Choose your preferred login method</p>
@@ -254,6 +282,7 @@
                 </div>
                 <div class="user-info">
                     <span id="memberDisplayName" class="member-name-clickable" onclick="openProfileModal()"></span>
+                    <button id="switchToAdminBtn" class="switch-btn hidden" onclick="switchToAdminView()">🔧 Admin View</button>
                     <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
             </div>
@@ -456,6 +485,7 @@
         }
 
         function showLogin() {
+            document.getElementById('loadingSection').classList.add('hidden');
             document.getElementById('loginSection').classList.remove('hidden');
             document.getElementById('dashboardSection').classList.add('hidden');
             showLoginForm();
@@ -604,12 +634,30 @@
         }
 
         function showDashboard() {
+            document.getElementById('loadingSection').classList.add('hidden');
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
             document.getElementById('memberDisplayName').textContent = currentMember.firstName || currentMember.email;
             // Load venues in background for booking reminders
             loadVenuesData();
-            switchTab('upcomingEvents');
+            
+            // Check hash to determine which tab to show
+            const hash = window.location.hash;
+            if (hash === '#events') {
+                switchTab('upcomingEvents');
+            } else if (hash === '#my-events') {
+                switchTab('myEvents');
+            } else if (hash === '#venues') {
+                switchTab('venues');
+            } else {
+                switchTab('upcomingEvents');
+            }
+            
+            // Check for pending registration from email links
+            checkPendingRegistration();
+            
+            // Check if user is also an admin
+            checkIfAdmin();
         }
 
         function switchTab(tabName) {
@@ -635,6 +683,22 @@
                 hasStoredId: !!localStorage.getItem('kartel_member_id')
             });
             
+            // Check for corrupted auth state and clean it up
+            if (memberToken && !localStorage.getItem('kartel_member_email')) {
+                console.log('🧹 Detected corrupted member auth, cleaning up...');
+                memberToken = null;
+                localStorage.removeItem('kartel_member_token');
+                localStorage.removeItem('kartel_member_id');
+                localStorage.removeItem('kartel_member_email');
+                localStorage.removeItem('kartel_member_firstName');
+                localStorage.removeItem('kartel_member_lastName');
+                localStorage.removeItem('kartel_member_company');
+                localStorage.removeItem('kartel_member_position');
+                localStorage.removeItem('kartel_member_phone');
+                localStorage.removeItem('kartel_member_linkedin');
+                localStorage.removeItem('kartel_member_hasPassword');
+            }
+            
             if (memberToken && localStorage.getItem('kartel_member_email')) {
                 console.log('✅ Found existing auth, loading member data...');
                 currentMember = {
@@ -646,7 +710,8 @@
                     position: localStorage.getItem('kartel_member_position'),
                     phone: localStorage.getItem('kartel_member_phone'),
                     linkedin: localStorage.getItem('kartel_member_linkedin'),
-                    hasPassword: localStorage.getItem('kartel_member_hasPassword') === 'true'
+                    hasPassword: localStorage.getItem('kartel_member_hasPassword') === 'true',
+                    isAdmin: localStorage.getItem('kartel_member_isAdmin') === 'true'
                 };
                 console.log('👤 Current member:', currentMember.email);
                 showDashboard();
@@ -733,16 +798,40 @@
                 
                 if (response.ok && result.success) {
                     memberToken = result.token;
+                    const profile = result.memberProfile || {};
                     currentMember = {
                         id: result.memberId,
                         email: result.memberEmail,
-                        firstName: result.memberFullName.split(' ')[0] || result.memberEmail,
+                        firstName: profile.firstName || result.memberFullName.split(' ')[0] || result.memberEmail,
+                        lastName: profile.lastName || '',
                         fullName: result.memberFullName,
-                        hasPassword: true // User just logged in with password, so they have one
+                        company: profile.company || '',
+                        position: profile.position || '',
+                        phone: profile.phone || '',
+                        linkedin: profile.linkedin || '',
+                        hasPassword: profile.hasPassword || true,
+                        isAdmin: !!result.isAdmin
                     };
                     
+                    // Store complete profile in localStorage
                     localStorage.setItem('kartel_member_token', memberToken);
-                    localStorage.setItem('kartel_member_data', JSON.stringify(currentMember));
+                    localStorage.setItem('kartel_member_email', result.memberEmail);
+                    localStorage.setItem('kartel_member_id', result.memberId);
+                    localStorage.setItem('kartel_member_firstName', currentMember.firstName);
+                    localStorage.setItem('kartel_member_lastName', currentMember.lastName);
+                    localStorage.setItem('kartel_member_company', currentMember.company);
+                    localStorage.setItem('kartel_member_position', currentMember.position);
+                    localStorage.setItem('kartel_member_phone', currentMember.phone);
+                    localStorage.setItem('kartel_member_linkedin', currentMember.linkedin);
+                    localStorage.setItem('kartel_member_isAdmin', result.isAdmin ? 'true' : 'false');
+                    localStorage.setItem('kartel_member_hasPassword', currentMember.hasPassword ? 'true' : 'false');
+                    
+                    // Store admin token if user is admin (for seamless switching)
+                    if (result.isAdmin && result.adminUser) {
+                        localStorage.setItem('kartel_admin_token', memberToken);
+                        localStorage.setItem('kartel_admin_user', JSON.stringify(result.adminUser));
+                        console.log('👑 Admin status detected, storing admin credentials for seamless switching');
+                    }
                     
                     showDashboard();
                 } else {
@@ -762,11 +851,19 @@
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
             const resetToken = urlParams.get('reset');
+            const registered = urlParams.get('registered');
+            const error = urlParams.get('error');
+            const info = urlParams.get('info');
             
             console.log('🔍 Page loaded, checking for token:', token ? 'Token found' : 'No token');
             console.log('🔍 Page loaded, checking for reset token:', resetToken ? 'Reset token found' : 'No reset token');
+            console.log('🔍 Page loaded, checking for registration params:', { registered, error, info });
             console.log('📍 Current URL:', window.location.href);
             console.log('🔧 URL parameters:', Object.fromEntries(urlParams));
+            
+            // Check if user came from admin switch
+            const switchedFromAdmin = sessionStorage.getItem('switched_from_admin');
+            console.log('🔄 Switched from admin:', switchedFromAdmin);
             
             if (resetToken) {
                 console.log('✅ Reset token found, showing password reset form...');
@@ -774,6 +871,16 @@
             } else if (token) {
                 console.log('✅ Token found, starting verification process...');
                 verifyLoginToken(token);
+            } else if (registered || error || info || urlParams.has('register')) {
+                console.log('✅ Registration/error/info parameters found, checking auth first then handling messages...');
+                // Check auth first, then handle URL parameters
+                checkAuth();
+                // Handle URL parameters after a short delay to ensure auth is processed
+                setTimeout(handleUrlParameters, 200);
+            } else if (switchedFromAdmin) {
+                console.log('👨‍💼 User switched from admin, attempting auto-login...');
+                sessionStorage.removeItem('switched_from_admin');
+                attemptAdminToMemberAutoLogin();
             } else {
                 console.log('🔄 No token found, checking existing auth...');
                 checkAuth();
@@ -807,28 +914,32 @@
                 if (response.ok && result.success) {
                     console.log('✅ Token verification successful!');
                     memberToken = result.token;
+                    const profile = result.memberProfile || {};
                     currentMember = {
                         id: result.memberId,
                         email: result.memberEmail,
-                        firstName: result.memberFirstName,
-                        lastName: result.memberLastName,
-                        company: result.memberCompany,
-                        position: result.memberPosition,
-                        phone: result.memberPhone,
-                        linkedin: result.memberLinkedin,
-                        hasPassword: result.hasPassword
+                        firstName: profile.firstName || result.memberFullName?.split(' ')[0] || result.memberEmail,
+                        lastName: profile.lastName || '',
+                        fullName: result.memberFullName,
+                        company: profile.company || '',
+                        position: profile.position || '',
+                        phone: profile.phone || '',
+                        linkedin: profile.linkedin || '',
+                        hasPassword: profile.hasPassword || false,
+                        isAdmin: !!result.isAdmin
                     };
-                    console.log('💾 Storing member data in localStorage...');
+                    console.log('💾 Storing complete member data in localStorage...');
                     localStorage.setItem('kartel_member_token', memberToken);
                     localStorage.setItem('kartel_member_id', currentMember.id);
                     localStorage.setItem('kartel_member_email', currentMember.email);
-                    localStorage.setItem('kartel_member_firstName', currentMember.firstName || '');
-                    localStorage.setItem('kartel_member_lastName', currentMember.lastName || '');
-                    localStorage.setItem('kartel_member_company', currentMember.company || '');
-                    localStorage.setItem('kartel_member_position', currentMember.position || '');
-                    localStorage.setItem('kartel_member_phone', currentMember.phone || '');
-                    localStorage.setItem('kartel_member_linkedin', currentMember.linkedin || '');
-                    localStorage.setItem('kartel_member_hasPassword', currentMember.hasPassword || false);
+                    localStorage.setItem('kartel_member_firstName', currentMember.firstName);
+                    localStorage.setItem('kartel_member_lastName', currentMember.lastName);
+                    localStorage.setItem('kartel_member_company', currentMember.company);
+                    localStorage.setItem('kartel_member_position', currentMember.position);
+                    localStorage.setItem('kartel_member_phone', currentMember.phone);
+                    localStorage.setItem('kartel_member_linkedin', currentMember.linkedin);
+                    localStorage.setItem('kartel_member_isAdmin', result.isAdmin ? 'true' : 'false');
+                    localStorage.setItem('kartel_member_hasPassword', currentMember.hasPassword ? 'true' : 'false');
                     
                     console.log('🧹 Cleaning URL and showing dashboard...');
                     window.history.replaceState({}, document.title, window.location.pathname);
@@ -1848,6 +1959,260 @@
             return true;
         }
 
+        // Handle URL parameters for registration success/error messages and direct registration
+        async function handleUrlParameters() {
+            const params = new URLSearchParams(window.location.search);
+            const hash = window.location.hash;
+            
+            console.log('🔍 handleUrlParameters called with:', {
+                hasRegister: params.has('register'),
+                hasToken: params.has('token'),
+                hasEmail: params.has('email'),
+                currentMember: currentMember ? currentMember.email : 'Not logged in',
+                allParams: Object.fromEntries(params)
+            });
+            
+            // Handle direct registration from email links
+            if (params.has('register') && params.has('token') && params.has('email')) {
+                const eventId = params.get('register');
+                const token = params.get('token');
+                const email = params.get('email');
+                
+                console.log('📧 Direct registration request:', { eventId, token, email });
+                console.log('👤 Current member status:', currentMember ? currentMember.email : 'Not logged in');
+                
+                // If user is logged in, proceed with registration
+                if (currentMember && currentMember.email) {
+                    console.log('✅ User is logged in, checking email match');
+                    // Verify the email matches the logged-in user
+                    if (currentMember.email.toLowerCase() === email.toLowerCase()) {
+                        console.log('✅ Email matches, proceeding with registration');
+                        handleDirectRegistration(eventId, token, email);
+                    } else {
+                        console.log('❌ Email mismatch:', { current: currentMember.email, expected: email });
+                        showMessage('Email mismatch. Please log in with the correct account.', 'error');
+                        showLogin();
+                    }
+                } else {
+                    // Check if user is logged in as admin
+                    const adminToken = localStorage.getItem('kartel_admin_token');
+                    const adminUser = localStorage.getItem('kartel_admin_user');
+                    
+                    if (adminToken && adminUser) {
+                        console.log('👨‍💼 User is logged in as admin, checking if admin email matches member email');
+                        try {
+                            const adminData = JSON.parse(adminUser);
+                            if (adminData.email && adminData.email.toLowerCase() === email.toLowerCase()) {
+                                console.log('✅ Admin email matches member email, attempting auto-login as member');
+                                showMessage('Detected admin login. Switching to member mode for event registration...', 'info');
+                                
+                                // Try to auto-login as member using admin email
+                                await autoLoginAsMember(adminData.email, eventId, token, email);
+                                return;
+                            } else {
+                                console.log('❌ Admin email does not match registration email');
+                                showMessage(`You're logged in as admin (${adminData.email}) but this registration link is for ${email}. Please log in as the correct member.`, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error parsing admin user data:', error);
+                        }
+                    }
+                    
+                    // Store registration info for after login
+                    console.log('💾 Storing registration info for after login:', { eventId, token, email });
+                    sessionStorage.setItem('pendingRegistration', JSON.stringify({
+                        eventId, token, email
+                    }));
+                    localStorage.setItem('kartel_pending_registration', JSON.stringify({
+                        eventId, token, email
+                    }));
+                    showMessage('Please log in as a member to register for the event.', 'info');
+                    showLogin();
+                }
+                
+                // Clean up URL but preserve hash
+                const cleanUrl = window.location.pathname + (hash ? hash : '');
+                window.history.replaceState({}, document.title, cleanUrl);
+                return;
+            }
+            
+            // Handle other URL parameters
+            if (params.has('registered')) {
+                const eventName = params.get('registered');
+                showMessage(`Successfully registered for ${eventName}!`, 'success');
+                
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            if (params.has('error')) {
+                const errorMessage = params.get('error');
+                showMessage(errorMessage, 'error');
+                
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            if (params.has('info')) {
+                const infoMessage = params.get('info');
+                showMessage(infoMessage, 'info');
+                
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        // Handle direct registration from email links
+        async function handleDirectRegistration(eventId, token, email) {
+            console.log('🎫 Processing direct registration:', { eventId, token, email });
+            
+            try {
+                // Verify token and register for event
+                const response = await fetch('/.netlify/functions/quick-register-event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        eventId: eventId,
+                        memberEmail: email,
+                        token: token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showMessage(`Successfully registered for ${result.eventName || 'the event'}!`, 'success');
+                    
+                    // Switch to My Events tab to show the newly registered event
+                    switchTab('myEvents');
+                    
+                    // Show the event modal for the registered event after a short delay
+                    setTimeout(() => {
+                        if (result.eventId) {
+                            showEventDetails(result.eventId);
+                        }
+                    }, 1000);
+                    
+                } else {
+                    showMessage(result.error || result.message || 'Registration failed. Please try again.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Direct registration error:', error);
+                showMessage('Network error during registration. Please try again.', 'error');
+            }
+        }
+
+        // Auto-login as member when admin email matches
+        async function autoLoginAsMember(emailAddress, eventId, token, email) {
+            try {
+                console.log('🔄 Attempting to auto-login as member:', emailAddress);
+                
+                // Check if this email exists as an approved member
+                const response = await fetch('/.netlify/functions/get-applications', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('kartel_admin_token')}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch member data');
+                }
+                
+                const data = await response.json();
+                const member = data.applications?.find(app => 
+                    app.email.toLowerCase() === emailAddress.toLowerCase() && 
+                    app.status === 'approved'
+                );
+                
+                if (member) {
+                    console.log('✅ Found approved member, creating member session');
+                    
+                    // Create member session
+                    const memberToken = 'admin_generated_' + Date.now();
+                    currentMember = {
+                        id: member.id,
+                        email: member.email,
+                        firstName: member.firstName,
+                        lastName: member.lastName,
+                        company: member.company,
+                        position: member.position,
+                        phone: member.phone,
+                        linkedin: member.linkedin,
+                        hasPassword: !!member.passwordHash
+                    };
+                    
+                    // Store member session
+                    localStorage.setItem('kartel_member_token', memberToken);
+                    localStorage.setItem('kartel_member_id', currentMember.id);
+                    localStorage.setItem('kartel_member_email', currentMember.email);
+                    localStorage.setItem('kartel_member_firstName', currentMember.firstName || '');
+                    localStorage.setItem('kartel_member_lastName', currentMember.lastName || '');
+                    localStorage.setItem('kartel_member_company', currentMember.company || '');
+                    localStorage.setItem('kartel_member_position', currentMember.position || '');
+                    localStorage.setItem('kartel_member_phone', currentMember.phone || '');
+                    localStorage.setItem('kartel_member_linkedin', currentMember.linkedin || '');
+                    localStorage.setItem('kartel_member_hasPassword', currentMember.hasPassword || false);
+                    
+                    showDashboard();
+                    showMessage('Successfully switched to member mode!', 'success');
+                    
+                    // Process the registration
+                    setTimeout(() => {
+                        handleDirectRegistration(eventId, token, email);
+                    }, 500);
+                    
+                } else {
+                    console.log('❌ Admin email not found as approved member');
+                    showMessage('Your admin email is not registered as an approved member. Please log in with a member account.', 'error');
+                    showLogin();
+                }
+                
+            } catch (error) {
+                console.error('Error during auto-login as member:', error);
+                showMessage('Failed to switch to member mode. Please log in manually.', 'error');
+                showLogin();
+            }
+        }
+
+        // Check for pending registration after successful login
+        function checkPendingRegistration() {
+            console.log('🔍 Checking for pending registration...');
+            
+            // Check sessionStorage first
+            let pending = sessionStorage.getItem('pendingRegistration');
+            let source = 'sessionStorage';
+            
+            // If not in sessionStorage, check localStorage
+            if (!pending) {
+                pending = localStorage.getItem('kartel_pending_registration');
+                source = 'localStorage';
+            }
+            
+            if (pending) {
+                console.log(`📋 Found pending registration in ${source}:`, pending);
+                const { eventId, token, email } = JSON.parse(pending);
+                
+                // Clean up both storage locations
+                sessionStorage.removeItem('pendingRegistration');
+                localStorage.removeItem('kartel_pending_registration');
+                
+                // Verify email matches logged-in user
+                if (currentMember && currentMember.email.toLowerCase() === email.toLowerCase()) {
+                    console.log('✅ Email matches, proceeding with registration');
+                    handleDirectRegistration(eventId, token, email);
+                } else {
+                    console.log('❌ Email mismatch:', { currentMember: currentMember?.email, expectedEmail: email });
+                    showMessage('Email mismatch. Registration cancelled.', 'error');
+                }
+            } else {
+                console.log('ℹ️ No pending registration found');
+            }
+        }
+
+        // Note: URL parameter handling is now done conditionally in DOMContentLoaded handler
+        // to avoid conflicts with authentication state
+
         // Expose functions to global scope for onclick attributes
         window.switchTab = switchTab;
         window.signUpForEvent = signUpForEvent;
@@ -1867,6 +2232,166 @@
         window.showLinkedInPrompt = showLinkedInPrompt;
         window.closeLinkedInPrompt = closeLinkedInPrompt;
         window.saveLinkedInFromPrompt = saveLinkedInFromPrompt;
+
+        // Admin switch functionality
+        function switchToAdminView() {
+            console.log('🔧 Switching to admin view');
+            window.location.href = '/admin.html';
+        }
+
+        function checkIfAdmin() {
+            // Check if current member has admin privileges
+            const isAdmin = localStorage.getItem('kartel_member_isAdmin') === 'true';
+            const memberEmail = localStorage.getItem('kartel_member_email');
+            
+            console.log('🔍 Checking admin privileges for unified auth:', {
+                isAdmin: isAdmin,
+                memberEmail: memberEmail,
+                hasCurrentMember: !!currentMember,
+                currentMemberIsAdmin: currentMember?.isAdmin
+            });
+            
+            // Also check currentMember object for admin status
+            const hasAdminAccess = isAdmin || (currentMember && currentMember.isAdmin);
+            
+            if (hasAdminAccess) {
+                console.log('👨‍💼 Admin privileges detected, showing admin switch button');
+                const switchBtn = document.getElementById('switchToAdminBtn');
+                console.log('🔧 Switch button element:', switchBtn);
+                if (switchBtn) {
+                    switchBtn.classList.remove('hidden');
+                    console.log('✅ Admin switch button shown');
+                } else {
+                    console.error('❌ Switch button element not found');
+                }
+            } else {
+                console.log('ℹ️ No admin privileges found for current user');
+                const switchBtn = document.getElementById('switchToAdminBtn');
+                if (switchBtn) {
+                    switchBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        // Check for admin credentials when showing dashboard
+        function showDashboardWithAdminCheck() {
+            showDashboard();
+            checkIfAdmin();
+        }
+
+        window.switchToAdminView = switchToAdminView;
+
+        // Auto-login when switching from admin
+        async function attemptAdminToMemberAutoLogin() {
+            console.log('🔄 Attempting admin to member auto-login...');
+            
+            const adminToken = localStorage.getItem('kartel_admin_token');
+            const adminUser = localStorage.getItem('kartel_admin_user');
+            
+            if (!adminToken || !adminUser) {
+                console.log('❌ No admin credentials found, showing login');
+                showLogin();
+                return;
+            }
+            
+            try {
+                const adminData = JSON.parse(adminUser);
+                console.log('👨‍💼 Admin data:', adminData);
+                
+                // Call our existing auto-login function
+                await autoLoginAsMember(adminData.email, null, null, adminData.email);
+                
+            } catch (error) {
+                console.error('❌ Auto-login failed:', error);
+                showLogin();
+            }
+        }
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New content available, prompt user to refresh
+                                    if (confirm('New version available! Reload to update?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install prompt after user has been on the site for a few seconds
+            setTimeout(() => {
+                if (deferredPrompt && !localStorage.getItem('kartel_install_dismissed')) {
+                    showInstallPrompt();
+                }
+            }, 5000);
+        });
+
+        function showInstallPrompt() {
+            const installPrompt = document.createElement('div');
+            installPrompt.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: #2c3e50; color: white;
+                padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 10000; max-width: 300px; font-family: 'League Spartan', sans-serif;
+            `;
+            installPrompt.innerHTML = `
+                <div style="margin-bottom: 10px; font-weight: 600;">Install The Kartel App</div>
+                <div style="margin-bottom: 15px; font-size: 0.9rem; opacity: 0.9;">
+                    Get quick access and offline functionality
+                </div>
+                <div>
+                    <button onclick="installApp()" style="background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-right: 10px; cursor: pointer; font-family: inherit;">Install</button>
+                    <button onclick="dismissInstall()" style="background: transparent; color: #bdc3c7; border: 1px solid #7f8c8d; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-family: inherit;">Later</button>
+                </div>
+            `;
+            installPrompt.id = 'installPrompt';
+            document.body.appendChild(installPrompt);
+        }
+
+        window.installApp = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    console.log('Install prompt result:', choiceResult.outcome);
+                    deferredPrompt = null;
+                });
+            }
+            const prompt = document.getElementById('installPrompt');
+            if (prompt) prompt.remove();
+        };
+
+        window.dismissInstall = function() {
+            localStorage.setItem('kartel_install_dismissed', 'true');
+            const prompt = document.getElementById('installPrompt');
+            if (prompt) prompt.remove();
+        };
+
+        // Initialize notification manager for members
+        let notificationManager;
+        window.addEventListener('load', () => {
+            notificationManager = new NotificationManager('member');
+            window.notificationManager = notificationManager; // Make available globally
+        });
     </script>
 </body>
 </html>

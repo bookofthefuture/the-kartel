@@ -11,13 +11,35 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { eventId, memberEmail, token } = JSON.parse(event.body);
+    let eventId, memberEmail, token;
+    
+    // Handle both JSON and form data
+    if (event.headers['content-type'] && event.headers['content-type'].includes('application/json')) {
+      // JSON data (from JavaScript)
+      const data = JSON.parse(event.body);
+      eventId = data.eventId;
+      memberEmail = data.memberEmail;
+      token = data.token;
+    } else {
+      // Form data (from email forms)
+      const params = new URLSearchParams(event.body);
+      eventId = params.get('eventId');
+      memberEmail = params.get('memberEmail');
+      token = params.get('token');
+    }
     
     // Validate required fields
     if (!eventId || !memberEmail || !token) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing required fields' })
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          error: 'Missing required fields',
+          success: false
+        })
       };
     }
 
@@ -51,7 +73,14 @@ exports.handler = async (event, context) => {
     if (!eventDetails) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ error: 'Event not found' })
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          error: 'Event not found',
+          success: false
+        })
       };
     }
 
@@ -64,8 +93,15 @@ exports.handler = async (event, context) => {
 
     if (!member) {
       return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Member not found or not approved' })
+        statusCode: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          error: 'Member not found or not approved',
+          success: false
+        })
       };
     }
 
@@ -78,7 +114,14 @@ exports.handler = async (event, context) => {
     if (token !== expectedToken) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: 'Invalid registration token' })
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          error: 'Invalid registration token',
+          success: false
+        })
       };
     }
 
@@ -87,9 +130,14 @@ exports.handler = async (event, context) => {
     if (existingAttendee) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ 
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
           error: 'Already registered',
-          message: 'You are already registered for this event'
+          message: `You are already registered for ${eventDetails.name}`,
+          success: false
         })
       };
     }
@@ -98,9 +146,14 @@ exports.handler = async (event, context) => {
     if (eventDetails.maxAttendees && eventDetails.attendees.length >= eventDetails.maxAttendees) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ 
-          error: 'Event full',
-          message: 'This event is already full'
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          error: 'Event is full',
+          message: `${eventDetails.name} is already full`,
+          success: false
         })
       };
     }
@@ -131,32 +184,33 @@ exports.handler = async (event, context) => {
     }
 
     console.log(`✅ ${memberEmail} registered for event ${eventDetails.name}`);
-
+    
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ 
-        success: true, 
-        message: `Successfully registered for ${eventDetails.name}`,
-        event: {
-          id: eventDetails.id,
-          name: eventDetails.name,
-          date: eventDetails.date,
-          venue: eventDetails.venue
-        }
+      body: JSON.stringify({
+        success: true,
+        eventName: eventDetails.name,
+        eventId: eventDetails.id,
+        message: `Successfully registered for ${eventDetails.name}`
       })
     };
 
   } catch (error) {
     console.error('💥 Error in quick registration:', error);
+    
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: 'Registration failed. Please try again.',
+        success: false
       })
     };
   }

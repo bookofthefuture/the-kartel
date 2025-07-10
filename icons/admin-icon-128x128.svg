@@ -1,0 +1,29 @@
+
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background circle -->
+  <circle cx="64" cy="64" r="64" fill="#1a2332"/>
+  
+  <!-- Go-kart body (red for admin) -->
+  <path d="M32 72 L88 72 C92 72 96 68 96 64 L96 56 C96 52 92 48 88 48 L32 48 C28 48 24 52 24 56 L24 64 C24 68 28 72 32 72 Z" fill="#e74c3c"/>
+  
+  <!-- Driver helmet (red for admin) -->
+  <circle cx="72" cy="40" r="14" fill="#e74c3c"/>
+  <path d="M64 32 L80 32 C82 32 84 34 84 36 L84 40 C84 42 82 44 80 44 L64 44 C62 44 60 42 60 40 L60 36 C60 34 62 32 64 32 Z" fill="white"/>
+  
+  <!-- Wheels (red accent for admin) -->
+  <circle cx="40" cy="80" r="10" fill="#1a2332" stroke="#e74c3c" stroke-width="4"/>
+  <circle cx="80" cy="80" r="10" fill="#1a2332" stroke="#e74c3c" stroke-width="4"/>
+  
+  <!-- Speed lines -->
+  <path d="M16 56 L24 56" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M12 64 L20 64" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Checkered flag -->
+  <rect x="96" y="32" width="16" height="12" fill="white"/>
+  <rect x="96" y="32" width="8" height="6" fill="#1a2332"/>
+  <rect x="104" y="38" width="8" height="6" fill="#1a2332"/>
+  
+  <!-- Admin badge (small "A" indicator) -->
+  <circle cx="104" cy="24" r="8" fill="#e74c3c"/>
+  <text x="104" y="27.2" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="10">A</text>
+</svg>

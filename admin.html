@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Kartel - Admin Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
+    <!-- PWA Manifest and Meta Tags -->
+    <link rel="manifest" href="/admin-manifest.json">
+    <meta name="theme-color" content="#e74c3c">
+    <meta name="background-color" content="#1a252f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Kartel Admin">
+    <link rel="apple-touch-icon" href="/icons/admin-icon-192x192.svg">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/admin-icon-152x152.svg">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/admin-icon-192x192.svg">
+    
+    <script src="/notification-manager.js"></script>
+    
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -14,8 +28,8 @@
             <p style="margin-bottom: 30px; color: #7f8c8d;">Admin access required</p>
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -35,7 +49,8 @@
                     <h1 class="header-title">The Kartel Admin</h1>
                 </div>
                 <div class="user-info">
-                    <span id="userEmail">Admin</span>
+                    <span id="userEmail" class="member-name-clickable" onclick="openAdminProfile()">Admin</span>
+                    <button id="switchToMemberBtn" class="switch-btn" onclick="switchToMemberView()">👤 Member View</button>
                     <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
             </div>
@@ -341,6 +356,7 @@
                 <button class="close" onclick="closeEventModal()">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="eventModalMessageContainer"></div>
                 <form id="editEventForm">
                     <input type="hidden" id="editEventId" name="editEventId">
                     <div class="form-row">
@@ -708,5 +724,93 @@
     </div>
 
     <script src="admin.js"></script>
+    
+    <script>
+        // PWA Service Worker Registration for Admin
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Admin Service Worker registered successfully:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New content available, prompt user to refresh
+                                    if (confirm('New admin version available! Reload to update?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('Admin Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // PWA Install Prompt for Admin
+        let adminDeferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            adminDeferredPrompt = e;
+            
+            // Show install prompt after admin has been on the site for a few seconds
+            setTimeout(() => {
+                if (adminDeferredPrompt && !localStorage.getItem('kartel_admin_install_dismissed')) {
+                    showAdminInstallPrompt();
+                }
+            }, 8000); // Longer delay for admin to avoid interrupting work
+        });
+
+        function showAdminInstallPrompt() {
+            const installPrompt = document.createElement('div');
+            installPrompt.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: #e74c3c; color: white;
+                padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 10000; max-width: 320px; font-family: 'League Spartan', sans-serif;
+            `;
+            installPrompt.innerHTML = `
+                <div style="margin-bottom: 10px; font-weight: 600;">Install Admin Dashboard</div>
+                <div style="margin-bottom: 15px; font-size: 0.9rem; opacity: 0.9;">
+                    Get quick admin access with offline functionality and push notifications
+                </div>
+                <div>
+                    <button onclick="installAdminApp()" style="background: #c0392b; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-right: 10px; cursor: pointer; font-family: inherit;">Install</button>
+                    <button onclick="dismissAdminInstall()" style="background: transparent; color: #ecf0f1; border: 1px solid #bdc3c7; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-family: inherit;">Later</button>
+                </div>
+            `;
+            installPrompt.id = 'adminInstallPrompt';
+            document.body.appendChild(installPrompt);
+        }
+
+        window.installAdminApp = function() {
+            if (adminDeferredPrompt) {
+                adminDeferredPrompt.prompt();
+                adminDeferredPrompt.userChoice.then((choiceResult) => {
+                    console.log('Admin install prompt result:', choiceResult.outcome);
+                    adminDeferredPrompt = null;
+                });
+            }
+            const prompt = document.getElementById('adminInstallPrompt');
+            if (prompt) prompt.remove();
+        };
+
+        window.dismissAdminInstall = function() {
+            localStorage.setItem('kartel_admin_install_dismissed', 'true');
+            const prompt = document.getElementById('adminInstallPrompt');
+            if (prompt) prompt.remove();
+        };
+
+        // Initialize notification manager for admin
+        let adminNotificationManager;
+        window.addEventListener('load', () => {
+            adminNotificationManager = new NotificationManager('admin');
+            window.notificationManager = adminNotificationManager; // Make available globally
+        });
+    </script>
 </body>
 </html>

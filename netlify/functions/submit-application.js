@@ -1,6 +1,14 @@
 // netlify/functions/submit-application.js - Updated for new field structure
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const webpush = require('web-push');
+
+// Configure web-push with VAPID keys
+webpush.setVapidDetails(
+  'mailto:admin@thekartel.co.uk',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -109,6 +117,14 @@ exports.handler = async (event, context) => {
       console.error('❌ Email failed:', emailError.message);
     }
 
+    // Send push notification to admins
+    try {
+      await sendAdminPushNotification(application);
+      console.log('📱 Admin push notification sent');
+    } catch (pushError) {
+      console.error('📱 Admin push notification failed:', pushError.message);
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -211,5 +227,101 @@ async function sendAdminNotification(application) {
   } catch (emailError) {
     console.error('SendGrid error:', emailError);
     throw emailError;
+  }
+}
+
+// Function to send push notifications to admins for new applications
+async function sendAdminPushNotification(application) {
+  try {
+    // Skip if VAPID keys not configured
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.log('📱 VAPID keys not configured, skipping admin push notifications');
+      return;
+    }
+
+    const subscriptionsStore = getStore('push-subscriptions');
+    let adminSubscriptions = [];
+    
+    try {
+      const allSubscriptions = await subscriptionsStore.get('all-subscriptions');
+      if (allSubscriptions) {
+        const parsed = JSON.parse(allSubscriptions);
+        adminSubscriptions = parsed.filter(sub => sub.userType === 'admin' && sub.active);
+      }
+    } catch (error) {
+      console.log('📱 No admin push subscriptions found');
+      return;
+    }
+
+    if (adminSubscriptions.length === 0) {
+      console.log('📱 No admin push subscriptions found');
+      return;
+    }
+
+    // Prepare notification payload
+    const notificationPayload = {
+      title: '📋 New Membership Application',
+      body: `${application.firstName} ${application.lastName} from ${application.company}`,
+      icon: '/icons/admin-icon-192x192.svg',
+      badge: '/icons/admin-icon-96x96.svg',
+      data: {
+        applicationId: application.id,
+        url: '/admin.html#applications',
+        timestamp: Date.now(),
+        isAdmin: true
+      },
+      requireInteraction: true,
+      actions: [
+        { action: 'review', title: 'Review Application' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    };
+
+    // Send notifications to all admin subscriptions
+    const notificationPromises = adminSubscriptions.map(async (subscriptionData) => {
+      try {
+        await webpush.sendNotification(
+          subscriptionData.subscription,
+          JSON.stringify(notificationPayload)
+        );
+        console.log(`📱 Admin push notification sent: ${subscriptionData.id}`);
+        return { success: true, id: subscriptionData.id };
+      } catch (error) {
+        console.error(`📱 Failed to send admin push notification to ${subscriptionData.id}:`, error);
+        
+        // If subscription is invalid (410 Gone), remove it
+        if (error.statusCode === 410) {
+          console.log(`📱 Removing invalid admin subscription: ${subscriptionData.id}`);
+          try {
+            await subscriptionsStore.delete(subscriptionData.id);
+            // Update the all-subscriptions list
+            const allSubscriptions = await subscriptionsStore.get('all-subscriptions');
+            if (allSubscriptions) {
+              const parsed = JSON.parse(allSubscriptions);
+              const updatedSubscriptions = parsed.filter(
+                sub => sub.id !== subscriptionData.id
+              );
+              await subscriptionsStore.set('all-subscriptions', JSON.stringify(updatedSubscriptions));
+            }
+          } catch (cleanupError) {
+            console.error('Error cleaning up invalid admin subscription:', cleanupError);
+          }
+        }
+        
+        return { success: false, id: subscriptionData.id, error: error.message };
+      }
+    });
+
+    const results = await Promise.allSettled(notificationPromises);
+    const successful = results.filter(result => 
+      result.status === 'fulfilled' && result.value.success
+    ).length;
+    const failed = results.length - successful;
+
+    console.log(`📱 Admin push notifications: ${successful} sent, ${failed} failed`);
+
+  } catch (error) {
+    console.error('📱 Error sending admin push notifications:', error);
+    // Don't throw - continue with submission even if push notifications fail
   }
 }
