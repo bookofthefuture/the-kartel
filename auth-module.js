@@ -248,10 +248,13 @@ class KartelAuth {
         if (loadingSection) loadingSection.classList.add('hidden');
         if (dashboardSection) dashboardSection.classList.remove('hidden');
         
-        // Update top bar - render it first if it hasn't been rendered yet
+        // Update top bar after dashboard is visible
         if (window.kartelTopBar) {
-            window.kartelTopBar.render(); // Ensure it's rendered
-            window.kartelTopBar.updateUser(this.currentUser, this.isAdmin);
+            // Small delay to ensure DOM is updated
+            setTimeout(() => {
+                window.kartelTopBar.render();
+                window.kartelTopBar.updateUser(this.currentUser, this.isAdmin);
+            }, 100);
         }
         
         // Trigger page-specific initialization
