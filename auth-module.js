@@ -24,7 +24,7 @@ class KartelAuth {
     }
 
     async init() {
-        console.log('🚀 Initializing Kartel Authentication System');
+        console.log('🚀 Initializing Kartel Authentication System v2.0');
         
         // Check for magic link token in URL first
         const urlParams = new URLSearchParams(window.location.search);
@@ -39,15 +39,30 @@ class KartelAuth {
         // Check for existing authentication
         if (this.token) {
             console.log('🔍 Found existing token, checking stored user data...');
+            console.log('🔍 Token source:', this.token.substring(0, 10) + '...');
+            
             const storedUserData = localStorage.getItem('kartel_user_data');
             const storedIsAdmin = localStorage.getItem('kartel_is_admin') === 'true';
             
+            console.log('🔍 Stored data check:', {
+                hasUserData: !!storedUserData,
+                isAdmin: storedIsAdmin,
+                userDataLength: storedUserData?.length || 0
+            });
+            
             if (storedUserData) {
                 console.log('✅ Found stored user data, restoring session...');
-                this.currentUser = JSON.parse(storedUserData);
-                this.isLoggedIn = true;
-                this.isAdmin = storedIsAdmin;
-                this.onAuthSuccess();
+                try {
+                    this.currentUser = JSON.parse(storedUserData);
+                    this.isLoggedIn = true;
+                    this.isAdmin = storedIsAdmin;
+                    console.log('✅ Session restored for:', this.currentUser.email);
+                    this.onAuthSuccess();
+                } catch (error) {
+                    console.error('❌ Error parsing stored user data:', error);
+                    this.clearAuth();
+                    this.showLogin();
+                }
             } else {
                 console.log('❌ No stored user data, requiring fresh login...');
                 this.clearAuth();
