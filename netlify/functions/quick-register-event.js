@@ -84,25 +84,43 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Verify member exists and is approved
-    const applications = await applicationsStore.get('_list', { type: 'json' }) || [];
-    const member = applications.find(app => 
-      app.email.toLowerCase() === memberEmail.toLowerCase() && 
-      app.status === 'approved'
-    );
-
-    if (!member) {
-      return {
-        statusCode: 404,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          error: 'Member not found or not approved',
-          success: false
-        })
+    // For test events, create a mock member. For real events, verify member exists and is approved
+    let member;
+    
+    if (eventId.startsWith('test-')) {
+      console.log('🧪 Test event detected, creating mock member for admin test');
+      member = {
+        id: 'admin-test',
+        email: memberEmail,
+        firstName: 'Admin',
+        lastName: 'Test',
+        fullName: 'Admin Test',
+        company: 'The Kartel Admin',
+        position: 'Administrator',
+        linkedin: 'admin-test',
+        status: 'approved'
       };
+    } else {
+      // Verify member exists and is approved for real events
+      const applications = await applicationsStore.get('_list', { type: 'json' }) || [];
+      member = applications.find(app => 
+        app.email.toLowerCase() === memberEmail.toLowerCase() && 
+        app.status === 'approved'
+      );
+
+      if (!member) {
+        return {
+          statusCode: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            error: 'Member not found or not approved',
+            success: false
+          })
+        };
+      }
     }
 
     // Verify token (simple token validation - in production you'd want more robust validation)

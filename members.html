@@ -1836,12 +1836,21 @@
                         try {
                             const adminData = JSON.parse(adminUser);
                             if (adminData.email && adminData.email.toLowerCase() === email.toLowerCase()) {
-                                console.log('✅ Admin email matches member email, attempting auto-login as member');
-                                showMessage('Detected admin login. Switching to member mode for event registration...', 'info');
+                                console.log('✅ Admin email matches test email, handling as admin test registration');
                                 
-                                // Try to auto-login as member using admin email
-                                await autoLoginAsMember(adminData.email, eventId, token, email);
-                                return;
+                                // Check if this is a test event (starts with "test-")
+                                if (eventId.startsWith('test-')) {
+                                    console.log('🧪 Detected test event, allowing admin test registration');
+                                    showMessage('Test registration detected - proceeding as admin test user...', 'info');
+                                    handleDirectRegistration(eventId, token, email);
+                                    return;
+                                } else {
+                                    // For real events, try to auto-login as member
+                                    console.log('📅 Real event, attempting auto-login as member');
+                                    showMessage('Detected admin login. Switching to member mode for event registration...', 'info');
+                                    await autoLoginAsMember(adminData.email, eventId, token, email);
+                                    return;
+                                }
                             } else {
                                 console.log('❌ Admin email does not match registration email');
                                 showMessage(`You're logged in as admin (${adminData.email}) but this registration link is for ${email}. Please log in as the correct member.`, 'error');
