@@ -721,6 +721,10 @@
             // Set global variables for existing admin code
             authToken = kartelAuth.getToken();
             
+            // Store admin user data for legacy functions (like test emails)
+            localStorage.setItem('kartel_admin_user', JSON.stringify(user));
+            console.log('✅ Admin user data stored for legacy functions:', user);
+            
             // Ensure top bar is rendered properly for admin
             console.log('🔧 Setting up admin top bar...');
             if (window.kartelTopBar) {
