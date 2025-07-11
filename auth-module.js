@@ -179,8 +179,11 @@ class KartelAuth {
         localStorage.setItem('kartel_member_lastName', this.currentUser.lastName || '');
         localStorage.setItem('kartel_member_isAdmin', this.isAdmin.toString());
         
+        // For admin users, also store in legacy admin token location
         if (this.isAdmin) {
             localStorage.setItem('kartel_admin_token', this.token);
+            localStorage.setItem('kartel_admin_user', JSON.stringify(this.currentUser));
+            console.log('✅ Admin legacy tokens stored for compatibility');
         }
         
         console.log('✅ User authenticated:', {
@@ -251,6 +254,7 @@ class KartelAuth {
         
         // Clear legacy tokens if they exist
         localStorage.removeItem('kartel_admin_token');
+        localStorage.removeItem('kartel_admin_user');
         localStorage.removeItem('kartel_member_token');
         localStorage.removeItem('kartel_member_email');
         localStorage.removeItem('kartel_member_id');

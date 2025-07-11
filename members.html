@@ -2154,6 +2154,20 @@
             }
         }
 
+        // Member Authentication Success Handler
+        window.onAuthSuccess = function(user, isAdmin) {
+            console.log('🎉 Member auth success:', user, isAdmin);
+            
+            // Store the user data
+            currentMember = user;
+            
+            // Show the dashboard
+            showDashboardWithAdminCheck();
+            
+            // Handle URL parameters for registration links
+            handleUrlParameters();
+        };
+
         // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
