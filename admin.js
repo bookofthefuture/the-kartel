@@ -2358,7 +2358,7 @@ function setupEmailButtons(eventId) {
 async function sendEventAnnouncementFromModal(eventId) {
     const event = events.find(e => e.id === eventId);
     if (!event) {
-        showError('Event not found', 'eventsMessageContainer');
+        showError('Event not found', 'eventModalMessageContainer');
         return;
     }
     
@@ -2389,14 +2389,14 @@ async function sendEventAnnouncementFromModal(eventId) {
         
         if (response.ok) {
             const result = await response.json();
-            showMessage(`Announcement sent successfully! ${result.emailsSent} emails sent.`, 'success', 'eventsMessageContainer');
+            showMessage(`Announcement sent successfully! ${result.emailsSent} emails sent.`, 'success', 'eventModalMessageContainer');
         } else {
             const error = await response.json();
-            showError(`Failed to send announcement: ${error.error}`, 'eventsMessageContainer');
+            showError(`Failed to send announcement: ${error.error}`, 'eventModalMessageContainer');
         }
     } catch (error) {
         console.error('Error sending announcement:', error);
-        showError('An error occurred while sending the announcement', 'eventsMessageContainer');
+        showError('An error occurred while sending the announcement', 'eventModalMessageContainer');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;
