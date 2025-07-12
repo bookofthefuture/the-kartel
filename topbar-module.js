@@ -26,7 +26,7 @@ class KartelTopBar {
     updateUser(userData, isAdmin) {
         this.currentUser = userData;
         this.isAdmin = isAdmin;
-        this.isSuperAdmin = userData && userData.isSuperAdmin;
+        this.isSuperAdmin = (userData && userData.isSuperAdmin) || (window.kartelAuth && window.kartelAuth.isSuperAdmin);
         this.updateUserDisplay();
         this.updateNavigation();
     }

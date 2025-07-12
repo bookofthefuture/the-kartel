@@ -46,10 +46,12 @@ class KartelAuth {
             
             const storedUserData = localStorage.getItem('kartel_user_data');
             const storedIsAdmin = localStorage.getItem('kartel_is_admin') === 'true';
+            const storedIsSuperAdmin = localStorage.getItem('kartel_is_super_admin') === 'true';
             
             console.log('🔍 Stored data check:', {
                 hasUserData: !!storedUserData,
                 isAdmin: storedIsAdmin,
+                isSuperAdmin: storedIsSuperAdmin,
                 userDataLength: storedUserData?.length || 0
             });
             
@@ -59,6 +61,7 @@ class KartelAuth {
                     this.currentUser = JSON.parse(storedUserData);
                     this.isLoggedIn = true;
                     this.isAdmin = storedIsAdmin;
+                    this.isSuperAdmin = storedIsSuperAdmin;
                     console.log('✅ Session restored for:', this.currentUser.email);
                     this.onAuthSuccess();
                 } catch (error) {
@@ -168,11 +171,13 @@ class KartelAuth {
         
         this.isLoggedIn = true;
         this.isAdmin = data.isAdmin || false;
+        this.isSuperAdmin = data.isSuperAdmin || false;
         
         // Store in localStorage for persistence - use ALL storage methods to ensure compatibility
         localStorage.setItem('kartel_auth_token', this.token);
         localStorage.setItem('kartel_user_data', JSON.stringify(this.currentUser));
         localStorage.setItem('kartel_is_admin', this.isAdmin.toString());
+        localStorage.setItem('kartel_is_super_admin', this.isSuperAdmin.toString());
         
         // Store in legacy locations for full compatibility
         localStorage.setItem('kartel_member_token', this.token);
@@ -230,31 +235,6 @@ class KartelAuth {
         }
     }
 
-    async superAdminLogin(email, password) {
-        console.log(`🔐 Attempting super admin login for: ${email}`);
-        
-        try {
-            const response = await fetch('/.netlify/functions/super-admin-login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                this.token = data.token;
-                this.setUserData(data);
-                this.onAuthSuccess();
-                return { success: true, message: 'Super admin login successful!' };
-            } else {
-                return { success: false, error: data.error || 'Super admin login failed' };
-            }
-        } catch (error) {
-            console.error('💥 Super admin login error:', error);
-            return { success: false, error: 'Network error. Please try again.' };
-        }
-    }
 
     logout() {
         console.log('👋 User logging out');
@@ -274,12 +254,14 @@ class KartelAuth {
         this.currentUser = null;
         this.isLoggedIn = false;
         this.isAdmin = false;
+        this.isSuperAdmin = false;
         this.token = null;
         
         // Clear localStorage - both unified and legacy tokens
         localStorage.removeItem('kartel_auth_token');
         localStorage.removeItem('kartel_user_data');
         localStorage.removeItem('kartel_is_admin');
+        localStorage.removeItem('kartel_is_super_admin');
         
         // Clear legacy tokens if they exist
         localStorage.removeItem('kartel_admin_token');
@@ -516,6 +498,7 @@ class KartelAuth {
     getToken() { return this.token; }
     getUserFullName() { return this.currentUser?.fullName || this.currentUser?.email || 'User'; }
     isUserAdmin() { return this.isAdmin; }
+    isUserSuperAdmin() { return this.isSuperAdmin; }
     isUserLoggedIn() { return this.isLoggedIn; }
 }
 

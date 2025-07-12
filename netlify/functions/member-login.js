@@ -25,6 +25,49 @@ exports.handler = async (event, context) => {
     // Determine authentication method based on password presence
     const isPasswordAuth = password !== undefined;
 
+    // Check for super admin credentials first
+    if (isPasswordAuth && process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD) {
+      if (email.toLowerCase() === process.env.SUPER_ADMIN_EMAIL.toLowerCase() && 
+          password === process.env.SUPER_ADMIN_PASSWORD) {
+        console.log('✅ Super admin authenticated successfully');
+        
+        // Generate token for super admin
+        const tokenData = {
+          email: process.env.SUPER_ADMIN_EMAIL,
+          role: 'super-admin',
+          timestamp: Date.now()
+        };
+        
+        const token = crypto.createHash('sha256')
+          .update(`${JSON.stringify(tokenData)}:${process.env.NETLIFY_ACCESS_TOKEN}`)
+          .digest('hex');
+
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            success: true,
+            token: token,
+            memberId: 'super-admin',
+            memberEmail: process.env.SUPER_ADMIN_EMAIL,
+            memberFullName: 'Super Administrator',
+            memberProfile: {
+              firstName: 'Super',
+              lastName: 'Administrator',
+              company: 'The Kartel Franchise',
+              position: 'Super Administrator',
+              hasPassword: true
+            },
+            isAdmin: true,
+            isSuperAdmin: true
+          })
+        };
+      }
+    }
+
     // 2. Environment variable check
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
       console.error('❌ Missing environment variables for Blob storage.');

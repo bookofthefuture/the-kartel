@@ -185,7 +185,7 @@
             loadCities();
         };
 
-        // Override the auth module's login form to use super admin login
+        // Override the auth module's login form to use password-only login
         kartelAuth.attachLoginEventListeners = function() {
             // Password Form (super admin only uses password login)
             const passwordForm = document.getElementById('passwordForm');
@@ -194,7 +194,7 @@
                     e.preventDefault();
                     const email = document.getElementById('passwordEmail').value;
                     const password = document.getElementById('password').value;
-                    const result = await this.superAdminLogin(email, password);
+                    const result = await this.login(email, password);
                     
                     if (!result.success) {
                         this.showMessage(result.error, 'error');
