@@ -230,6 +230,32 @@ class KartelAuth {
         }
     }
 
+    async superAdminLogin(email, password) {
+        console.log(`🔐 Attempting super admin login for: ${email}`);
+        
+        try {
+            const response = await fetch('/.netlify/functions/super-admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.token = data.token;
+                this.setUserData(data);
+                this.onAuthSuccess();
+                return { success: true, message: 'Super admin login successful!' };
+            } else {
+                return { success: false, error: data.error || 'Super admin login failed' };
+            }
+        } catch (error) {
+            console.error('💥 Super admin login error:', error);
+            return { success: false, error: 'Network error. Please try again.' };
+        }
+    }
+
     logout() {
         console.log('👋 User logging out');
         this.clearAuth();
