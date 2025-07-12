@@ -740,12 +740,25 @@
                 setTimeout(() => {
                     console.log('🎯 Rendering admin top bar');
                     
-                    // Check if user is super admin from auth module
-                    const isSuperAdmin = kartelAuth.isUserSuperAdmin();
-                    if (isSuperAdmin) {
+                    // Check multiple sources for super admin status
+                    const authSuperAdmin = kartelAuth.isUserSuperAdmin();
+                    const userSuperAdmin = user.isSuperAdmin;
+                    const storedSuperAdmin = localStorage.getItem('kartel_is_super_admin') === 'true';
+                    
+                    console.log('🔍 Super admin status check from admin:', {
+                        authSuperAdmin,
+                        userSuperAdmin, 
+                        storedSuperAdmin,
+                        userEmail: user.email,
+                        authObject: kartelAuth
+                    });
+                    
+                    // Set super admin if any source indicates it
+                    if (authSuperAdmin || userSuperAdmin || storedSuperAdmin) {
                         user.isSuperAdmin = true;
                     }
-                    console.log('🔄 Updating topbar from admin - isSuperAdmin:', isSuperAdmin);
+                    
+                    console.log('🔄 Updating topbar from admin - final isSuperAdmin:', user.isSuperAdmin);
                     
                     window.kartelTopBar.render();
                     window.kartelTopBar.updateUser(user, isAdmin);
