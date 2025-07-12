@@ -1132,6 +1132,127 @@
             });
         }
 
+        function showCancellationReminder(eventId) {
+            // Find the event to get venue information
+            const event = allEvents.find(e => e.id === eventId);
+            if (!event) {
+                console.log('Event not found for cancellation reminder');
+                return;
+            }
+
+            // Find the venue to get booking URL
+            const venue = allVenues.find(v => v.id === event.venueId || v.name === event.venue);
+            
+            // Create and show cancellation reminder modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.7); z-index: 2000; display: flex; 
+                align-items: center; justify-content: center; font-family: 'League Spartan', sans-serif;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white; padding: 30px; border-radius: 15px; max-width: 500px; 
+                margin: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: center;
+            `;
+            
+            // Create header
+            const header = document.createElement('h3');
+            header.style.cssText = 'color: #e74c3c; margin-bottom: 20px; font-size: 1.5rem;';
+            header.textContent = '🏎️ Cancellation Successful!';
+            
+            // Create description
+            const description = document.createElement('p');
+            description.style.cssText = 'color: #5d6d7e; margin-bottom: 25px; line-height: 1.6;';
+            description.innerHTML = '<strong>Important:</strong> Don\'t forget to cancel your karting session booking directly with the track if you have one.';
+            
+            // Create venue info container
+            const venueContainer = document.createElement('div');
+            venueContainer.style.cssText = 'background: #fff5f5; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #e74c3c;';
+            
+            if (venue && venue.website) {
+                const venueName = document.createElement('p');
+                venueName.style.cssText = 'color: #2c3e50; margin-bottom: 15px; font-weight: 600;';
+                venueName.textContent = `📍 ${venue.name}`;
+                
+                const cancellationLink = document.createElement('a');
+                cancellationLink.href = venue.website;
+                cancellationLink.target = '_blank';
+                cancellationLink.style.cssText = `
+                    display: inline-block; background: #e74c3c; color: white; padding: 12px 24px; 
+                    text-decoration: none; border-radius: 6px; font-weight: 600; 
+                    transition: background 0.3s ease; cursor: pointer;
+                `;
+                cancellationLink.textContent = '🔗 Cancel Track Booking';
+                
+                // Add hover effects
+                cancellationLink.addEventListener('mouseenter', () => {
+                    cancellationLink.style.background = '#c0392b';
+                });
+                cancellationLink.addEventListener('mouseleave', () => {
+                    cancellationLink.style.background = '#e74c3c';
+                });
+                
+                venueContainer.appendChild(venueName);
+                venueContainer.appendChild(cancellationLink);
+            } else {
+                const venueName = document.createElement('p');
+                venueName.style.cssText = 'color: #2c3e50; margin-bottom: 10px;';
+                venueName.innerHTML = `<strong>📍 ${event.venue || 'Venue details in event information'}</strong>`;
+                
+                if (venue && venue.phone) {
+                    const venuePhone = document.createElement('p');
+                    venuePhone.style.cssText = 'color: #5d6d7e; margin-bottom: 10px;';
+                    venuePhone.textContent = `📞 ${venue.phone}`;
+                    venueContainer.appendChild(venuePhone);
+                }
+                
+                const contactNote = document.createElement('p');
+                contactNote.style.cssText = 'color: #7f8c8d; font-size: 0.9rem;';
+                contactNote.textContent = 'Contact the venue directly to cancel your track booking';
+                
+                venueContainer.appendChild(venueName);
+                venueContainer.appendChild(contactNote);
+            }
+            
+            // Create close button
+            const closeButton = document.createElement('button');
+            closeButton.style.cssText = `
+                background: #95a5a6; color: white; border: none; padding: 10px 20px; 
+                border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'League Spartan', sans-serif;
+                transition: background 0.3s ease;
+            `;
+            closeButton.textContent = 'Close';
+            
+            // Add hover effects and click handler to close button
+            closeButton.addEventListener('mouseenter', () => {
+                closeButton.style.background = '#7f8c8d';
+            });
+            closeButton.addEventListener('mouseleave', () => {
+                closeButton.style.background = '#95a5a6';
+            });
+            closeButton.addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            // Assemble modal content
+            modalContent.appendChild(header);
+            modalContent.appendChild(description);
+            modalContent.appendChild(venueContainer);
+            modalContent.appendChild(closeButton);
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
         async function cancelSignUp(buttonElement, eventId) {
             if (!currentMember || !currentMember.id) {
                 showMessage('You must be logged in to cancel event sign-ups.', 'error');
@@ -1166,6 +1287,12 @@
 
                 if (response.ok && result.success) {
                     showMessage('Successfully cancelled sign-up.', 'success');
+                    
+                    // Show cancellation reminder after a short delay
+                    setTimeout(() => {
+                        showCancellationReminder(eventId);
+                    }, 1500);
+                    
                     loadEvents('upcoming'); 
                     loadEvents('my');       
                 } else {
@@ -2149,6 +2276,7 @@
         window.signUpForEvent = signUpForEvent;
         window.cancelSignUp = cancelSignUp;
         window.showBookingReminder = showBookingReminder;
+        window.showCancellationReminder = showCancellationReminder;
         window.showLoginForm = showLoginForm;
         window.showLoginHelp = showLoginHelp;
         window.showMagicLinkForm = showMagicLinkForm;
