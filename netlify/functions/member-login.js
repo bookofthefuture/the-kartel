@@ -177,6 +177,7 @@ exports.handler = async (event, context) => {
       memberEmail: memberApplication.email,
       memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
       isAdmin: !!memberApplication.isAdmin,
+      isSuperAdmin: !!memberApplication.isSuperAdmin,
       // Complete member profile data
       memberProfile: {
         firstName: memberApplication.firstName,
