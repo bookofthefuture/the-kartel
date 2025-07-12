@@ -9,6 +9,10 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
+  
+  // Get the current hostname from the request headers
+  const currentHost = event.headers.host || event.headers.Host;
+  console.log('🌐 Current request host:', currentHost);
 
   // Check authentication
   const authHeader = event.headers.authorization;
@@ -134,7 +138,7 @@ exports.handler = async (event, context) => {
     };
 
     // Send test email
-    await sendTestAnnouncementEmail(testMember, eventDetails, venueDetails);
+    await sendTestAnnouncementEmail(testMember, eventDetails, venueDetails, currentHost);
 
     console.log(`✅ Test email sent to ${adminEmail}`);
 
@@ -163,8 +167,26 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function sendTestAnnouncementEmail(member, eventDetails, venueDetails) {
-  const baseUrl = process.env.SITE_URL || 'https://the-kartel.com';
+async function sendTestAnnouncementEmail(member, eventDetails, venueDetails, currentHost) {
+  // Determine base URL from the request host
+  let baseUrl;
+  if (currentHost && currentHost.includes('--effortless-crumble-9e3c92.netlify.app')) {
+    // We're on a preview deployment
+    baseUrl = `https://${currentHost}`;
+  } else {
+    // Use configured site URL for production
+    baseUrl = process.env.SITE_URL || 'https://the-kartel.com';
+  }
+  
+  console.log('🔍 URL Environment Variables:', {
+    DEPLOY_PRIME_URL: process.env.DEPLOY_PRIME_URL,
+    SITE_URL: process.env.SITE_URL,
+    URL: process.env.URL,
+    CONTEXT: process.env.CONTEXT,
+    currentHost: currentHost,
+    selectedBaseUrl: baseUrl,
+    isPreviewDeploy: currentHost && currentHost.includes('--effortless-crumble-9e3c92.netlify.app')
+  });
   
   // Generate REAL registration token for testing HTTPS links
   const registrationToken = crypto.createHash('sha256')

@@ -26,14 +26,17 @@ class KartelAuth {
     async init() {
         console.log('🚀 Initializing Kartel Authentication System v2.0');
         
-        // Check for magic link token in URL first
+        // Check for magic link token in URL first (but not if it's a registration token)
         const urlParams = new URLSearchParams(window.location.search);
         const magicToken = urlParams.get('token');
+        const isRegistrationLink = urlParams.has('register') && urlParams.has('email');
         
-        if (magicToken) {
+        if (magicToken && !isRegistrationLink) {
             console.log('🔗 Magic link token found in URL, verifying...');
             await this.verifyMagicToken(magicToken);
             return;
+        } else if (magicToken && isRegistrationLink) {
+            console.log('🎫 Registration token found in URL, skipping magic link verification');
         }
         
         // Check for existing authentication

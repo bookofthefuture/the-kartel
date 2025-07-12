@@ -71,9 +71,11 @@ exports.handler = async (event, context) => {
       eventData.attendees = [];
     }
 
-    // Find and remove the attendee
+    // Find and remove the attendee (check both id and memberId for compatibility)
     const initialAttendeesCount = eventData.attendees.length;
-    eventData.attendees = eventData.attendees.filter(attendee => attendee.memberId !== memberId);
+    eventData.attendees = eventData.attendees.filter(attendee => 
+      attendee.memberId !== memberId && attendee.id !== memberId
+    );
 
     if (eventData.attendees.length === initialAttendeesCount) {
       return {

@@ -129,7 +129,8 @@ async function sendMagicLinkEmail(member, loginToken) {
     return;
   }
 
-  const baseUrl = process.env.SITE_URL || 'https://the-kartel.netlify.app';
+  // Use deploy prime URL for preview environments, otherwise use configured site URL
+  const baseUrl = process.env.DEPLOY_PRIME_URL || process.env.SITE_URL || 'https://the-kartel.com';
   const loginUrl = `${baseUrl}/members.html?token=${loginToken}`;
   const memberName = member.firstName || member.email;
 

@@ -410,6 +410,13 @@
         function showMessage(message, type = 'success', containerId = 'loginMessage') {
             console.log(`📢 Showing message: [${type}] ${message}`);
             const container = document.getElementById(containerId);
+            
+            // Check if container exists before trying to access it
+            if (!container) {
+                console.warn(`⚠️ Message container '${containerId}' not found, skipping message display`);
+                return;
+            }
+            
             container.classList.remove('hidden', 'success', 'error');
             container.classList.add(type);
             container.textContent = message;
@@ -665,6 +672,7 @@
         // Unified Authentication Integration for Members
         window.onAuthSuccess = function(user, isAdmin) {
             console.log('🎉 Member auth success:', user, isAdmin);
+            console.log('🔍 URL at auth success:', window.location.href);
             
             // Set current member data for compatibility with existing code
             currentMember = user;
@@ -673,13 +681,15 @@
             console.log('🔧 Variables set:', { 
                 memberToken: !!memberToken, 
                 currentMember: !!currentMember,
-                userId: currentMember?.id 
+                userId: currentMember?.id,
+                hasUrlParams: !!new URLSearchParams(window.location.search).get('register')
             });
             
             // Initialize member dashboard
             showDashboard();
             
             // Handle URL parameters after auth is complete - increased delay for better reliability
+            console.log('⏰ Setting timeout for handleUrlParameters in 500ms');
             setTimeout(handleUrlParameters, 500);
         };
 
@@ -696,6 +706,12 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 Members page DOMContentLoaded - unified auth will handle initialization');
+            console.log('🔍 Initial page load state:', {
+                url: window.location.href,
+                hasRegisterParam: new URLSearchParams(window.location.search).has('register'),
+                localStorageToken: !!localStorage.getItem('kartel_member_token'),
+                localStorageEmail: localStorage.getItem('kartel_member_email')
+            });
             
             const urlParams = new URLSearchParams(window.location.search);
             const resetToken = urlParams.get('reset');
@@ -815,8 +831,13 @@
 
             try {
                 console.log('📡 Making API request to get-events-member...');
-                const response = await fetch('/.netlify/functions/get-events-member', {
-                    headers: { 'Authorization': `Bearer ${memberToken}` }
+                // Add cache busting parameter to ensure fresh data
+                const cacheBuster = `?t=${Date.now()}`;
+                const response = await fetch(`/.netlify/functions/get-events-member${cacheBuster}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${memberToken}`,
+                        'Cache-Control': 'no-cache'
+                    }
                 });
 
                 console.log('📊 API Response:', response.status, response.statusText);
@@ -836,7 +857,9 @@
                 console.log('📄 Events data received:', data);
                 allEvents = data.events || [];
                 console.log(`✅ Found ${allEvents.length} events`);
+                console.log(`🎨 Rendering ${type} events to container:`, container.id);
                 renderEvents(type, container);
+                console.log(`✅ Finished rendering ${type} events`);
 
             } catch (error) {
                 console.error('Error loading events:', error);
@@ -853,7 +876,7 @@
                 );
             } else if (type === 'my') {
                 eventsToDisplay = allEvents.filter(event => 
-                    event.attendees && event.attendees.some(a => a.memberId === currentMember.id)
+                    event.attendees && event.attendees.some(a => a.id === currentMember.id || a.memberId === currentMember.id)
                 );
             }
 
@@ -869,7 +892,9 @@
 
             const eventsHTML = eventsToDisplay.map(event => {
                 const currentAttendeesCount = event.attendees ? event.attendees.length : 0;
-                const isSignedUp = event.attendees && event.attendees.some(a => a.memberId === currentMember.id);
+                const isSignedUp = event.attendees && event.attendees.some(a => a.id === currentMember.id || a.memberId === currentMember.id);
+                console.log(`🎯 Event ${event.id} - isSignedUp: ${isSignedUp}, attendees:`, event.attendees?.map(a => ({ id: a.id, memberId: a.memberId, email: a.email })));
+                console.log(`👤 Current member: ${currentMember?.id} (${currentMember?.email})`);
                 const eventDate = new Date(event.date);
                 const today = new Date();
                 const isPastEvent = eventDate < today;
@@ -897,7 +922,7 @@
                                 `}
                             ` : `
                                 ${!isPastEvent ? `<button class="btn btn-secondary" onclick="cancelSignUp(this, '${event.id}')">Cancel Sign-up</button>` : ''}
-                                ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
+                                ${isSignedUp ? `<span class="status-badge status-approved">${event.attendees.find(a => a.id === currentMember.id || a.memberId === currentMember.id)?.attended ? 'Attended' : 'Registered'}</span>` : ''}
                             `}
                         </div>
                     </div>
@@ -1145,6 +1170,15 @@
                     loadEvents('my');       
                 } else {
                     showMessage(result.error || 'Failed to cancel sign-up.', 'error');
+                    // Refresh UI if user wasn't actually signed up to sync the display
+                    if (result.error === 'You are not signed up for this event.') {
+                        console.log('🔄 UI out of sync, refreshing event lists after small delay...');
+                        // Add small delay to ensure server state is consistent
+                        setTimeout(() => {
+                            loadEvents('upcoming'); 
+                            loadEvents('my');
+                        }, 500);
+                    }
                 }
             } catch (error) {
                 console.error('Cancel sign-up error:', error);
@@ -1794,9 +1828,24 @@
 
         // Handle URL parameters for registration success/error messages and direct registration
         async function handleUrlParameters() {
+            // Debug logging for authentication state
+            console.log('🔍 handleUrlParameters auth state check:', {
+                memberToken: !!memberToken,
+                currentMember: !!currentMember,
+                currentMemberEmail: currentMember?.email,
+                localStorageToken: !!localStorage.getItem('kartel_member_token'),
+                localStorageEmail: localStorage.getItem('kartel_member_email'),
+                urlHasRegisterParams: new URLSearchParams(window.location.search).has('register')
+            });
+            
             // Explicit authentication state check before processing URL parameters
             if (!memberToken || !currentMember) {
                 console.log('⚠️ handleUrlParameters called without valid authentication, skipping');
+                console.log('🔍 Detailed auth state:', {
+                    memberToken,
+                    currentMember,
+                    localStorage_keys: Object.keys(localStorage).filter(k => k.startsWith('kartel_'))
+                });
                 return;
             }
             
@@ -1945,7 +1994,23 @@
                     }, 1000);
                     
                 } else {
-                    showMessage(result.error || result.message || 'Registration failed. Please try again.', 'error');
+                    // Handle "Already registered" as a success case
+                    if (result.error === 'Already registered') {
+                        showMessage(result.message || `You are already registered for this event!`, 'success');
+                        
+                        // Refresh events to show correct registration status
+                        loadEvents('upcoming');
+                        
+                        // Switch to current view to show updated status  
+                        const hash = window.location.hash;
+                        if (hash === '#my-events') {
+                            loadEvents('my');
+                        }
+                        
+                        console.log('✅ User already registered, events refreshed');
+                    } else {
+                        showMessage(result.error || result.message || 'Registration failed. Please try again.', 'error');
+                    }
                 }
                 
             } catch (error) {

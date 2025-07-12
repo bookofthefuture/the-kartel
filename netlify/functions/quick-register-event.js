@@ -178,7 +178,8 @@ exports.handler = async (event, context) => {
 
     // Add member to event attendees
     const attendee = {
-      id: member.id,
+      memberId: member.id,  // Use memberId for consistency with sign-up-event
+      id: member.id,        // Keep id for backward compatibility
       name: member.fullName || `${member.firstName} ${member.lastName}`,
       email: member.email,
       company: member.company,

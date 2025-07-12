@@ -159,7 +159,8 @@ async function sendAdminNotification(application) {
     return;
   }
 
-  const baseUrl = process.env.SITE_URL || 'https://your-site.netlify.app';
+  // Use deploy prime URL for preview environments, otherwise use configured site URL
+  const baseUrl = process.env.DEPLOY_PRIME_URL || process.env.SITE_URL || 'https://the-kartel.com';
   const approveUrl = `${baseUrl}/admin.html?action=approve&id=${application.id}&token=${application.approveToken}`;
   const rejectUrl = `${baseUrl}/admin.html?action=reject&id=${application.id}&token=${application.rejectToken}`;
 
