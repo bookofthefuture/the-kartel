@@ -545,6 +545,8 @@
             
             // Update topbar with super admin status
             if (window.kartelTopBar) {
+                // Ensure the user object has the super admin flag
+                user.isSuperAdmin = true;
                 window.kartelTopBar.updateUser(user, isAdmin);
             }
             
@@ -636,17 +638,45 @@
             container.innerHTML = '<div>Loading cities...</div>';
             
             try {
-                // For now, show Manchester as existing city
-                // TODO: Load from cities collection
+                // Load real data from the system
+                await loadAllMembers(); // Ensure we have member data
+                
+                // Get real counts from the data
+                const totalMembers = allMembers.filter(m => m.status === 'approved').length;
+                const adminMembers = allMembers.filter(m => m.status === 'approved' && m.isAdmin);
+                
+                // Get events count (we'll need to load this)
+                let eventCount = 0;
+                try {
+                    const eventsResponse = await fetch('/.netlify/functions/get-events', {
+                        headers: {
+                            'Authorization': `Bearer ${superAdminToken || kartelAuth.getToken()}`
+                        }
+                    });
+                    if (eventsResponse.ok) {
+                        const eventsData = await eventsResponse.json();
+                        eventCount = eventsData.events ? eventsData.events.length : 0;
+                    }
+                } catch (e) {
+                    console.log('Could not load events count:', e);
+                }
+                
+                // Find the primary admin (you)
+                const primaryAdmin = adminMembers.find(a => a.email === 'tom@bookofthefuture.co.uk') || adminMembers[0];
+                const adminName = primaryAdmin ? 
+                    `${primaryAdmin.firstName || ''} ${primaryAdmin.lastName || ''}`.trim() || primaryAdmin.email :
+                    'No Admin';
+                
                 cities = [
                     {
                         id: 'manchester',
                         name: 'Manchester',
                         region: 'Greater Manchester',
-                        adminEmail: 'admin@the-kartel.com',
-                        adminName: 'Tom',
-                        memberCount: 39,
-                        eventCount: 12,
+                        adminEmail: primaryAdmin?.email || 'admin@the-kartel.com',
+                        adminName: adminName,
+                        memberCount: totalMembers,
+                        eventCount: eventCount,
+                        pendingCount: allMembers.filter(m => m.status === 'pending').length,
                         status: 'active'
                     }
                 ];

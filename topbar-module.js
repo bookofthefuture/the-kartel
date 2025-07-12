@@ -27,6 +27,14 @@ class KartelTopBar {
         this.currentUser = userData;
         this.isAdmin = isAdmin;
         this.isSuperAdmin = (userData && userData.isSuperAdmin) || (window.kartelAuth && window.kartelAuth.isSuperAdmin);
+        
+        console.log('🔄 TopBar updateUser called:', {
+            isAdmin: this.isAdmin,
+            isSuperAdmin: this.isSuperAdmin,
+            userData: userData,
+            authSuperAdmin: window.kartelAuth && window.kartelAuth.isSuperAdmin
+        });
+        
         this.updateUserDisplay();
         this.updateNavigation();
     }
