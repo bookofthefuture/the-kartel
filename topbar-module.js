@@ -70,7 +70,7 @@ class KartelTopBar {
         const availableViews = [];
         
         // All authenticated users can access members area
-        availableViews.push({ key: 'members', name: 'Members', url: '/members.html' });
+        availableViews.push({ key: 'members', name: 'Member', url: '/members.html' });
         
         if (this.isAdmin || this.isSuperAdmin) {
             availableViews.push({ key: 'admin', name: 'Admin', url: '/admin.html' });
@@ -85,7 +85,7 @@ class KartelTopBar {
             const viewNames = {
                 'super-admin': 'Super Admin',
                 'admin': 'Admin',
-                'members': 'Members'
+                'members': 'Member'
             };
             return `<span class="page-indicator">${viewNames[this.currentPage] || 'Dashboard'}</span>`;
         }
