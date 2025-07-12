@@ -739,6 +739,14 @@
             if (window.kartelTopBar) {
                 setTimeout(() => {
                     console.log('🎯 Rendering admin top bar');
+                    
+                    // Check if user is super admin from auth module
+                    const isSuperAdmin = kartelAuth.isUserSuperAdmin();
+                    if (isSuperAdmin) {
+                        user.isSuperAdmin = true;
+                    }
+                    console.log('🔄 Updating topbar from admin - isSuperAdmin:', isSuperAdmin);
+                    
                     window.kartelTopBar.render();
                     window.kartelTopBar.updateUser(user, isAdmin);
                     console.log('✅ Admin top bar setup complete');

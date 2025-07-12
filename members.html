@@ -677,6 +677,17 @@
             currentMember = user;
             memberToken = kartelAuth.getToken();
             
+            // Update topbar with super admin status if applicable
+            if (window.kartelTopBar) {
+                // Check if user is super admin from auth module
+                const isSuperAdmin = kartelAuth.isUserSuperAdmin();
+                if (isSuperAdmin) {
+                    user.isSuperAdmin = true;
+                }
+                console.log('🔄 Updating topbar from members - isSuperAdmin:', isSuperAdmin);
+                window.kartelTopBar.updateUser(user, isAdmin);
+            }
+            
             // Initialize member dashboard
             showDashboard();
             
