@@ -41,7 +41,7 @@ class KartelTopBar {
         header.innerHTML = `
             <div class="header-content">
                 <div class="header-logo">
-                    <img src="/photos/the-kartel-logo.png" alt="The Kartel Logo">
+                    <img src="/assets/the-kartel-logo-crop.png" alt="The Kartel Logo">
                     <h1 class="header-title">The Kartel${this.isSuperAdmin ? ' <span class="super-admin-badge">Super Admin</span>' : ''}</h1>
                 </div>
                 <div class="header-navigation">

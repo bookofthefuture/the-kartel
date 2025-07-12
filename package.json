@@ -22,6 +22,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "dev": "netlify dev",
+    "restart": "./restart-dev.sh",
     "build": "echo 'No build step required for static site'",
     "deploy:preview": "./scripts/deploy-preview.sh",
     "deploy:prod": "./scripts/deploy-prod.sh",

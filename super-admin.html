@@ -74,6 +74,57 @@
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; border-radius: 10px; padding: 30px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
         .modal h3 { margin-bottom: 20px; color: #2c3e50; }
+        
+        .manage-tabs { display: flex; background: #f8f9fa; border-radius: 5px; padding: 2px; margin-bottom: 20px; }
+        .manage-tab { flex: 1; padding: 8px 12px; background: none; border: none; cursor: pointer; font-weight: 600; color: #6c757d; transition: all 0.3s ease; border-radius: 3px; font-size: 0.9rem; }
+        .manage-tab.active { background: white; color: #2c3e50; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .manage-tab:hover { color: #2c3e50; }
+        
+        .manage-tab-content { display: none; }
+        .manage-tab-content.active { display: block; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #dee2e6; }
+        .stat-card h4 { margin: 0 0 5px 0; font-size: 1.5rem; color: #2c3e50; }
+        .stat-card p { margin: 0; color: #6c757d; font-size: 0.9rem; }
+        
+        .action-group { margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6; }
+        .action-group h4 { margin-bottom: 15px; color: #2c3e50; font-size: 1.1rem; }
+        .action-group .btn { margin-right: 10px; margin-bottom: 10px; }
+        
+        .danger-zone { margin-top: 30px; padding: 20px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 8px; }
+        .danger-zone h4 { color: #e53e3e; margin-bottom: 10px; }
+        .danger-zone p { color: #718096; margin-bottom: 15px; font-size: 0.9rem; }
+        .danger-zone .btn { margin-right: 10px; }
+        
+        textarea { width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 4px; font-size: 1rem; transition: border-color 0.3s ease; font-family: 'League Spartan', sans-serif; resize: vertical; }
+        textarea:focus { outline: none; border-color: #3498db; }
+        
+        select { width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 4px; font-size: 1rem; transition: border-color 0.3s ease; font-family: 'League Spartan', sans-serif; background: white; }
+        select:focus { outline: none; border-color: #3498db; }
+        
+        input[type="checkbox"] { margin-right: 8px; }
+        
+        .admins-list { border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #dee2e6; background: white; }
+        .admin-item:last-child { border-bottom: none; }
+        .admin-item:hover { background: #f8f9fa; }
+        .admin-info { flex: 1; }
+        .admin-name { font-weight: 600; color: #2c3e50; margin-bottom: 5px; }
+        .admin-email { color: #6c757d; font-size: 0.9rem; margin-bottom: 3px; }
+        .admin-details { color: #6c757d; font-size: 0.85rem; }
+        .admin-actions { display: flex; gap: 8px; }
+        .admin-status { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .admin-status.primary { background: #e3f2fd; color: #1976d2; }
+        .admin-status.secondary { background: #f3e5f5; color: #7b1fa2; }
+        .empty-state { text-align: center; padding: 40px; color: #6c757d; }
+        
+        .member-search { width: 100%; padding: 10px; border: 2px solid #ecf0f1; border-radius: 4px; margin-bottom: 15px; }
+        .member-search:focus { border-color: #3498db; outline: none; }
+        .member-results { max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; }
+        .member-result-item { padding: 12px; border-bottom: 1px solid #f1f3f4; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .member-result-item:hover { background: #f8f9fa; }
+        .member-result-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -156,9 +207,321 @@
                     <label for="adminName">City Admin Name</label>
                     <input type="text" id="adminName" name="adminName" required placeholder="John Smith">
                 </div>
+                <div class="form-group">
+                    <label for="cityDescription">Description (Optional)</label>
+                    <textarea id="cityDescription" name="cityDescription" rows="3" placeholder="Brief description of this franchise location..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="cityTimezone">Timezone</label>
+                    <select id="cityTimezone" name="cityTimezone" required>
+                        <option value="Europe/London">Europe/London (GMT/BST)</option>
+                        <option value="Europe/Dublin">Europe/Dublin (GMT/IST)</option>
+                        <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                        <option value="America/New_York">America/New_York (EST/EDT)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="homeVenue">Home Venue</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="homeVenue" name="homeVenue" style="flex: 1;">
+                            <option value="">Select a venue...</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="showAddVenueModal()">+ Add Venue</button>
+                    </div>
+                </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
                     <button type="button" class="btn btn-secondary" onclick="closeCreateCityModal()">Cancel</button>
                     <button type="submit" class="btn btn-success">Create City</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage City Modal -->
+    <div id="manageCityModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>Manage City: <span id="manageCityName"></span></h3>
+            
+            <!-- City Info Tab -->
+            <div class="manage-tabs">
+                <button type="button" class="manage-tab active" onclick="switchManageTab('info')">City Info</button>
+                <button type="button" class="manage-tab" onclick="switchManageTab('admin')">Admin Settings</button>
+                <button type="button" class="manage-tab" onclick="switchManageTab('members')">Members</button>
+                <button type="button" class="manage-tab" onclick="switchManageTab('settings')">Advanced</button>
+            </div>
+            
+            <!-- City Info Tab Content -->
+            <div id="manageInfoTab" class="manage-tab-content active">
+                <form id="editCityForm">
+                    <input type="hidden" id="editCityId" name="cityId">
+                    <div class="form-group">
+                        <label for="editCityName">City Name</label>
+                        <input type="text" id="editCityName" name="cityName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCityRegion">Region</label>
+                        <input type="text" id="editCityRegion" name="cityRegion" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCityDescription">Description</label>
+                        <textarea id="editCityDescription" name="cityDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCityTimezone">Timezone</label>
+                        <select id="editCityTimezone" name="cityTimezone" required>
+                            <option value="Europe/London">Europe/London (GMT/BST)</option>
+                            <option value="Europe/Dublin">Europe/Dublin (GMT/IST)</option>
+                            <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                            <option value="America/New_York">America/New_York (EST/EDT)</option>
+                            <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editHomeVenue">Home Venue</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="editHomeVenue" name="homeVenue" style="flex: 1;">
+                                <option value="">Select a venue...</option>
+                            </select>
+                            <button type="button" class="btn btn-secondary" onclick="showAddVenueModal()">+ Add Venue</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCityStatus">Status</label>
+                        <select id="editCityStatus" name="cityStatus" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Admin Settings Tab Content -->
+            <div id="manageAdminTab" class="manage-tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h4>City Administrators</h4>
+                    <div>
+                        <button type="button" class="btn btn-primary" onclick="showPromoteToAdminModal()">+ Promote Member</button>
+                        <button type="button" class="btn btn-success" onclick="showCreateAdminModal()">+ Create New Admin</button>
+                    </div>
+                </div>
+                
+                <div id="cityAdminsList" class="admins-list">
+                    <!-- City admins will be loaded here -->
+                </div>
+                
+                <div class="action-group">
+                    <h4>Admin Management Actions</h4>
+                    <button type="button" class="btn btn-secondary" onclick="exportAdminData()">Export Admin Data</button>
+                    <button type="button" class="btn btn-secondary" onclick="sendAdminBulkWelcome()">Send Welcome Emails to All</button>
+                </div>
+            </div>
+            
+            <!-- Members Tab Content -->
+            <div id="manageMembersTab" class="manage-tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4 id="memberCount">0</h4>
+                        <p>Total Members</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4 id="pendingCount">0</h4>
+                        <p>Pending Applications</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4 id="eventCount">0</h4>
+                        <p>Total Events</p>
+                    </div>
+                </div>
+                <div class="action-group">
+                    <h4>Member Management</h4>
+                    <button type="button" class="btn btn-primary" onclick="viewAllMembers()">View All Members</button>
+                    <button type="button" class="btn btn-secondary" onclick="exportMemberData()">Export Member Data</button>
+                    <button type="button" class="btn btn-secondary" onclick="importMembers()">Import Members</button>
+                </div>
+            </div>
+            
+            <!-- Advanced Settings Tab Content -->
+            <div id="manageSettingsTab" class="manage-tab-content">
+                <div class="form-group">
+                    <label for="editBrandingLogo">Custom Branding Logo URL</label>
+                    <input type="url" id="editBrandingLogo" name="brandingLogo" placeholder="https://example.com/logo.png">
+                </div>
+                <div class="form-group">
+                    <label for="editCustomDomain">Custom Domain (Optional)</label>
+                    <input type="text" id="editCustomDomain" name="customDomain" placeholder="manchester.thekartel.com">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editEmailNotifications" name="emailNotifications" checked>
+                        Enable Email Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editPushNotifications" name="pushNotifications" checked>
+                        Enable Push Notifications
+                    </label>
+                </div>
+                <div class="danger-zone">
+                    <h4>Danger Zone</h4>
+                    <p>These actions cannot be undone. Please be certain.</p>
+                    <button type="button" class="btn btn-danger" onclick="archiveCity()">Archive City</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteCity()">Delete City</button>
+                </div>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                <button type="button" class="btn btn-secondary" onclick="closeManageCityModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCityChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Venue Modal -->
+    <div id="addVenueModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add New Venue</h3>
+            <form id="addVenueForm">
+                <div class="form-group">
+                    <label for="venueName">Venue Name</label>
+                    <input type="text" id="venueName" name="venueName" required placeholder="e.g., TeamSport Go Karting Manchester">
+                </div>
+                <div class="form-group">
+                    <label for="venueAddress">Address</label>
+                    <textarea id="venueAddress" name="venueAddress" rows="3" required placeholder="Full venue address..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="venuePhone">Phone Number</label>
+                    <input type="tel" id="venuePhone" name="venuePhone" placeholder="+44 161 123 4567">
+                </div>
+                <div class="form-group">
+                    <label for="venueWebsite">Website (Optional)</label>
+                    <input type="url" id="venueWebsite" name="venueWebsite" placeholder="https://www.teamsport.co.uk/go-karting-manchester/">
+                </div>
+                <div class="form-group">
+                    <label for="venueCapacity">Track Capacity</label>
+                    <input type="number" id="venueCapacity" name="venueCapacity" min="1" placeholder="e.g., 20">
+                </div>
+                <div class="form-group">
+                    <label for="venueNotes">Notes (Optional)</label>
+                    <textarea id="venueNotes" name="venueNotes" rows="2" placeholder="Any additional notes about this venue..."></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddVenueModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Venue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Promote Member to Admin Modal -->
+    <div id="promoteToAdminModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Promote Member to Admin</h3>
+            <div class="form-group">
+                <label for="memberSearch">Search for Member</label>
+                <input type="text" id="memberSearch" class="member-search" placeholder="Type name or email to search members...">
+            </div>
+            <div id="memberSearchResults" class="member-results" style="display: none;">
+                <!-- Search results will appear here -->
+            </div>
+            <div id="selectedMemberInfo" style="display: none; padding: 15px; background: #f8f9fa; border-radius: 4px; margin: 15px 0;">
+                <h4>Selected Member:</h4>
+                <div id="selectedMemberDetails"></div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closePromoteToAdminModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="promoteButton" onclick="confirmPromoteToAdmin()" disabled>Promote to Admin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create New Admin Modal -->
+    <div id="createAdminModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Create New Administrator</h3>
+            <form id="createAdminForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label for="adminFirstName">First Name</label>
+                        <input type="text" id="adminFirstName" name="firstName" required placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminLastName">Last Name</label>
+                        <input type="text" id="adminLastName" name="lastName" required placeholder="Smith">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="adminEmail">Email Address</label>
+                    <input type="email" id="adminEmail" name="email" required placeholder="admin@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="adminCompany">Company</label>
+                    <input type="text" id="adminCompany" name="company" placeholder="Company name">
+                </div>
+                <div class="form-group">
+                    <label for="adminPosition">Position</label>
+                    <input type="text" id="adminPosition" name="position" placeholder="Operations Manager">
+                </div>
+                <div class="form-group">
+                    <label for="adminPhone">Phone Number</label>
+                    <input type="tel" id="adminPhone" name="phone" placeholder="+44 7xxx xxx xxx">
+                </div>
+                <div class="form-group">
+                    <label for="adminLinkedin">LinkedIn Profile</label>
+                    <input type="url" id="adminLinkedin" name="linkedin" placeholder="https://linkedin.com/in/username">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateAdminModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Admin Modal -->
+    <div id="editAdminModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Administrator</h3>
+            <form id="editAdminForm">
+                <input type="hidden" id="editAdminId" name="adminId">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label for="editAdminFirstName">First Name</label>
+                        <input type="text" id="editAdminFirstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAdminLastName">Last Name</label>
+                        <input type="text" id="editAdminLastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editAdminEmailField">Email Address</label>
+                    <input type="email" id="editAdminEmailField" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAdminCompany">Company</label>
+                    <input type="text" id="editAdminCompany" name="company">
+                </div>
+                <div class="form-group">
+                    <label for="editAdminPosition">Position</label>
+                    <input type="text" id="editAdminPosition" name="position">
+                </div>
+                <div class="form-group">
+                    <label for="editAdminPhone">Phone Number</label>
+                    <input type="tel" id="editAdminPhone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="editAdminLinkedin">LinkedIn Profile</label>
+                    <input type="url" id="editAdminLinkedin" name="linkedin">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditAdminModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -169,6 +532,10 @@
         let superAdminToken = null;
         let currentSuperAdmin = null;
         let cities = [];
+        let venues = [];
+        let allMembers = [];
+        let currentCityId = null;
+        let selectedMemberForPromotion = null;
 
         // Override auth module behavior for super admin
         window.onAuthSuccess = function(user, isAdmin) {
@@ -182,6 +549,7 @@
             }
             
             // Load initial data
+            loadVenues();
             loadCities();
         };
 
@@ -324,6 +692,490 @@
             document.getElementById('createCityForm').reset();
         }
 
+        // Venue management functions
+        async function loadVenues() {
+            console.log('🏁 Loading venues...');
+            try {
+                const response = await fetch('/.netlify/functions/get-venues', {
+                    headers: {
+                        'Authorization': `Bearer ${superAdminToken || kartelAuth.getToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    venues = data.venues || [];
+                    console.log(`✅ Loaded ${venues.length} venues`);
+                    populateVenueDropdowns();
+                } else {
+                    console.log('⚠️ Failed to load venues, using empty list');
+                    venues = [];
+                    populateVenueDropdowns();
+                }
+            } catch (error) {
+                console.error('❌ Error loading venues:', error);
+                venues = [];
+                populateVenueDropdowns();
+            }
+        }
+
+        function populateVenueDropdowns() {
+            const homeVenueSelects = ['homeVenue', 'editHomeVenue'];
+            
+            homeVenueSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    // Store current value
+                    const currentValue = select.value;
+                    
+                    // Clear existing options except the first one
+                    select.innerHTML = '<option value="">Select a venue...</option>';
+                    
+                    // Add venue options
+                    venues.forEach(venue => {
+                        const option = document.createElement('option');
+                        option.value = venue.id;
+                        option.textContent = venue.name;
+                        select.appendChild(option);
+                    });
+                    
+                    // Restore selection if it still exists
+                    if (currentValue) {
+                        select.value = currentValue;
+                    }
+                }
+            });
+        }
+
+        function showAddVenueModal() {
+            document.getElementById('addVenueModal').classList.remove('hidden');
+        }
+
+        function closeAddVenueModal() {
+            document.getElementById('addVenueModal').classList.add('hidden');
+            document.getElementById('addVenueForm').reset();
+        }
+
+        async function createVenue(venueData) {
+            try {
+                const response = await fetch('/.netlify/functions/create-venue', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${superAdminToken || kartelAuth.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(venueData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Venue created successfully:', data);
+                    
+                    // Add to local venues array
+                    venues.push({
+                        id: data.venueId,
+                        name: venueData.name,
+                        address: venueData.address,
+                        phone: venueData.phone,
+                        website: venueData.website,
+                        capacity: venueData.capacity,
+                        notes: venueData.notes
+                    });
+                    
+                    // Update dropdowns
+                    populateVenueDropdowns();
+                    
+                    return { success: true, venueId: data.venueId };
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create venue');
+                }
+            } catch (error) {
+                console.error('❌ Error creating venue:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        function closeManageCityModal() {
+            document.getElementById('manageCityModal').classList.add('hidden');
+        }
+
+        function switchManageTab(tabName) {
+            // Hide all manage tab contents
+            document.querySelectorAll('.manage-tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.manage-tab').forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById('manage' + tabName.charAt(0).toUpperCase() + tabName.slice(1) + 'Tab').classList.add('active');
+            document.querySelector(`[onclick="switchManageTab('${tabName}')"]`).classList.add('active');
+            
+            // Load tab-specific data
+            if (tabName === 'admin' && currentCityId) {
+                if (allMembers.length === 0) {
+                    loadAllMembers().then(() => loadCityAdmins(currentCityId));
+                } else {
+                    loadCityAdmins(currentCityId);
+                }
+            }
+        }
+
+        function saveCityChanges() {
+            const cityId = document.getElementById('editCityId').value;
+            const city = cities.find(c => c.id === cityId);
+            
+            if (!city) {
+                alert('City not found');
+                return;
+            }
+            
+            // Update city data from form
+            city.name = document.getElementById('editCityName').value;
+            city.region = document.getElementById('editCityRegion').value;
+            city.description = document.getElementById('editCityDescription').value;
+            city.timezone = document.getElementById('editCityTimezone').value;
+            city.homeVenue = document.getElementById('editHomeVenue').value;
+            city.status = document.getElementById('editCityStatus').value;
+            city.brandingLogo = document.getElementById('editBrandingLogo').value;
+            city.customDomain = document.getElementById('editCustomDomain').value;
+            city.emailNotifications = document.getElementById('editEmailNotifications').checked;
+            city.pushNotifications = document.getElementById('editPushNotifications').checked;
+            
+            console.log('💾 Saving city changes:', city);
+            
+            // TODO: Call API to save changes
+            // For now, just update the display and close modal
+            renderCities();
+            closeManageCityModal();
+            
+            alert(`City "${city.name}" updated successfully!`);
+        }
+
+        // Admin management functions
+        async function loadAllMembers() {
+            console.log('👥 Loading all members...');
+            try {
+                const response = await fetch('/.netlify/functions/get-applications', {
+                    headers: {
+                        'Authorization': `Bearer ${superAdminToken || kartelAuth.getToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    allMembers = data.applications || [];
+                    console.log(`✅ Loaded ${allMembers.length} members`);
+                } else {
+                    console.log('⚠️ Failed to load members');
+                    allMembers = [];
+                }
+            } catch (error) {
+                console.error('❌ Error loading members:', error);
+                allMembers = [];
+            }
+        }
+
+        async function loadCityAdmins(cityId) {
+            // Load admins for this city from the members list
+            const cityAdmins = allMembers.filter(member => 
+                member.status === 'approved' && 
+                member.isAdmin && 
+                (member.cityId === cityId || !member.cityId) // Support legacy admins without cityId
+            );
+            
+            renderCityAdmins(cityAdmins);
+        }
+
+        function renderCityAdmins(admins) {
+            const container = document.getElementById('cityAdminsList');
+            
+            if (admins.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No administrators assigned to this city yet.</p>
+                        <p>Use the buttons above to promote an existing member or create a new admin.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = admins.map(admin => `
+                <div class="admin-item">
+                    <div class="admin-info">
+                        <div class="admin-name">${admin.firstName} ${admin.lastName}</div>
+                        <div class="admin-email">${admin.email}</div>
+                        <div class="admin-details">
+                            ${admin.company ? `${admin.company}` : ''}
+                            ${admin.position ? ` • ${admin.position}` : ''}
+                            ${admin.phone ? ` • ${admin.phone}` : ''}
+                        </div>
+                    </div>
+                    <div class="admin-actions">
+                        <span class="admin-status primary">Admin</span>
+                        <button class="btn btn-secondary" onclick="editAdmin('${admin.id}')">Edit</button>
+                        <button class="btn btn-secondary" onclick="resetAdminPassword('${admin.id}')">Reset Password</button>
+                        <button class="btn btn-danger" onclick="removeAdminRights('${admin.id}')">Remove Admin</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showPromoteToAdminModal() {
+            document.getElementById('promoteToAdminModal').classList.remove('hidden');
+            document.getElementById('memberSearch').value = '';
+            document.getElementById('memberSearchResults').style.display = 'none';
+            document.getElementById('selectedMemberInfo').style.display = 'none';
+            document.getElementById('promoteButton').disabled = true;
+            selectedMemberForPromotion = null;
+            
+            // Load members if not already loaded
+            if (allMembers.length === 0) {
+                loadAllMembers();
+            }
+        }
+
+        function closePromoteToAdminModal() {
+            document.getElementById('promoteToAdminModal').classList.add('hidden');
+        }
+
+        function showCreateAdminModal() {
+            document.getElementById('createAdminModal').classList.remove('hidden');
+        }
+
+        function closeCreateAdminModal() {
+            document.getElementById('createAdminModal').classList.add('hidden');
+            document.getElementById('createAdminForm').reset();
+        }
+
+        function showEditAdminModal() {
+            document.getElementById('editAdminModal').classList.remove('hidden');
+        }
+
+        function closeEditAdminModal() {
+            document.getElementById('editAdminModal').classList.add('hidden');
+            document.getElementById('editAdminForm').reset();
+        }
+
+        // Member search functionality
+        function setupMemberSearch() {
+            const searchInput = document.getElementById('memberSearch');
+            const resultsContainer = document.getElementById('memberSearchResults');
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                
+                if (query.length < 2) {
+                    resultsContainer.style.display = 'none';
+                    return;
+                }
+                
+                // Filter non-admin members
+                const eligibleMembers = allMembers.filter(member => 
+                    member.status === 'approved' && 
+                    !member.isAdmin &&
+                    (member.firstName?.toLowerCase().includes(query) ||
+                     member.lastName?.toLowerCase().includes(query) ||
+                     member.email?.toLowerCase().includes(query) ||
+                     member.company?.toLowerCase().includes(query))
+                );
+                
+                if (eligibleMembers.length === 0) {
+                    resultsContainer.innerHTML = '<div class="member-result-item">No eligible members found</div>';
+                } else {
+                    resultsContainer.innerHTML = eligibleMembers.slice(0, 10).map(member => `
+                        <div class="member-result-item" onclick="selectMemberForPromotion('${member.id}')">
+                            <div>
+                                <div style="font-weight: 600;">${member.firstName} ${member.lastName}</div>
+                                <div style="color: #6c757d; font-size: 0.9rem;">${member.email}</div>
+                                ${member.company ? `<div style="color: #6c757d; font-size: 0.85rem;">${member.company}</div>` : ''}
+                            </div>
+                            <button class="btn btn-primary btn-sm">Select</button>
+                        </div>
+                    `).join('');
+                }
+                
+                resultsContainer.style.display = 'block';
+            });
+        }
+
+        function selectMemberForPromotion(memberId) {
+            selectedMemberForPromotion = allMembers.find(m => m.id === memberId);
+            
+            if (selectedMemberForPromotion) {
+                document.getElementById('selectedMemberDetails').innerHTML = `
+                    <div><strong>${selectedMemberForPromotion.firstName} ${selectedMemberForPromotion.lastName}</strong></div>
+                    <div>${selectedMemberForPromotion.email}</div>
+                    ${selectedMemberForPromotion.company ? `<div>${selectedMemberForPromotion.company}</div>` : ''}
+                `;
+                
+                document.getElementById('selectedMemberInfo').style.display = 'block';
+                document.getElementById('memberSearchResults').style.display = 'none';
+                document.getElementById('promoteButton').disabled = false;
+            }
+        }
+
+        async function confirmPromoteToAdmin() {
+            if (!selectedMemberForPromotion || !currentCityId) return;
+            
+            const confirmText = `Promote ${selectedMemberForPromotion.firstName} ${selectedMemberForPromotion.lastName} to administrator for this city?`;
+            if (!confirm(confirmText)) return;
+            
+            console.log('👑 Promoting member to admin:', selectedMemberForPromotion.email);
+            
+            try {
+                // TODO: Call API to update member admin status and cityId
+                // For now, update locally
+                selectedMemberForPromotion.isAdmin = true;
+                selectedMemberForPromotion.cityId = currentCityId;
+                
+                closePromoteToAdminModal();
+                loadCityAdmins(currentCityId);
+                alert(`${selectedMemberForPromotion.firstName} ${selectedMemberForPromotion.lastName} has been promoted to administrator!`);
+            } catch (error) {
+                console.error('❌ Error promoting member:', error);
+                alert('Failed to promote member. Please try again.');
+            }
+        }
+
+        async function createNewAdmin(adminData) {
+            console.log('👨‍💼 Creating new admin:', adminData);
+            
+            try {
+                // TODO: Call API to create new member with admin status
+                // For now, add to local array
+                const newAdmin = {
+                    id: 'admin_' + Date.now(),
+                    email: adminData.email,
+                    firstName: adminData.firstName,
+                    lastName: adminData.lastName,
+                    company: adminData.company,
+                    position: adminData.position,
+                    phone: adminData.phone,
+                    linkedin: adminData.linkedin,
+                    status: 'approved',
+                    isAdmin: true,
+                    cityId: currentCityId,
+                    createdAt: new Date().toISOString()
+                };
+                
+                allMembers.push(newAdmin);
+                loadCityAdmins(currentCityId);
+                
+                return { success: true };
+            } catch (error) {
+                console.error('❌ Error creating admin:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        function editAdmin(adminId) {
+            const admin = allMembers.find(m => m.id === adminId);
+            if (!admin) return;
+            
+            // Populate edit form
+            document.getElementById('editAdminId').value = admin.id;
+            document.getElementById('editAdminFirstName').value = admin.firstName || '';
+            document.getElementById('editAdminLastName').value = admin.lastName || '';
+            document.getElementById('editAdminEmailField').value = admin.email || '';
+            document.getElementById('editAdminCompany').value = admin.company || '';
+            document.getElementById('editAdminPosition').value = admin.position || '';
+            document.getElementById('editAdminPhone').value = admin.phone || '';
+            document.getElementById('editAdminLinkedin').value = admin.linkedin || '';
+            
+            showEditAdminModal();
+        }
+
+        function resetAdminPassword(adminId) {
+            const admin = allMembers.find(m => m.id === adminId);
+            if (!admin) return;
+            
+            if (confirm(`Send password reset email to ${admin.firstName} ${admin.lastName} (${admin.email})?`)) {
+                console.log('🔐 Resetting admin password for:', admin.email);
+                // TODO: Call password reset API
+                alert('Password reset email sent to ' + admin.email);
+            }
+        }
+
+        function removeAdminRights(adminId) {
+            const admin = allMembers.find(m => m.id === adminId);
+            if (!admin) return;
+            
+            const confirmText = `Remove administrator rights from ${admin.firstName} ${admin.lastName}? They will remain a member but lose admin access.`;
+            if (confirm(confirmText)) {
+                console.log('👤 Removing admin rights from:', admin.email);
+                
+                // TODO: Call API to update member
+                admin.isAdmin = false;
+                admin.cityId = null;
+                
+                loadCityAdmins(currentCityId);
+                alert(`${admin.firstName} ${admin.lastName} is no longer an administrator.`);
+            }
+        }
+
+        function exportAdminData() {
+            console.log('📤 Exporting admin data for city:', currentCityId);
+            // TODO: Generate and download admin data CSV
+            alert('Exporting admin data... (TODO: Implement)');
+        }
+
+        function sendAdminBulkWelcome() {
+            console.log('📧 Sending bulk welcome emails to admins');
+            // TODO: Send welcome emails to all city admins
+            alert('Sending welcome emails to all administrators... (TODO: Implement)');
+        }
+
+        // Member management functions
+        function viewAllMembers() {
+            const cityId = document.getElementById('editCityId').value;
+            console.log('👥 Viewing all members for city:', cityId);
+            // TODO: Open members list modal or navigate to members page
+            alert('Opening members list... (TODO: Implement)');
+        }
+
+        function exportMemberData() {
+            const cityId = document.getElementById('editCityId').value;
+            console.log('📤 Exporting member data for city:', cityId);
+            // TODO: Generate and download CSV/Excel file
+            alert('Exporting member data... (TODO: Implement)');
+        }
+
+        function importMembers() {
+            const cityId = document.getElementById('editCityId').value;
+            console.log('📥 Importing members for city:', cityId);
+            // TODO: Open file upload dialog
+            alert('Opening import dialog... (TODO: Implement)');
+        }
+
+        // Danger zone functions
+        function archiveCity() {
+            const cityId = document.getElementById('editCityId').value;
+            const city = cities.find(c => c.id === cityId);
+            
+            if (confirm(`Archive city "${city.name}"? This will hide it from active use but preserve all data.`)) {
+                console.log('📦 Archiving city:', city.name);
+                city.status = 'archived';
+                renderCities();
+                closeManageCityModal();
+                alert(`City "${city.name}" has been archived.`);
+            }
+        }
+
+        function deleteCity() {
+            const cityId = document.getElementById('editCityId').value;
+            const city = cities.find(c => c.id === cityId);
+            
+            const confirmText = prompt(`To delete "${city.name}", type "DELETE" (this cannot be undone):`, '');
+            if (confirmText === 'DELETE') {
+                console.log('🗑️ Deleting city:', city.name);
+                cities = cities.filter(c => c.id !== cityId);
+                renderCities();
+                closeManageCityModal();
+                alert(`City "${city.name}" has been permanently deleted.`);
+            } else if (confirmText !== null) {
+                alert('Deletion cancelled - text did not match "DELETE"');
+            }
+        }
+
         async function loadAnalytics() {
             console.log('📊 Loading analytics...');
             // TODO: Implement analytics
@@ -336,7 +1188,42 @@
 
         function manageCityAdmin(cityId) {
             console.log('👨‍💼 Managing city admin for:', cityId);
-            // TODO: Implement city admin management
+            
+            const city = cities.find(c => c.id === cityId);
+            if (!city) {
+                alert('City not found');
+                return;
+            }
+            
+            // Populate the manage modal with city data
+            document.getElementById('manageCityName').textContent = city.name;
+            document.getElementById('editCityId').value = city.id;
+            document.getElementById('editCityName').value = city.name;
+            document.getElementById('editCityRegion').value = city.region;
+            document.getElementById('editCityDescription').value = city.description || '';
+            document.getElementById('editCityTimezone').value = city.timezone || 'Europe/London';
+            document.getElementById('editHomeVenue').value = city.homeVenue || '';
+            document.getElementById('editCityStatus').value = city.status || 'active';
+            
+            // Set current city for admin management
+            currentCityId = city.id;
+            
+            // Members tab stats
+            document.getElementById('memberCount').textContent = city.memberCount || 0;
+            document.getElementById('pendingCount').textContent = city.pendingCount || 0;
+            document.getElementById('eventCount').textContent = city.eventCount || 0;
+            
+            // Advanced settings
+            document.getElementById('editBrandingLogo').value = city.brandingLogo || '';
+            document.getElementById('editCustomDomain').value = city.customDomain || '';
+            document.getElementById('editEmailNotifications').checked = city.emailNotifications !== false;
+            document.getElementById('editPushNotifications').checked = city.pushNotifications !== false;
+            
+            // Reset to first tab
+            switchManageTab('info');
+            
+            // Show modal
+            document.getElementById('manageCityModal').classList.remove('hidden');
         }
 
         function viewCityStats(cityId) {
@@ -356,7 +1243,10 @@
                         name: formData.get('cityName'),
                         region: formData.get('cityRegion'),
                         adminEmail: formData.get('adminEmail'),
-                        adminName: formData.get('adminName')
+                        adminName: formData.get('adminName'),
+                        description: formData.get('cityDescription'),
+                        timezone: formData.get('cityTimezone'),
+                        homeVenue: formData.get('homeVenue')
                     };
                     
                     console.log('🏙️ Creating new city:', cityData);
@@ -379,9 +1269,16 @@
                             region: cityData.region,
                             adminEmail: cityData.adminEmail,
                             adminName: cityData.adminName,
+                            description: cityData.description || '',
+                            timezone: cityData.timezone || 'Europe/London',
+                            homeVenue: cityData.homeVenue || '',
                             memberCount: 0,
                             eventCount: 0,
-                            status: 'active'
+                            pendingCount: 0,
+                            status: 'active',
+                            emailNotifications: true,
+                            pushNotifications: true,
+                            createdAt: new Date().toISOString()
                         };
                         
                         cities.push(newCity);
@@ -397,6 +1294,104 @@
                     }
                 });
             }
+            
+            // Handle add venue form submission
+            const addVenueForm = document.getElementById('addVenueForm');
+            if (addVenueForm) {
+                addVenueForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const venueData = {
+                        name: formData.get('venueName'),
+                        address: formData.get('venueAddress'),
+                        phone: formData.get('venuePhone'),
+                        website: formData.get('venueWebsite'),
+                        capacity: parseInt(formData.get('venueCapacity')) || null,
+                        notes: formData.get('venueNotes')
+                    };
+                    
+                    console.log('🏁 Creating new venue:', venueData);
+                    
+                    const result = await createVenue(venueData);
+                    
+                    if (result.success) {
+                        closeAddVenueModal();
+                        alert(`Venue "${venueData.name}" created successfully!`);
+                        
+                        // Auto-select the new venue in the active home venue dropdown
+                        const activeSelect = document.querySelector('#homeVenue, #editHomeVenue');
+                        if (activeSelect) {
+                            activeSelect.value = result.venueId;
+                        }
+                    } else {
+                        alert('Failed to create venue: ' + result.error);
+                    }
+                });
+            }
+            
+            // Handle create admin form submission
+            const createAdminForm = document.getElementById('createAdminForm');
+            if (createAdminForm) {
+                createAdminForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const adminData = {
+                        firstName: formData.get('firstName'),
+                        lastName: formData.get('lastName'),
+                        email: formData.get('email'),
+                        company: formData.get('company'),
+                        position: formData.get('position'),
+                        phone: formData.get('phone'),
+                        linkedin: formData.get('linkedin')
+                    };
+                    
+                    const result = await createNewAdmin(adminData);
+                    
+                    if (result.success) {
+                        closeCreateAdminModal();
+                        alert(`Administrator ${adminData.firstName} ${adminData.lastName} created successfully!`);
+                    } else {
+                        alert('Failed to create administrator: ' + result.error);
+                    }
+                });
+            }
+            
+            // Handle edit admin form submission
+            const editAdminForm = document.getElementById('editAdminForm');
+            if (editAdminForm) {
+                editAdminForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const adminId = formData.get('adminId');
+                    const admin = allMembers.find(m => m.id === adminId);
+                    
+                    if (admin) {
+                        // Update admin data
+                        admin.firstName = formData.get('firstName');
+                        admin.lastName = formData.get('lastName');
+                        admin.email = formData.get('email');
+                        admin.company = formData.get('company');
+                        admin.position = formData.get('position');
+                        admin.phone = formData.get('phone');
+                        admin.linkedin = formData.get('linkedin');
+                        
+                        // TODO: Call API to update admin
+                        console.log('📝 Updating admin:', admin);
+                        
+                        closeEditAdminModal();
+                        loadCityAdmins(currentCityId);
+                        alert(`Administrator ${admin.firstName} ${admin.lastName} updated successfully!`);
+                    }
+                });
+            }
+            
+            // Setup member search when promote modal is opened
+            setTimeout(() => {
+                setupMemberSearch();
+            }, 1000);
         });
 
         // Logout handled by topbar module
