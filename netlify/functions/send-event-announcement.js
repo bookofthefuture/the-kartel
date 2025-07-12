@@ -198,7 +198,7 @@ async function sendEventAnnouncementEmail(member, eventDetails, venueDetails) {
         <h3 style="color: #2c3e50; margin-bottom: 20px; font-family: 'League Spartan', 'Arial', sans-serif;">Register Now</h3>
         
         <div style="margin-bottom: 30px;">
-          <a href="${baseUrl}/members.html?register=${eventDetails.id}&token=${registrationToken}&email=${encodeURIComponent(member.email)}#events" 
+          <a href="${baseUrl}/members.html?register=${eventDetails.id}&token=${registrationToken}&email=${encodeURIComponent(member.email)}" 
              style="display: inline-block; background: #27ae60; color: white; padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-family: 'League Spartan', 'Arial', sans-serif; text-decoration: none; transition: background-color 0.3s ease;"
              onmouseover="this.style.backgroundColor='#229954'"
              onmouseout="this.style.backgroundColor='#27ae60'">

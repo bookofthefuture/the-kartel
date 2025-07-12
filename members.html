@@ -679,8 +679,8 @@
             // Initialize member dashboard
             showDashboard();
             
-            // Handle URL parameters after auth is complete
-            setTimeout(handleUrlParameters, 200);
+            // Handle URL parameters after auth is complete - increased delay for better reliability
+            setTimeout(handleUrlParameters, 500);
         };
 
         // Override existing functions to work with unified auth
@@ -1794,6 +1794,12 @@
 
         // Handle URL parameters for registration success/error messages and direct registration
         async function handleUrlParameters() {
+            // Explicit authentication state check before processing URL parameters
+            if (!memberToken || !currentMember) {
+                console.log('⚠️ handleUrlParameters called without valid authentication, skipping');
+                return;
+            }
+            
             const params = new URLSearchParams(window.location.search);
             const hash = window.location.hash;
             
@@ -1861,13 +1867,14 @@
                     }
                     
                     // Store registration info for after login
-                    console.log('💾 Storing registration info for after login:', { eventId, token, email });
-                    sessionStorage.setItem('pendingRegistration', JSON.stringify({
-                        eventId, token, email
-                    }));
-                    localStorage.setItem('kartel_pending_registration', JSON.stringify({
-                        eventId, token, email
-                    }));
+                    const pendingData = {
+                        eventId, token, email,
+                        originalUrl: window.location.href,
+                        hash: hash || '#events'
+                    };
+                    console.log('💾 Storing registration info for after login:', pendingData);
+                    sessionStorage.setItem('pendingRegistration', JSON.stringify(pendingData));
+                    localStorage.setItem('kartel_pending_registration', JSON.stringify(pendingData));
                     showMessage('Please log in as a member to register for the event.', 'info');
                     showLogin();
                 }
@@ -2033,7 +2040,8 @@
             
             if (pending) {
                 console.log(`📋 Found pending registration in ${source}:`, pending);
-                const { eventId, token, email } = JSON.parse(pending);
+                const data = JSON.parse(pending);
+                const { eventId, token, email, originalUrl, hash } = data;
                 
                 // Clean up both storage locations
                 sessionStorage.removeItem('pendingRegistration');
@@ -2042,6 +2050,22 @@
                 // Verify email matches logged-in user
                 if (currentMember && currentMember.email.toLowerCase() === email.toLowerCase()) {
                     console.log('✅ Email matches, proceeding with registration');
+                    
+                    // Restore the URL context if available
+                    if (hash) {
+                        console.log(`🔗 Restoring URL hash: ${hash}`);
+                        window.location.hash = hash;
+                        
+                        // Switch to appropriate tab based on hash
+                        if (hash === '#events') {
+                            switchTab('upcomingEvents');
+                        } else if (hash === '#my-events') {
+                            switchTab('myEvents');
+                        } else if (hash === '#venues') {
+                            switchTab('venues');
+                        }
+                    }
+                    
                     handleDirectRegistration(eventId, token, email);
                 } else {
                     console.log('❌ Email mismatch:', { currentMember: currentMember?.email, expectedEmail: email });
@@ -2154,19 +2178,6 @@
             }
         }
 
-        // Member Authentication Success Handler
-        window.onAuthSuccess = function(user, isAdmin) {
-            console.log('🎉 Member auth success:', user, isAdmin);
-            
-            // Store the user data
-            currentMember = user;
-            
-            // Show the dashboard
-            showDashboardWithAdminCheck();
-            
-            // Handle URL parameters for registration links
-            handleUrlParameters();
-        };
 
         // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
