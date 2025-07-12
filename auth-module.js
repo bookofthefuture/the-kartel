@@ -312,10 +312,12 @@ class KartelAuth {
         console.log('🎉 Authentication successful, showing dashboard');
         
         const loginSection = document.getElementById('loginSection');
+        const loginContainer = document.getElementById('loginContainer');
         const dashboardSection = document.getElementById('dashboardSection');
         const loadingSection = document.getElementById('loadingSection');
         
         if (loginSection) loginSection.classList.add('hidden');
+        if (loginContainer) loginContainer.classList.add('hidden');
         if (loadingSection) loadingSection.classList.add('hidden');
         if (dashboardSection) dashboardSection.classList.remove('hidden');
         
@@ -443,7 +445,12 @@ class KartelAuth {
                 const email = document.getElementById('passwordEmail').value;
                 const password = document.getElementById('password').value;
                 const result = await this.login(email, password);
-                this.showMessage(result.message, result.success ? 'success' : 'error');
+                
+                // Only show message for errors or magic link requests
+                if (!result.success || result.checkEmail) {
+                    this.showMessage(result.message, result.success ? 'success' : 'error');
+                }
+                // For successful password login, onAuthSuccess() already handles the transition
             });
         }
     }
