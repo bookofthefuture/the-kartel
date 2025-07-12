@@ -2083,16 +2083,15 @@
                     if (result.error === 'Already registered') {
                         showMessage(result.message || `You are already registered for this event!`, 'success');
                         
-                        // Refresh events to show correct registration status
-                        loadEvents('upcoming');
+                        // Switch to My Events tab to show they're already registered
+                        switchTab('myEvents');
                         
-                        // Switch to current view to show updated status  
-                        const hash = window.location.hash;
-                        if (hash === '#my-events') {
-                            loadEvents('my');
-                        }
+                        // Show the event modal for the event they're already registered for after a short delay
+                        setTimeout(() => {
+                            showEventDetails(eventId);
+                        }, 1000);
                         
-                        console.log('✅ User already registered, events refreshed');
+                        console.log('✅ User already registered, switched to My Events and showing event details');
                     } else {
                         showMessage(result.error || result.message || 'Registration failed. Please try again.', 'error');
                     }
