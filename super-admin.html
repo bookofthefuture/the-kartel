@@ -86,18 +86,9 @@
 
     <!-- Dashboard Section -->
     <div id="dashboardSection" class="hidden">
-        <!-- Header -->
+        <!-- Header (managed by topbar module) -->
         <div class="header">
-            <div class="header-content">
-                <div class="header-logo">
-                    <img src="/assets/the-kartel-logo.png" alt="The Kartel Logo">
-                    <h1 class="header-title">The Kartel <span class="super-admin-badge">Super Admin</span></h1>
-                </div>
-                <div class="user-info">
-                    <span id="userGreeting">Loading...</span>
-                    <button class="logout-btn" onclick="logout()">Logout</button>
-                </div>
-            </div>
+            <!-- Topbar module will render content here -->
         </div>
 
         <!-- Main Content -->
@@ -185,8 +176,10 @@
             currentSuperAdmin = user;
             superAdminToken = kartelAuth.getToken();
             
-            // Update user greeting
-            document.getElementById('userGreeting').textContent = `Welcome, ${user.fullName || user.email}`;
+            // Update topbar with super admin status
+            if (window.kartelTopBar) {
+                window.kartelTopBar.updateUser(user, isAdmin);
+            }
             
             // Load initial data
             loadCities();
@@ -406,9 +399,7 @@
             }
         });
 
-        function logout() {
-            kartelAuth.logout();
-        }
+        // Logout handled by topbar module
 
         // Initialize when page loads
         console.log('🚀 Super Admin Dashboard initializing...');

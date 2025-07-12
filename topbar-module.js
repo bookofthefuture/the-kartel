@@ -17,6 +17,7 @@ class KartelTopBar {
 
     detectCurrentPage() {
         const path = window.location.pathname;
+        if (path.includes('super-admin')) return 'super-admin';
         if (path.includes('admin')) return 'admin';
         if (path.includes('members')) return 'members';
         return 'public';
@@ -25,6 +26,7 @@ class KartelTopBar {
     updateUser(userData, isAdmin) {
         this.currentUser = userData;
         this.isAdmin = isAdmin;
+        this.isSuperAdmin = userData && userData.isSuperAdmin;
         this.updateUserDisplay();
         this.updateNavigation();
     }
@@ -40,7 +42,7 @@ class KartelTopBar {
             <div class="header-content">
                 <div class="header-logo">
                     <img src="/photos/the-kartel-logo.png" alt="The Kartel Logo">
-                    <h1 class="header-title">The Kartel</h1>
+                    <h1 class="header-title">The Kartel${this.isSuperAdmin ? ' <span class="super-admin-badge">Super Admin</span>' : ''}</h1>
                 </div>
                 <div class="header-navigation">
                     ${this.renderNavigation()}
@@ -55,25 +57,54 @@ class KartelTopBar {
     renderNavigation() {
         if (!this.currentUser) return '';
 
-        const navigation = [];
+        // Get current view name
+        const viewNames = {
+            'super-admin': 'Super Admin',
+            'admin': 'Admin',
+            'members': 'Members'
+        };
+        const currentViewName = viewNames[this.currentPage] || 'Dashboard';
 
-        // Always show current page indicator
-        if (this.currentPage === 'admin') {
-            navigation.push('<span class="page-indicator">Admin View</span>');
-        } else if (this.currentPage === 'members') {
-            navigation.push('<span class="page-indicator">Member View</span>');
+        // Build available views based on user permissions
+        const availableViews = [];
+        
+        if (this.isSuperAdmin) {
+            availableViews.push({ key: 'super-admin', name: 'Super Admin', url: '/super-admin.html' });
+        }
+        
+        if (this.isAdmin || this.isSuperAdmin) {
+            availableViews.push({ key: 'admin', name: 'Admin', url: '/admin.html' });
+        }
+        
+        // All authenticated users can access members area
+        availableViews.push({ key: 'members', name: 'Members', url: '/members.html' });
+
+        // If only one view available, show simple indicator
+        if (availableViews.length <= 1) {
+            return `<span class="page-indicator">${currentViewName}</span>`;
         }
 
-        // Show page switcher for admins
-        if (this.isAdmin) {
-            if (this.currentPage === 'admin') {
-                navigation.push('<button class="switch-btn" onclick="kartelTopBar.switchToMembers()">Switch to Members</button>');
-            } else if (this.currentPage === 'members') {
-                navigation.push('<button class="switch-btn" onclick="kartelTopBar.switchToAdmin()">Switch to Admin</button>');
-            }
-        }
+        // Build dropdown for multiple views
+        const dropdownOptions = availableViews
+            .filter(view => view.key !== this.currentPage)
+            .map(view => `<a href="${view.url}" class="view-option">${view.name}</a>`)
+            .join('');
 
-        return navigation.join('');
+        return `
+            <div class="view-switcher">
+                <span class="current-view">${currentViewName}</span>
+                <div class="view-dropdown">
+                    <button class="dropdown-toggle" onclick="kartelTopBar.toggleViewDropdown()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu" id="viewDropdownMenu">
+                        ${dropdownOptions}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     renderUserSection() {
@@ -140,6 +171,41 @@ class KartelTopBar {
         }
         
         window.location.href = '/admin.html';
+    }
+
+    switchToSuperAdmin() {
+        console.log('🔄 Switching to Super Admin view');
+        
+        if (!this.isSuperAdmin) {
+            console.warn('⚠️ Non-super-admin user attempted to access super admin view');
+            return;
+        }
+        
+        window.location.href = '/super-admin.html';
+    }
+
+    toggleViewDropdown() {
+        const dropdown = document.getElementById('viewDropdownMenu');
+        if (dropdown) {
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            
+            // Close dropdown when clicking outside
+            if (!isVisible) {
+                setTimeout(() => {
+                    document.addEventListener('click', this.closeDropdownOnClickOutside.bind(this), { once: true });
+                }, 100);
+            }
+        }
+    }
+
+    closeDropdownOnClickOutside(event) {
+        const dropdown = document.getElementById('viewDropdownMenu');
+        const switcher = document.querySelector('.view-switcher');
+        
+        if (dropdown && switcher && !switcher.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
     }
 
     logout() {
