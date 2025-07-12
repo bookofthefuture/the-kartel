@@ -52,56 +52,50 @@ class KartelTopBar {
         `;
 
         this.attachEventListeners();
+        this.updateSliderPosition();
     }
 
     renderNavigation() {
         if (!this.currentUser) return '';
 
-        // Get current view name
-        const viewNames = {
-            'super-admin': 'Super Admin',
-            'admin': 'Admin',
-            'members': 'Members'
-        };
-        const currentViewName = viewNames[this.currentPage] || 'Dashboard';
-
         // Build available views based on user permissions
         const availableViews = [];
         
-        if (this.isSuperAdmin) {
-            availableViews.push({ key: 'super-admin', name: 'Super Admin', url: '/super-admin.html' });
-        }
+        // All authenticated users can access members area
+        availableViews.push({ key: 'members', name: 'Members', url: '/members.html' });
         
         if (this.isAdmin || this.isSuperAdmin) {
             availableViews.push({ key: 'admin', name: 'Admin', url: '/admin.html' });
         }
         
-        // All authenticated users can access members area
-        availableViews.push({ key: 'members', name: 'Members', url: '/members.html' });
+        if (this.isSuperAdmin) {
+            availableViews.push({ key: 'super-admin', name: 'Super', url: '/super-admin.html' });
+        }
 
         // If only one view available, show simple indicator
         if (availableViews.length <= 1) {
-            return `<span class="page-indicator">${currentViewName}</span>`;
+            const viewNames = {
+                'super-admin': 'Super Admin',
+                'admin': 'Admin',
+                'members': 'Members'
+            };
+            return `<span class="page-indicator">${viewNames[this.currentPage] || 'Dashboard'}</span>`;
         }
 
-        // Build dropdown for multiple views
-        const dropdownOptions = availableViews
-            .filter(view => view.key !== this.currentPage)
-            .map(view => `<a href="${view.url}" class="view-option">${view.name}</a>`)
-            .join('');
+        // Build slider with available positions
+        const sliderOptions = availableViews.map(view => `
+            <div class="slider-option ${view.key === this.currentPage ? 'active' : ''}" 
+                 data-view="${view.key}" 
+                 onclick="kartelTopBar.switchToView('${view.url}')">
+                ${view.name}
+            </div>
+        `).join('');
 
         return `
-            <div class="view-switcher">
-                <span class="current-view">${currentViewName}</span>
-                <div class="view-dropdown">
-                    <button class="dropdown-toggle" onclick="kartelTopBar.toggleViewDropdown()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6,9 12,15 18,9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu" id="viewDropdownMenu">
-                        ${dropdownOptions}
-                    </div>
+            <div class="view-slider">
+                <div class="slider-track">
+                    ${sliderOptions}
+                    <div class="slider-indicator"></div>
                 </div>
             </div>
         `;
@@ -141,12 +135,8 @@ class KartelTopBar {
             const userSection = navigationContainer.querySelector('.user-info');
             const newNavigation = this.renderNavigation();
             
-            // Replace everything except user section
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = newNavigation;
-            
             // Remove old navigation elements
-            navigationContainer.querySelectorAll('.page-indicator, .switch-btn').forEach(el => el.remove());
+            navigationContainer.querySelectorAll('.page-indicator, .switch-btn, .view-slider').forEach(el => el.remove());
             
             // Insert new navigation before user section
             if (userSection) {
@@ -154,6 +144,9 @@ class KartelTopBar {
             } else {
                 navigationContainer.insertAdjacentHTML('beforeend', newNavigation);
             }
+            
+            // Update slider position
+            this.updateSliderPosition();
         }
     }
 
@@ -184,28 +177,29 @@ class KartelTopBar {
         window.location.href = '/super-admin.html';
     }
 
-    toggleViewDropdown() {
-        const dropdown = document.getElementById('viewDropdownMenu');
-        if (dropdown) {
-            const isVisible = dropdown.style.display === 'block';
-            dropdown.style.display = isVisible ? 'none' : 'block';
-            
-            // Close dropdown when clicking outside
-            if (!isVisible) {
-                setTimeout(() => {
-                    document.addEventListener('click', this.closeDropdownOnClickOutside.bind(this), { once: true });
-                }, 100);
-            }
-        }
+    switchToView(url) {
+        console.log('🔄 Switching view to:', url);
+        window.location.href = url;
     }
 
-    closeDropdownOnClickOutside(event) {
-        const dropdown = document.getElementById('viewDropdownMenu');
-        const switcher = document.querySelector('.view-switcher');
-        
-        if (dropdown && switcher && !switcher.contains(event.target)) {
-            dropdown.style.display = 'none';
-        }
+    updateSliderPosition() {
+        // Update slider indicator position based on active option
+        setTimeout(() => {
+            const activeOption = document.querySelector('.slider-option.active');
+            const indicator = document.querySelector('.slider-indicator');
+            
+            if (activeOption && indicator) {
+                const track = activeOption.parentElement;
+                const trackRect = track.getBoundingClientRect();
+                const optionRect = activeOption.getBoundingClientRect();
+                
+                const position = optionRect.left - trackRect.left;
+                const width = optionRect.width;
+                
+                indicator.style.transform = `translateX(${position}px)`;
+                indicator.style.width = `${width}px`;
+            }
+        }, 50);
     }
 
     logout() {

@@ -360,91 +360,67 @@
         font-size: 0.8rem;
     }
     
-    .view-switcher {
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
+    .view-slider {
+        order: -1;
+        margin-bottom: 10px;
     }
     
-    .dropdown-menu {
-        position: relative;
-        top: 5px;
-        min-width: 120px;
+    .slider-option {
+        padding: 5px 10px;
+        font-size: 0.75rem;
     }
 }
 
-/* View Switcher Dropdown Styles */
-.view-switcher {
+/* View Slider Switch Styles */
+.view-slider {
     display: flex;
     align-items: center;
-    gap: 8px;
-    position: relative;
 }
 
-.current-view {
-    color: #ecf0f1;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-family: 'League Spartan', sans-serif;
-}
-
-.view-dropdown {
-    position: relative;
-}
-
-.dropdown-toggle {
+.slider-track {
+    display: flex;
     background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 3px;
+    position: relative;
     border: 1px solid rgba(255,255,255,0.2);
-    color: #ecf0f1;
-    padding: 6px 8px;
-    border-radius: 4px;
+}
+
+.slider-option {
+    padding: 6px 14px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.dropdown-toggle:hover {
-    background: rgba(255,255,255,0.2);
-    border-color: rgba(255,255,255,0.4);
-}
-
-.dropdown-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    min-width: 140px;
-    z-index: 1000;
-    display: none;
-    overflow: hidden;
-}
-
-.view-option {
-    display: block;
-    padding: 12px 16px;
-    color: #2c3e50;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: background-color 0.2s ease;
-    border-bottom: 1px solid #f8f9fa;
+    border-radius: 16px;
+    z-index: 2;
+    position: relative;
     font-family: 'League Spartan', sans-serif;
+    white-space: nowrap;
+    user-select: none;
 }
 
-.view-option:hover {
-    background: #f8f9fa;
+.slider-option:hover {
+    color: rgba(255,255,255,0.9);
+}
+
+.slider-option.active {
     color: #2c3e50;
+    font-weight: 700;
 }
 
-.view-option:last-child {
-    border-bottom: none;
+.slider-indicator {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 /* Page indicator fallback */
