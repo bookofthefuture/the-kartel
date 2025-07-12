@@ -2336,18 +2336,25 @@ async function loadModalMemberCount() {
 function setupEmailButtons(eventId) {
     // Remove existing event listeners to avoid duplicates
     const announceBtn = document.getElementById('sendAnnouncementEmailBtn');
+    const reminderBtn = document.getElementById('sendReminderEmailBtn');
     const testBtn = document.getElementById('modalSendTestEmailBtn');
     
     // Clone buttons to remove all event listeners
     const newAnnounceBtn = announceBtn.cloneNode(true);
+    const newReminderBtn = reminderBtn.cloneNode(true);
     const newTestBtn = testBtn.cloneNode(true);
     
     announceBtn.parentNode.replaceChild(newAnnounceBtn, announceBtn);
+    reminderBtn.parentNode.replaceChild(newReminderBtn, reminderBtn);
     testBtn.parentNode.replaceChild(newTestBtn, testBtn);
     
     // Add new event listeners
     newAnnounceBtn.addEventListener('click', async function() {
         await sendEventAnnouncementFromModal(eventId);
+    });
+    
+    newReminderBtn.addEventListener('click', async function() {
+        await sendReminderFromModal(eventId);
     });
     
     newTestBtn.addEventListener('click', async function() {
@@ -2403,6 +2410,55 @@ async function sendEventAnnouncementFromModal(eventId) {
     }
 }
 
+async function sendReminderFromModal(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+        showError('Event not found', 'eventModalMessageContainer');
+        return;
+    }
+    
+    const confirmMessage = `Send reminder email to all approved members about "${event.name}" on ${new Date(event.date).toLocaleDateString()}?`;
+    if (!confirm(confirmMessage)) return;
+    
+    const btn = document.getElementById('sendReminderEmailBtn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch('/.netlify/functions/send-event-announcement', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId: eventId,
+                eventName: event.name,
+                eventDate: event.date,
+                eventTime: event.time,
+                eventVenue: event.venue,
+                eventDescription: event.description,
+                isReminder: true
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(`Reminder sent successfully! ${result.stats.sent} emails sent.`, 'success', 'eventModalMessageContainer');
+        } else {
+            const error = await response.json();
+            showError(`Failed to send reminder: ${error.error}`, 'eventModalMessageContainer');
+        }
+    } catch (error) {
+        console.error('Error sending reminder:', error);
+        showError('An error occurred while sending the reminder', 'eventModalMessageContainer');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
 async function sendTestEmailFromModal(eventId) {
     const event = events.find(e => e.id === eventId);
     if (!event) {
@@ -2439,6 +2495,10 @@ async function sendTestEmailFromModal(eventId) {
         }
     }
 
+    // Get the selected test email type
+    const testEmailType = document.getElementById('testEmailType');
+    const isReminderTest = testEmailType ? testEmailType.value === 'reminder' : false;
+
     const testBtn = document.getElementById('modalSendTestEmailBtn');
     const originalText = testBtn.textContent;
     testBtn.textContent = 'Sending...';
@@ -2454,14 +2514,16 @@ async function sendTestEmailFromModal(eventId) {
             body: JSON.stringify({
                 eventId: eventId,
                 adminEmail: adminEmail,
-                eventData: event
+                eventData: event,
+                isReminder: isReminderTest
             })
         });
 
         const result = await response.json();
 
         if (response.ok && result.success) {
-            showMessage(`Test email sent successfully to ${adminEmail}!`, 'success', 'eventModalMessageContainer');
+            const emailType = isReminderTest ? 'reminder' : 'announcement';
+            showMessage(`Test ${emailType} email sent successfully to ${adminEmail}!`, 'success', 'eventModalMessageContainer');
         } else {
             showError(`Failed to send test email: ${result.error}`, 'eventModalMessageContainer');
         }

@@ -447,7 +447,7 @@
                     <div class="email-section" style="display: none;">
                         <h4>📧 Email Communications</h4>
                         <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 15px 0;">
-                            <p style="color: #7f8c8d; margin-bottom: 15px;">Send announcement emails to all approved members about this event.</p>
+                            <p style="color: #7f8c8d; margin-bottom: 15px;">Send emails to all approved members about this event. Use "Announcement" for new events, "Reminder" for follow-up notifications.</p>
                             
                             <div class="member-count-info" style="background: white; border-radius: 6px; padding: 15px; margin-bottom: 15px; border: 1px solid #dee2e6;">
                                 <div style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Email Recipients:</div>
@@ -456,13 +456,22 @@
                                 </div>
                             </div>
                             
-                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
                                 <button type="button" id="sendAnnouncementEmailBtn" class="btn btn-primary">
                                     📧 Send Announcement Email
                                 </button>
-                                <button type="button" id="modalSendTestEmailBtn" class="btn btn-secondary">
-                                    🧪 Send Test Email
+                                <button type="button" id="sendReminderEmailBtn" class="btn btn-warning">
+                                    🔔 Send Reminder Email
                                 </button>
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <select id="testEmailType" style="padding: 5px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem;">
+                                        <option value="announcement">Test Announcement</option>
+                                        <option value="reminder">Test Reminder</option>
+                                    </select>
+                                    <button type="button" id="modalSendTestEmailBtn" class="btn btn-secondary">
+                                        🧪 Send Test Email
+                                    </button>
+                                </div>
                             </div>
                             
                             <div style="margin-top: 15px;">

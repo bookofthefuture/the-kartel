@@ -39,7 +39,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { eventId } = JSON.parse(event.body);
+    const { eventId, isReminder } = JSON.parse(event.body);
     
     if (!eventId) {
       return {
@@ -48,7 +48,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    console.log(`📧 Sending event announcement for ${eventId}`);
+    console.log(`📧 Sending ${isReminder ? 'reminder' : 'announcement'} for event ${eventId}`);
 
     // Check environment variables
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
@@ -103,7 +103,7 @@ exports.handler = async (event, context) => {
 
     // Send emails to all approved members
     const emailPromises = approvedMembers.map(member => 
-      sendEventAnnouncementEmail(member, eventDetails, venueDetails, currentHost)
+      sendEventAnnouncementEmail(member, eventDetails, venueDetails, currentHost, isReminder)
     );
 
     const results = await Promise.allSettled(emailPromises);
@@ -122,7 +122,7 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         success: true, 
-        message: `Event announcement sent to ${successes} members`,
+        message: `Event ${isReminder ? 'reminder' : 'announcement'} sent to ${successes} members`,
         stats: {
           sent: successes,
           failed: failures,
@@ -143,7 +143,7 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function sendEventAnnouncementEmail(member, eventDetails, venueDetails, currentHost) {
+async function sendEventAnnouncementEmail(member, eventDetails, venueDetails, currentHost, isReminder = false) {
   // Determine base URL from the request host
   let baseUrl;
   if (currentHost && currentHost.includes('--effortless-crumble-9e3c92.netlify.app')) {
@@ -179,7 +179,9 @@ async function sendEventAnnouncementEmail(member, eventDetails, venueDetails, cu
   const venueName = venueDetails?.name || eventDetails.venue;
   const venueAddress = venueDetails?.address || eventDetails.venueAddress || '';
   
-  const subject = `🏎️ New Kartel Event: ${eventDetails.name}`;
+  const subject = isReminder ? 
+    `🏎️ Kartel Event Reminder: ${eventDetails.name}` : 
+    `🏎️ New Kartel Event: ${eventDetails.name}`;
   
   const htmlBody = `
     <div style="font-family: 'League Spartan', 'Arial', sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;">
@@ -187,7 +189,7 @@ async function sendEventAnnouncementEmail(member, eventDetails, venueDetails, cu
       <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); color: white; padding: 30px; text-align: center;">
         <img src="${baseUrl}/assets/the-kartel-logo.png" alt="The Kartel Logo" style="height: 60px; width: auto; margin-bottom: 15px;">
         <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px; font-family: 'League Spartan', 'Arial', sans-serif;">The Kartel</h1>
-        <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; font-family: 'League Spartan', 'Arial', sans-serif;">New Event Announcement</p>
+        <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; font-family: 'League Spartan', 'Arial', sans-serif;">${isReminder ? 'Event Reminder' : 'New Event Announcement'}</p>
       </div>
       
       <!-- Event Details -->
