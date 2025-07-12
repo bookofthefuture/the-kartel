@@ -12,7 +12,6 @@ exports.handler = async (event, context) => {
   
   // Get the current hostname from the request headers
   const currentHost = event.headers.host || event.headers.Host;
-  console.log('🌐 Current request host:', currentHost);
 
   // Check authentication
   const authHeader = event.headers.authorization;
@@ -178,15 +177,6 @@ async function sendTestAnnouncementEmail(member, eventDetails, venueDetails, cur
     baseUrl = process.env.SITE_URL || 'https://the-kartel.com';
   }
   
-  console.log('🔍 URL Environment Variables:', {
-    DEPLOY_PRIME_URL: process.env.DEPLOY_PRIME_URL,
-    SITE_URL: process.env.SITE_URL,
-    URL: process.env.URL,
-    CONTEXT: process.env.CONTEXT,
-    currentHost: currentHost,
-    selectedBaseUrl: baseUrl,
-    isPreviewDeploy: currentHost && currentHost.includes('--effortless-crumble-9e3c92.netlify.app')
-  });
   
   // Generate REAL registration token for testing HTTPS links
   const registrationToken = crypto.createHash('sha256')

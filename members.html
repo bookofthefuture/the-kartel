@@ -672,24 +672,15 @@
         // Unified Authentication Integration for Members
         window.onAuthSuccess = function(user, isAdmin) {
             console.log('🎉 Member auth success:', user, isAdmin);
-            console.log('🔍 URL at auth success:', window.location.href);
             
             // Set current member data for compatibility with existing code
             currentMember = user;
             memberToken = kartelAuth.getToken();
             
-            console.log('🔧 Variables set:', { 
-                memberToken: !!memberToken, 
-                currentMember: !!currentMember,
-                userId: currentMember?.id,
-                hasUrlParams: !!new URLSearchParams(window.location.search).get('register')
-            });
-            
             // Initialize member dashboard
             showDashboard();
             
             // Handle URL parameters after auth is complete - increased delay for better reliability
-            console.log('⏰ Setting timeout for handleUrlParameters in 500ms');
             setTimeout(handleUrlParameters, 500);
         };
 
@@ -706,12 +697,6 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 Members page DOMContentLoaded - unified auth will handle initialization');
-            console.log('🔍 Initial page load state:', {
-                url: window.location.href,
-                hasRegisterParam: new URLSearchParams(window.location.search).has('register'),
-                localStorageToken: !!localStorage.getItem('kartel_member_token'),
-                localStorageEmail: localStorage.getItem('kartel_member_email')
-            });
             
             const urlParams = new URLSearchParams(window.location.search);
             const resetToken = urlParams.get('reset');
@@ -857,9 +842,7 @@
                 console.log('📄 Events data received:', data);
                 allEvents = data.events || [];
                 console.log(`✅ Found ${allEvents.length} events`);
-                console.log(`🎨 Rendering ${type} events to container:`, container.id);
                 renderEvents(type, container);
-                console.log(`✅ Finished rendering ${type} events`);
 
             } catch (error) {
                 console.error('Error loading events:', error);
@@ -893,8 +876,6 @@
             const eventsHTML = eventsToDisplay.map(event => {
                 const currentAttendeesCount = event.attendees ? event.attendees.length : 0;
                 const isSignedUp = event.attendees && event.attendees.some(a => a.id === currentMember.id || a.memberId === currentMember.id);
-                console.log(`🎯 Event ${event.id} - isSignedUp: ${isSignedUp}, attendees:`, event.attendees?.map(a => ({ id: a.id, memberId: a.memberId, email: a.email })));
-                console.log(`👤 Current member: ${currentMember?.id} (${currentMember?.email})`);
                 const eventDate = new Date(event.date);
                 const today = new Date();
                 const isPastEvent = eventDate < today;
@@ -1299,7 +1280,6 @@
                     showMessage(result.error || 'Failed to cancel sign-up.', 'error');
                     // Refresh UI if user wasn't actually signed up to sync the display
                     if (result.error === 'You are not signed up for this event.') {
-                        console.log('🔄 UI out of sync, refreshing event lists after small delay...');
                         // Add small delay to ensure server state is consistent
                         setTimeout(() => {
                             loadEvents('upcoming'); 
@@ -1955,37 +1935,15 @@
 
         // Handle URL parameters for registration success/error messages and direct registration
         async function handleUrlParameters() {
-            // Debug logging for authentication state
-            console.log('🔍 handleUrlParameters auth state check:', {
-                memberToken: !!memberToken,
-                currentMember: !!currentMember,
-                currentMemberEmail: currentMember?.email,
-                localStorageToken: !!localStorage.getItem('kartel_member_token'),
-                localStorageEmail: localStorage.getItem('kartel_member_email'),
-                urlHasRegisterParams: new URLSearchParams(window.location.search).has('register')
-            });
-            
             // Explicit authentication state check before processing URL parameters
             if (!memberToken || !currentMember) {
                 console.log('⚠️ handleUrlParameters called without valid authentication, skipping');
-                console.log('🔍 Detailed auth state:', {
-                    memberToken,
-                    currentMember,
-                    localStorage_keys: Object.keys(localStorage).filter(k => k.startsWith('kartel_'))
-                });
                 return;
             }
             
             const params = new URLSearchParams(window.location.search);
             const hash = window.location.hash;
             
-            console.log('🔍 handleUrlParameters called with:', {
-                hasRegister: params.has('register'),
-                hasToken: params.has('token'),
-                hasEmail: params.has('email'),
-                currentMember: currentMember ? currentMember.email : 'Not logged in',
-                allParams: Object.fromEntries(params)
-            });
             
             // Handle direct registration from email links
             if (params.has('register') && params.has('token') && params.has('email')) {
