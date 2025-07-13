@@ -258,6 +258,12 @@ The Kartel is a static website for an exclusive business networking group based 
 - **Password Validation**: Minimum 8 characters with confirmation matching
 - **Email Security**: Reset tokens expire in 30 minutes with one-time use validation
 
+### CRITICAL SECURITY RULES
+- **NEVER HARDCODE SECRETS**: NEVER hardcode email addresses, API keys, passwords, usernames, or any sensitive values directly in code. Always use environment variables (process.env.VARIABLE_NAME). Hardcoding secrets will trigger secret scanning failures and security vulnerabilities.
+- **ENVIRONMENT VARIABLES ONLY**: For any sensitive data like email addresses (admin@domain.com), API keys, or credentials, always use process.env variables even if they seem "safe". What appears to be a simple email address may be flagged as a secret by automated scanning.
+- **NO SECRETS IN COMMITS**: Never commit .env files, API keys, passwords, or any sensitive data to the repository. Use .env.example for templates only.
+- **SECRET SCANNING**: All code is automatically scanned for secrets. Any hardcoded sensitive values will cause build failures and must be replaced with environment variables.
+
 ### Data Recovery
 - **Applications List Recovery**: Built-in recovery system for blob storage corruption
 - **Individual Record Scanning**: Rebuilds applications list from individual member records
