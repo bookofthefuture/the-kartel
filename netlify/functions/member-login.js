@@ -2,6 +2,7 @@
 const { getStore } = require('@netlify/blobs');
 const { verifyPassword } = require('./password-utils');
 const { generateToken } = require('./jwt-auth');
+const { verifySuperAdminCredentials } = require('./timing-safe-utils');
 
 exports.handler = async (event, context) => {
   // 1. HTTP method validation
@@ -25,10 +26,9 @@ exports.handler = async (event, context) => {
     // Determine authentication method based on password presence
     const isPasswordAuth = password !== undefined;
 
-    // Check for super admin credentials first
+    // Check for super admin credentials first using timing-safe comparison
     if (isPasswordAuth && process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD) {
-      if (email.toLowerCase() === process.env.SUPER_ADMIN_EMAIL.toLowerCase() && 
-          password === process.env.SUPER_ADMIN_PASSWORD) {
+      if (verifySuperAdminCredentials(email, password, process.env.SUPER_ADMIN_EMAIL, process.env.SUPER_ADMIN_PASSWORD)) {
         console.log('✅ Super admin authenticated successfully');
         
         // Generate JWT for super admin

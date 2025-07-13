@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { timingSafeStringCompare } = require('./timing-safe-utils');
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(32).toString('hex');
@@ -8,7 +9,7 @@ function hashPassword(password) {
 
 function verifyPassword(password, salt, hash) {
   const verifyHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-  return hash === verifyHash;
+  return timingSafeStringCompare(hash, verifyHash);
 }
 
 module.exports = {
