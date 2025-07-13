@@ -1,7 +1,15 @@
 // netlify/functions/super-admin-login.js
 const crypto = require('crypto');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeEmail, sanitizeText } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -10,7 +18,9 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email, password } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const email = sanitizeEmail(rawData.email);
+    const password = sanitizeText(rawData.password, { maxLength: 200 });
     
     if (!email || !password) {
       return {
@@ -60,10 +70,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         token: token,

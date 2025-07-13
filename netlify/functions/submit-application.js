@@ -2,6 +2,8 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const webpush = require('web-push');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeApplication, validateRequiredFields } = require('./input-sanitization');
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -11,6 +13,12 @@ webpush.setVapidDetails(
 );
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -21,17 +29,16 @@ exports.handler = async (event, context) => {
   try {
     console.log('📝 Form submission started');
     
-    const data = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const data = sanitizeApplication(rawData);
     const timestamp = new Date().toISOString();
     
-    const requiredFields = ['firstName', 'lastName', 'email', 'company', 'position', 'phone'];
-    for (const field of requiredFields) {
-      if (!data[field]) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: `Missing required field: ${field}` })
-        };
-      }
+    const validation = validateRequiredFields(data, ['firstName', 'lastName', 'email', 'company', 'position', 'phone']);
+    if (!validation.isValid) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: `Missing required fields: ${validation.missing.join(', ')}` })
+      };
     }
 
     const approveToken = crypto.randomBytes(16).toString('hex');
@@ -46,8 +53,10 @@ exports.handler = async (event, context) => {
       company: data.company,
       position: data.position,
       phone: data.phone,
-      linkedin: data.linkedin || '',
-      message: data.message || '',
+      linkedin: data.linkedin,
+      experience: data.experience,
+      interests: data.interests,
+      referral: data.referral,
       status: 'pending',
       submittedAt: timestamp,
       reviewedAt: null,
@@ -127,10 +136,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Application submitted successfully',
@@ -195,8 +201,10 @@ async function sendAdminNotification(application) {
           <p><strong>Phone:</strong> ${application.phone}</p>
           <p><strong>Company:</strong> ${application.company}</p>
           <p><strong>Position:</strong> ${application.position}</p>
-          ${application.linkedin ? `<p><strong>LinkedIn:</strong> <a href="https://linkedin.com/in/${application.linkedin}" target="_blank">linkedin.com/in/${application.linkedin}</a></p>` : ''}
-          <p><strong>Message:</strong> ${application.message || 'No message provided'}</p>
+          ${application.linkedin ? `<p><strong>LinkedIn:</strong> <a href="${application.linkedin}" target="_blank">${application.linkedin}</a></p>` : ''}
+          ${application.experience ? `<p><strong>Experience:</strong> ${application.experience}</p>` : ''}
+          ${application.interests ? `<p><strong>Interests:</strong> ${application.interests}</p>` : ''}
+          ${application.referral ? `<p><strong>Referral:</strong> ${application.referral}</p>` : ''}
           <p><strong>ID:</strong> ${application.id}</p>
         </div>
         

@@ -1,6 +1,8 @@
 // netlify/functions/send-test-email.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeText, sanitizeEmail } = require('./input-sanitization');
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -34,12 +36,16 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { eventId, adminEmail, eventData, isReminder } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const eventId = rawData.eventId ? sanitizeText(rawData.eventId, { maxLength: 100 }) : null;
+    const adminEmail = sanitizeEmail(rawData.adminEmail);
+    const eventData = rawData.eventData; // Will be processed later if provided
+    const isReminder = !!rawData.isReminder;
     
     if (!adminEmail) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing adminEmail' })
+        body: JSON.stringify({ error: 'Missing or invalid adminEmail' })
       };
     }
 
@@ -146,10 +152,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: `Test email sent to ${adminEmail}`,

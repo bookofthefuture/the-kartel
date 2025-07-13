@@ -1,8 +1,15 @@
 // netlify/functions/verify-login-token.js
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -93,10 +100,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         token: sessionToken,

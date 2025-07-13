@@ -1,8 +1,15 @@
 // netlify/functions/delete-event.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'DELETE') {
     return {
       statusCode: 405,
@@ -126,10 +133,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Event and associated photos deleted successfully' 

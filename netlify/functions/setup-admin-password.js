@@ -1,6 +1,7 @@
 // netlify/functions/setup-admin-password.js
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -140,10 +141,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Admin password setup completed successfully',

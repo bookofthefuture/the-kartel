@@ -2,6 +2,7 @@
 const sgMail = require('@sendgrid/mail');
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -138,10 +139,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: `Admin invitation sent to ${email}`,

@@ -1,5 +1,6 @@
 // netlify/functions/submit-city-expansion.js
 const sgMail = require('@sendgrid/mail');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 // Set SendGrid API key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -131,10 +132,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         message: 'Thank you! We\'ll be in touch soon to discuss bringing The Kartel to your city.'
@@ -146,10 +144,7 @@ exports.handler = async (event, context) => {
     
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         error: 'Sorry, there was an error sending your message. Please try again.'
       })

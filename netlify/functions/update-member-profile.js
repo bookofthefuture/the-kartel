@@ -2,6 +2,8 @@
 const { getStore } = require('@netlify/blobs');
 const { hashPassword } = require('./password-utils');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeMemberProfile, sanitizeText, validateRequiredFields } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -25,12 +27,17 @@ exports.handler = async (event, context) => {
   const isAdmin = userRoles.includes('admin') || userRoles.includes('super-admin');
 
   try {
-    const { firstName, lastName, company, position, phone, linkedin, memberId, memberEmail, newPassword } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const profileData = sanitizeMemberProfile(rawData);
+    const memberId = sanitizeText(rawData.memberId, { maxLength: 100 });
+    const memberEmail = sanitizeText(rawData.memberEmail, { maxLength: 254 });
+    const newPassword = rawData.newPassword ? sanitizeText(rawData.newPassword, { maxLength: 200 }) : null;
 
-    if (!firstName || !firstName.trim() || !lastName || !lastName.trim()) {
+    const validation = validateRequiredFields(profileData, ['firstName', 'lastName']);
+    if (!validation.isValid) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'First name and last name are required' })
+        body: JSON.stringify({ error: `Missing required fields: ${validation.missing.join(', ')}` })
       };
     }
 
@@ -99,12 +106,12 @@ exports.handler = async (event, context) => {
     // Update member profile
     const updatedMember = {
       ...member,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      company: company?.trim() || '',
-      position: position?.trim() || '',
-      phone: phone?.trim() || '',
-      linkedin: linkedin?.trim() || '',
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      company: profileData.company,
+      position: profileData.position,
+      phone: profileData.phone,
+      linkedin: profileData.linkedin,
       ...passwordFields,
       updatedAt: new Date().toISOString()
     };
@@ -132,10 +139,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: newPassword ? 'Profile and password updated successfully' : 'Profile updated successfully',

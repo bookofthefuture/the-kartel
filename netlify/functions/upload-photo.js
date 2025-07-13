@@ -1,6 +1,7 @@
 // netlify/functions/upload-photo.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -171,10 +172,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Photo uploaded successfully',

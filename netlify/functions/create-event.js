@@ -2,8 +2,16 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeEvent, sanitizeText, validateRequiredFields } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -32,18 +40,18 @@ exports.handler = async (event, context) => {
   try {
     console.log('📅 Creating new event');
     
-    const data = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const eventData = sanitizeEvent(rawData);
+    const sendAnnouncement = !!rawData.sendAnnouncement;
     const timestamp = new Date().toISOString();
     
-    // Validate required fields
-    const requiredFields = ['name', 'date', 'venue'];
-    for (const field of requiredFields) {
-      if (!data[field]) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: `Missing required field: ${field}` })
-        };
-      }
+    // Validate required fields based on sanitized data
+    const validation = validateRequiredFields(eventData, ['title', 'date', 'venue']);
+    if (!validation.isValid) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: `Missing required fields: ${validation.missing.join(', ')}` })
+      };
     }
 
     // Check environment variables
@@ -65,14 +73,16 @@ exports.handler = async (event, context) => {
     // Create event object
     const newEvent = {
       id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: data.name,
-      description: data.description || '',
-      date: data.date,
-      time: data.time || '',
-      venue: data.venue,
-      venueAddress: data.venueAddress || '',
-      maxAttendees: parseInt(data.maxAttendees) || null,
-      attendees: data.attendees || [],
+      name: eventData.title,
+      title: eventData.title,
+      description: eventData.description,
+      date: eventData.date,
+      time: eventData.time,
+      venue: eventData.venue,
+      venueAddress: sanitizeText(rawData.venueAddress, { maxLength: 200 }),
+      maxAttendees: eventData.maxAttendees,
+      cost: eventData.cost,
+      attendees: rawData.attendees || [],
       photos: [],
       status: 'upcoming', // upcoming, completed, cancelled
       createdAt: timestamp,
@@ -108,10 +118,10 @@ exports.handler = async (event, context) => {
     console.log(`✅ Events list updated (${events.length} total)`);
 
     // Send announcement email if requested
-    if (data.sendAnnouncement) {
+    if (sendAnnouncement) {
       try {
         console.log('📧 Sending event announcement emails...');
-        await sendEventAnnouncement(newEvent.id, token);
+        await sendEventAnnouncement(newEvent.id, authResult.payload.token);
         console.log('✅ Event announcement emails sent');
       } catch (emailError) {
         console.error('❌ Failed to send event announcements:', emailError);
@@ -121,15 +131,12 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Event created successfully',
         event: newEvent,
-        announcementSent: data.sendAnnouncement || false
+        announcementSent: sendAnnouncement
       })
     };
 

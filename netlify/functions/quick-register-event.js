@@ -1,6 +1,8 @@
 // netlify/functions/quick-register-event.js
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeText, sanitizeEmail } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -17,25 +19,22 @@ exports.handler = async (event, context) => {
     if (event.headers['content-type'] && event.headers['content-type'].includes('application/json')) {
       // JSON data (from JavaScript)
       const data = JSON.parse(event.body);
-      eventId = data.eventId;
-      memberEmail = data.memberEmail;
-      token = data.token;
+      eventId = sanitizeText(data.eventId, { maxLength: 100 });
+      memberEmail = sanitizeEmail(data.memberEmail);
+      token = sanitizeText(data.token, { maxLength: 64 });
     } else {
       // Form data (from email forms)
       const params = new URLSearchParams(event.body);
-      eventId = params.get('eventId');
-      memberEmail = params.get('memberEmail');
-      token = params.get('token');
+      eventId = sanitizeText(params.get('eventId'), { maxLength: 100 });
+      memberEmail = sanitizeEmail(params.get('memberEmail'));
+      token = sanitizeText(params.get('token'), { maxLength: 64 });
     }
     
     // Validate required fields
     if (!eventId || !memberEmail || !token) {
       return {
         statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           error: 'Missing required fields',
           success: false
@@ -73,10 +72,7 @@ exports.handler = async (event, context) => {
     if (!eventDetails) {
       return {
         statusCode: 404,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           error: 'Event not found',
           success: false
@@ -111,10 +107,7 @@ exports.handler = async (event, context) => {
       if (!member) {
         return {
           statusCode: 404,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: createSecureHeaders(event),
           body: JSON.stringify({
             error: 'Member not found or not approved',
             success: false
@@ -132,10 +125,7 @@ exports.handler = async (event, context) => {
     if (token !== expectedToken) {
       return {
         statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           error: 'Invalid registration token',
           success: false
@@ -148,10 +138,7 @@ exports.handler = async (event, context) => {
     if (existingAttendee) {
       return {
         statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           error: 'Already registered',
           message: `You are already registered for ${eventDetails.name}`,
@@ -164,10 +151,7 @@ exports.handler = async (event, context) => {
     if (eventDetails.maxAttendees && eventDetails.attendees.length >= eventDetails.maxAttendees) {
       return {
         statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           error: 'Event is full',
           message: `${eventDetails.name} is already full`,
@@ -206,10 +190,7 @@ exports.handler = async (event, context) => {
     
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         eventName: eventDetails.name,
@@ -223,10 +204,7 @@ exports.handler = async (event, context) => {
     
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         error: 'Registration failed. Please try again.',
         success: false

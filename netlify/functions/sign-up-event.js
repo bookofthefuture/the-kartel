@@ -1,8 +1,16 @@
-  // netlify/functions/sign-up-event.js
-  const { getStore } = require('@netlify/blobs');
+// netlify/functions/sign-up-event.js
+const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeText, sanitizeEmail, sanitizeLinkedinUrl } = require('./input-sanitization');
 
   exports.handler = async (event, context) => {
+    // Handle CORS preflight requests
+    const corsResponse = handleCorsPreflightRequest(event);
+    if (corsResponse) {
+      return corsResponse;
+    }
+
     // 1. HTTP method validation
     if (event.httpMethod !== 'POST') {
       return {
@@ -33,7 +41,12 @@ const { validateAuthHeader, requireRole } = require('./jwt-auth');
       const requestBody = JSON.parse(event.body);
       console.log('📝 Received request body:', JSON.stringify(requestBody, null, 2));
       
-      const { eventId, memberId, memberName, memberEmail, memberCompany, memberLinkedin } = requestBody;
+      const eventId = sanitizeText(requestBody.eventId, { maxLength: 100 });
+      const memberId = sanitizeText(requestBody.memberId, { maxLength: 100 });
+      const memberName = sanitizeText(requestBody.memberName, { maxLength: 100 });
+      const memberEmail = sanitizeEmail(requestBody.memberEmail);
+      const memberCompany = sanitizeText(requestBody.memberCompany, { maxLength: 100 });
+      const memberLinkedin = sanitizeLinkedinUrl(requestBody.memberLinkedin);
       
       console.log('📋 Extracted fields:', { eventId, memberId, memberName, memberEmail, memberCompany, memberLinkedin });
 
@@ -132,10 +145,7 @@ const { validateAuthHeader, requireRole } = require('./jwt-auth');
       // 5. Standard success response
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           success: true,
           message: 'Successfully signed up for the event!',

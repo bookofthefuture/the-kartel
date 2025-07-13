@@ -1,5 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 const { hashPassword } = require('./password-utils');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeText } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -10,7 +12,9 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { memberId, password } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const memberId = sanitizeText(rawData.memberId, { maxLength: 100 });
+    const password = sanitizeText(rawData.password, { maxLength: 200 });
     const authToken = event.headers.authorization?.replace('Bearer ', '');
 
     if (!memberId || !password) {
@@ -96,10 +100,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         message: 'Password set successfully. You can now use password login.'
@@ -110,10 +111,7 @@ exports.handler = async (event, context) => {
     console.error('💥 Error setting member password:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         error: 'Internal server error',
         details: error.message

@@ -1,6 +1,8 @@
 // netlify/functions/send-event-announcement.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeText } = require('./input-sanitization');
 const crypto = require('crypto');
 const webpush = require('web-push');
 
@@ -42,7 +44,9 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { eventId, isReminder } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const eventId = sanitizeText(rawData.eventId, { maxLength: 100 });
+    const isReminder = !!rawData.isReminder;
     
     if (!eventId) {
       return {
@@ -119,10 +123,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: `Event ${isReminder ? 'reminder' : 'announcement'} sent to ${successes} members`,

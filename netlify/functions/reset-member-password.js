@@ -2,6 +2,8 @@ const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const sgMail = require('@sendgrid/mail');
 const { hashPassword } = require('./password-utils');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeEmail, sanitizeText } = require('./input-sanitization');
 
 // Configure SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -15,12 +17,15 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email, resetToken, newPassword } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const email = sanitizeEmail(rawData.email);
+    const resetToken = sanitizeText(rawData.resetToken, { maxLength: 64 });
+    const newPassword = sanitizeText(rawData.newPassword, { maxLength: 200 });
 
     if (!email) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Email is required' })
+        body: JSON.stringify({ error: 'Email is required or invalid' })
       };
     }
 
@@ -73,10 +78,7 @@ exports.handler = async (event, context) => {
       // Always return success to prevent email enumeration
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           success: true,
           message: 'If this email is associated with a member account, a password reset link has been sent.'
@@ -151,10 +153,7 @@ exports.handler = async (event, context) => {
 
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           success: true,
           message: 'If this email is associated with a member account, a password reset link has been sent.'
@@ -176,10 +175,7 @@ exports.handler = async (event, context) => {
         console.log(`❌ Invalid reset token: ${resetToken}`, error.message);
         return {
           statusCode: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: createSecureHeaders(event),
           body: JSON.stringify({ error: 'Invalid or expired reset token' })
         };
       }
@@ -195,10 +191,7 @@ exports.handler = async (event, context) => {
         });
         return {
           statusCode: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: createSecureHeaders(event),
           body: JSON.stringify({ error: 'Invalid or expired reset token' })
         };
       }
@@ -229,10 +222,7 @@ exports.handler = async (event, context) => {
 
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({
           success: true,
           message: 'Password reset successful. You can now log in with your new password.'
@@ -249,10 +239,7 @@ exports.handler = async (event, context) => {
     console.error('💥 Error during password reset:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         error: 'Internal server error',
         details: error.message

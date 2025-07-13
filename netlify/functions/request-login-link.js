@@ -1,6 +1,7 @@
 // netlify/functions/request-login-link.js
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const { sanitizeEmail } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -11,21 +12,13 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const email = sanitizeEmail(rawData.email);
 
     if (!email) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Email is required' })
-      };
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid email format' })
+        body: JSON.stringify({ error: 'Email is required or invalid' })
       };
     }
 
@@ -66,10 +59,7 @@ exports.handler = async (event, context) => {
     // Always return success to prevent email enumeration
     const successResponse = {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         message: 'If your email is registered, you will receive a login link shortly.'
@@ -173,6 +163,7 @@ async function sendMagicLinkEmail(member, loginToken) {
 
   try {
     const sgMail = require('@sendgrid/mail');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     await sgMail.send({

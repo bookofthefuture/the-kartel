@@ -3,8 +3,15 @@ const { getStore } = require('@netlify/blobs');
 const { verifyPassword } = require('./password-utils');
 const { generateToken } = require('./jwt-auth');
 const { verifySuperAdminCredentials } = require('./timing-safe-utils');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   // 1. HTTP method validation
   if (event.httpMethod !== 'POST') {
     return {
@@ -43,10 +50,7 @@ exports.handler = async (event, context) => {
 
         return {
           statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: createSecureHeaders(event),
           body: JSON.stringify({
             success: true,
             token: token,
@@ -121,10 +125,7 @@ exports.handler = async (event, context) => {
       console.log(`📧 Available emails:`, applications.slice(0, 5).map(app => `${app.email} (${app.status})`));
       return {
         statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: createSecureHeaders(event),
         body: JSON.stringify({ error: 'Invalid credentials or application not approved' })
       };
     }
@@ -138,10 +139,7 @@ exports.handler = async (event, context) => {
         console.log(`❌ Password login attempted for ${email} but no password set`);
         return {
           statusCode: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: createSecureHeaders(event),
           body: JSON.stringify({ error: 'Password not set. Please use magic link login or contact admin.' })
         };
       }
@@ -151,10 +149,7 @@ exports.handler = async (event, context) => {
         console.log(`❌ Invalid password for member: ${email}`);
         return {
           statusCode: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: createSecureHeaders(event),
           body: JSON.stringify({ error: 'Invalid credentials' })
         };
       }
@@ -216,10 +211,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify(response)
     };
 
@@ -228,10 +220,7 @@ exports.handler = async (event, context) => {
     console.error('💥 Error during member login:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         error: 'Internal server error',
         details: error.message

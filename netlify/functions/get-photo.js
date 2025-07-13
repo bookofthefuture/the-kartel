@@ -1,7 +1,14 @@
 // netlify/functions/get-photo.js
 const { getStore } = require('@netlify/blobs');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   try {
     const { path } = event.queryStringParameters || {};
     
@@ -48,11 +55,10 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
+      headers: createSecureHeaders(event, {
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
-        'Access-Control-Allow-Origin': '*'
-      },
+        'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
+      }),
       body: buffer.toString('base64'),
       isBase64Encoded: true
     };

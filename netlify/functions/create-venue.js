@@ -1,6 +1,8 @@
 // /.netlify/functions/create-venue.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeVenue, sanitizeText, validateRequiredFields } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -32,14 +34,18 @@ exports.handler = async (event, context) => {
   try {
     console.log('🏁 Creating new venue');
     
-    const data = JSON.parse(event.body);
-    const { name, address, phone, website, notes, drivingTips, vimeoId, trackMap } = data;
+    const rawData = JSON.parse(event.body);
+    const venueData = sanitizeVenue(rawData);
+    const trackMap = rawData.trackMap; // Handle file upload separately
+    const vimeoId = sanitizeText(rawData.vimeoId, { maxLength: 50 });
+    const drivingTips = sanitizeText(rawData.drivingTips, { maxLength: 1000, allowNewlines: true });
 
-    // Validate required fields
-    if (!name || !address) {
+    // Validate required fields using sanitized data
+    const validation = validateRequiredFields(venueData, ['name', 'address']);
+    if (!validation.isValid) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Name and address are required' })
+        body: JSON.stringify({ error: `Missing required fields: ${validation.missing.join(', ')}` })
       };
     }
 
@@ -72,7 +78,7 @@ exports.handler = async (event, context) => {
     }
 
     // Check for duplicate venue names
-    const existingVenue = venues.find(v => v.name.toLowerCase() === name.toLowerCase());
+    const existingVenue = venues.find(v => v.name.toLowerCase() === venueData.name.toLowerCase());
     if (existingVenue) {
       return {
         statusCode: 400,
@@ -114,13 +120,15 @@ exports.handler = async (event, context) => {
     // Create venue object
     const newVenue = {
       id: venueId,
-      name: name.trim(),
-      address: address.trim(),
-      phone: phone?.trim() || null,
-      website: website?.trim() || null,
-      notes: notes?.trim() || null,
-      drivingTips: drivingTips?.trim() || null,
-      vimeoId: vimeoId?.trim() || null,
+      name: venueData.name,
+      address: venueData.address,
+      city: venueData.city,
+      postcode: venueData.postcode,
+      phone: venueData.phone,
+      website: venueData.website,
+      description: venueData.description,
+      drivingTips: drivingTips,
+      vimeoId: vimeoId,
       trackMapPath: trackMapPath,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -145,10 +153,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         venue: newVenue,

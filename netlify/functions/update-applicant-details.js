@@ -1,6 +1,8 @@
 // netlify/functions/update-applicant-details.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeApplication, sanitizeText, validateRequiredFields } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -29,24 +31,29 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { applicationId, firstName, lastName, email, company, position, phone, linkedin, status, isAdmin } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const applicationId = sanitizeText(rawData.applicationId, { maxLength: 100 });
+    const status = sanitizeText(rawData.status, { maxLength: 20 });
+    const isAdmin = !!rawData.isAdmin;
+    
+    // Sanitize the application data using sanitizeApplication
+    const applicationData = sanitizeApplication(rawData);
     
     console.log(`🔄 Updating applicant details for ${applicationId}`);
 
     // Validate required fields
-    if (!applicationId || !firstName || !lastName || !email) {
+    if (!applicationId) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Application ID, first name, last name, and email are required' })
+        body: JSON.stringify({ error: 'Application ID is required' })
       };
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const validation = validateRequiredFields(applicationData, ['firstName', 'lastName', 'email']);
+    if (!validation.isValid) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid email format' })
+        body: JSON.stringify({ error: `Missing required fields: ${validation.missing.join(', ')}` })
       };
     }
 
@@ -77,12 +84,12 @@ exports.handler = async (event, context) => {
     }
     
     // Check if email is changing and if it already exists for another application
-    if (email !== application.email) {
+    if (applicationData.email !== application.email) {
       try {
         const applicationsList = await applicationsStore.get('_list', { type: 'json' });
         if (applicationsList && Array.isArray(applicationsList)) {
           const emailExists = applicationsList.find(app => 
-            app.email.toLowerCase() === email.toLowerCase() && app.id !== applicationId
+            app.email.toLowerCase() === applicationData.email.toLowerCase() && app.id !== applicationId
           );
           if (emailExists) {
             return {
@@ -99,13 +106,16 @@ exports.handler = async (event, context) => {
     // Update application with new details
     const updatedApplication = {
       ...application,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim().toLowerCase(),
-      company: company?.trim() || '',
-      position: position?.trim() || '',
-      phone: phone?.trim() || '',
-      linkedin: linkedin?.trim() || '',
+      firstName: applicationData.firstName,
+      lastName: applicationData.lastName,
+      email: applicationData.email,
+      company: applicationData.company,
+      position: applicationData.position,
+      phone: applicationData.phone,
+      linkedin: applicationData.linkedin,
+      experience: applicationData.experience,
+      interests: applicationData.interests,
+      referral: applicationData.referral,
       status: status || application.status,
       isAdmin: isAdmin || false,
       updatedAt: new Date().toISOString(),
@@ -143,7 +153,7 @@ exports.handler = async (event, context) => {
         const invitationResponse = await fetch(`${process.env.URL || 'https://the-kartel.com'}/.netlify/functions/send-admin-invitation`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': event.headers.authorization,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -169,10 +179,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Applicant details updated successfully',

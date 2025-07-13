@@ -1,8 +1,15 @@
 // netlify/functions/cancel-sign-up.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   // 1. HTTP method validation
   if (event.httpMethod !== 'POST') {
     return {
@@ -12,19 +19,20 @@ exports.handler = async (event, context) => {
   }
 
   // 2. Authentication check: Requires a valid member token
-  const authHeader = event.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authResult = validateAuthHeader(event.headers.authorization);
+  if (!authResult.success) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized: No token provided' })
+      body: JSON.stringify({ error: authResult.error })
     };
   }
 
-  const token = authHeader.split(' ')[1];
-  if (!token || token.length < 32) { // Simplified token validation
+  // Require member role (includes admins)
+  const roleCheck = requireRole(['member', 'admin', 'super-admin'])(authResult.payload);
+  if (!roleCheck.success) {
     return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized: Invalid token format' })
+      statusCode: 403,
+      body: JSON.stringify({ error: roleCheck.error })
     };
   }
 
@@ -109,10 +117,7 @@ exports.handler = async (event, context) => {
     // 5. Standard success response
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         message: 'Successfully cancelled sign-up for the event.'

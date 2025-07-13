@@ -1,6 +1,8 @@
 // netlify/functions/update-event.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeEvent, sanitizeText } = require('./input-sanitization');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -29,13 +31,33 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { eventId, updates } = JSON.parse(event.body);
+    const rawData = JSON.parse(event.body);
+    const eventId = sanitizeText(rawData.eventId, { maxLength: 100 });
     
     if (!eventId) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Missing eventId' })
       };
+    }
+
+    // Sanitize updates object
+    const sanitizedUpdates = sanitizeEvent(rawData.updates || {});
+    
+    // Only keep non-empty updates
+    const updates = {};
+    Object.keys(sanitizedUpdates).forEach(key => {
+      if (sanitizedUpdates[key] !== '' && sanitizedUpdates[key] != null) {
+        updates[key] = sanitizedUpdates[key];
+      }
+    });
+    
+    // Handle additional fields that might need sanitization
+    if (rawData.updates?.venueAddress) {
+      updates.venueAddress = sanitizeText(rawData.updates.venueAddress, { maxLength: 200 });
+    }
+    if (rawData.updates?.attendees && Array.isArray(rawData.updates.attendees)) {
+      updates.attendees = rawData.updates.attendees;
     }
 
     console.log(`🔄 Updating event ${eventId}`);
@@ -98,10 +120,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'Event updated successfully',

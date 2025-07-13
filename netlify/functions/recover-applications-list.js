@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
   // Only allow POST method
@@ -93,10 +94,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         success: true,
         message: 'Applications list recovered successfully',
@@ -110,10 +108,7 @@ exports.handler = async (event, context) => {
     console.error('💥 Recovery error:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({
         error: 'Recovery failed',
         details: error.message

@@ -1,5 +1,6 @@
 // netlify/functions/validate-setup-token.js
 const { getStore } = require('@netlify/blobs');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'GET') {
@@ -75,10 +76,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         valid: true,
         user: {

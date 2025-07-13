@@ -1,6 +1,8 @@
 // netlify/functions/import-members.js
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { sanitizeApplication } = require('./input-sanitization');
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
@@ -81,20 +83,23 @@ exports.handler = async (event, context) => {
     // Process each row from CSV
     for (const row of csvData) {
       try {
-        // Validate required fields
-        if (!row.email || !row.firstName || !row.lastName) {
+        // Sanitize the row data first
+        const sanitizedRow = sanitizeApplication(row);
+        
+        // Validate required fields after sanitization
+        if (!sanitizedRow.email || !sanitizedRow.firstName || !sanitizedRow.lastName) {
           importResults.errors++;
           importResults.details.push({
             row: row,
             status: 'error',
-            message: 'Missing required fields (email, firstName, lastName)'
+            message: 'Missing required fields (email, firstName, lastName) after sanitization'
           });
           continue;
         }
 
         // Check if member already exists
         const existingMember = existingApplications.find(app => 
-          app.email.toLowerCase() === row.email.toLowerCase()
+          app.email.toLowerCase() === sanitizedRow.email.toLowerCase()
         );
 
         if (existingMember) {
@@ -107,17 +112,20 @@ exports.handler = async (event, context) => {
           continue;
         }
 
-        // Create application object
+        // Create application object with sanitized data
         const application = {
           id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          firstName: row.firstName || '',
-          lastName: row.lastName || '',
-          fullName: `${row.firstName || ''} ${row.lastName || ''}`.trim(),
-          email: row.email.toLowerCase(),
-          company: row.company || '',
-          position: row.position || '',
-          phone: row.phone || '',
-          message: row.message || 'Imported from CSV',
+          firstName: sanitizedRow.firstName,
+          lastName: sanitizedRow.lastName,
+          fullName: `${sanitizedRow.firstName} ${sanitizedRow.lastName}`.trim(),
+          email: sanitizedRow.email,
+          company: sanitizedRow.company,
+          position: sanitizedRow.position,
+          phone: sanitizedRow.phone,
+          linkedin: sanitizedRow.linkedin,
+          experience: sanitizedRow.experience,
+          interests: sanitizedRow.interests,
+          referral: sanitizedRow.referral,
           status: 'approved', // Imported members are pre-approved
           submittedAt: timestamp,
           reviewedAt: timestamp,
@@ -166,10 +174,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: createSecureHeaders(event),
       body: JSON.stringify({ 
         success: true, 
         message: 'CSV import completed',
