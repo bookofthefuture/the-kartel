@@ -35,8 +35,8 @@ exports.handler = async (event, context) => {
 
     // Email to admin
     const adminEmail = {
-      to: 'admin@the-kartel.com',
-      from: process.env.FROM_EMAIL || 'noreply@the-kartel.com',
+      to: process.env.ADMIN_EMAIL,
+      from: process.env.FROM_EMAIL,
       subject: `New City Expansion Interest - ${formData.city}`,
       html: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -79,7 +79,7 @@ exports.handler = async (event, context) => {
     // Confirmation email to applicant
     const confirmationEmail = {
       to: formData.email,
-      from: process.env.FROM_EMAIL || 'noreply@the-kartel.com',
+      from: process.env.FROM_EMAIL,
       subject: 'Thank you for your interest in The Kartel',
       html: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
