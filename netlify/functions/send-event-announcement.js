@@ -5,7 +5,7 @@ const webpush = require('web-push');
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  `mailto:${process.env.ADMIN_CONTACT_EMAIL}`,
+  `mailto:${process.env.ADMIN_EMAIL}`,
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );

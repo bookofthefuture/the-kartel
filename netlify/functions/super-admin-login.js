@@ -22,7 +22,7 @@ exports.handler = async (event, context) => {
     console.log(`🔐 Super admin login attempt: ${email}`);
 
     // Check against super admin credentials from environment variables
-    const superAdminEmail = process.env.SUPER_ADMIN_CONTACT_EMAIL;
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
     const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
     
     if (!superAdminEmail || !superAdminPassword) {
