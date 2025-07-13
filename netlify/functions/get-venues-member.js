@@ -1,5 +1,6 @@
 // netlify/functions/get-venues-member.js
 const { getStore } = require('@netlify/blobs');
+const { validateAuthHeader, requireRole } = require('./jwt-auth');
 
 exports.handler = async (event, context) => {
   // Authentication check: Requires a valid member token

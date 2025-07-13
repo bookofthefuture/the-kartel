@@ -1,6 +1,7 @@
 // netlify/functions/update-member-profile.js
 const { getStore } = require('@netlify/blobs');
 const { hashPassword } = require('./password-utils');
+const { validateAuthHeader, requireRole } = require('./jwt-auth');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -10,21 +11,18 @@ exports.handler = async (event, context) => {
     };
   }
 
-  const authHeader = event.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Validate JWT token
+  const authResult = validateAuthHeader(event.headers.authorization);
+  if (!authResult.success) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' })
+      body: JSON.stringify({ error: authResult.error })
     };
   }
 
-  const token = authHeader.split(' ')[1];
-  if (!token || token.length < 32) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Invalid token' })
-    };
-  }
+  // Members can update their own profile, admins can update any profile
+  const userRoles = authResult.payload.roles || [];
+  const isAdmin = userRoles.includes('admin') || userRoles.includes('super-admin');
 
   try {
     const { firstName, lastName, company, position, phone, linkedin, memberId, memberEmail, newPassword } = JSON.parse(event.body);
@@ -75,6 +73,14 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 403,
         body: JSON.stringify({ error: 'Member email does not match' })
+      };
+    }
+
+    // Authorization check: members can only update their own profile unless they're admin
+    if (!isAdmin && authResult.payload.userId !== memberId) {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({ error: 'You can only update your own profile' })
       };
     }
 

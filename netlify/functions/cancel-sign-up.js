@@ -1,5 +1,6 @@
 // netlify/functions/cancel-sign-up.js
 const { getStore } = require('@netlify/blobs');
+const { validateAuthHeader, requireRole } = require('./jwt-auth');
 
 exports.handler = async (event, context) => {
   // 1. HTTP method validation

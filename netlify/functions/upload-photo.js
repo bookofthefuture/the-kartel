@@ -1,5 +1,6 @@
 // netlify/functions/upload-photo.js
 const { getStore } = require('@netlify/blobs');
+const { validateAuthHeader, requireRole } = require('./jwt-auth');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -9,19 +10,21 @@ exports.handler = async (event, context) => {
     };
   }
 
-  const authHeader = event.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Validate JWT token and require admin role
+  const authResult = validateAuthHeader(event.headers.authorization);
+  if (!authResult.success) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' })
+      body: JSON.stringify({ error: authResult.error })
     };
   }
 
-  const token = authHeader.split(' ')[1];
-  if (!token || token.length < 32) {
+  // Check if user has admin role
+  const roleCheck = requireRole(['admin', 'super-admin'])(authResult.payload);
+  if (!roleCheck.success) {
     return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Invalid token' })
+      statusCode: 403,
+      body: JSON.stringify({ error: roleCheck.error })
     };
   }
 

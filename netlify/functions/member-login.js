@@ -1,7 +1,7 @@
 // netlify/functions/member-login.js
 const { getStore } = require('@netlify/blobs');
-const crypto = require('crypto'); // Used for generating a simple token
 const { verifyPassword } = require('./password-utils');
+const { generateToken } = require('./jwt-auth');
 
 exports.handler = async (event, context) => {
   // 1. HTTP method validation
@@ -31,16 +31,15 @@ exports.handler = async (event, context) => {
           password === process.env.SUPER_ADMIN_PASSWORD) {
         console.log('✅ Super admin authenticated successfully');
         
-        // Generate token for super admin
-        const tokenData = {
+        // Generate JWT for super admin
+        const tokenPayload = {
+          userId: 'super-admin',
           email: process.env.SUPER_ADMIN_EMAIL,
-          role: 'super-admin',
-          timestamp: Date.now()
+          roles: ['super-admin', 'admin'],
+          type: 'super-admin'
         };
         
-        const token = crypto.createHash('sha256')
-          .update(`${JSON.stringify(tokenData)}:${process.env.NETLIFY_ACCESS_TOKEN}`)
-          .digest('hex');
+        const token = generateToken(tokenPayload);
 
         return {
           statusCode: 200,
@@ -166,8 +165,20 @@ exports.handler = async (event, context) => {
       console.log(`✅ Member magic link login successful for: ${email}`);
     }
 
-    // Generate a simple token (similar to admin-login for consistency)
-    const token = crypto.randomBytes(32).toString('hex');
+    // Generate JWT token
+    const roles = [];
+    if (memberApplication.isAdmin) roles.push('admin');
+    if (memberApplication.isSuperAdmin) roles.push('super-admin');
+    roles.push('member');
+
+    const tokenPayload = {
+      userId: memberApplication.id,
+      email: memberApplication.email,
+      roles: roles,
+      type: 'member'
+    };
+    
+    const token = generateToken(tokenPayload);
 
     // 5. Enhanced success response with complete member profile
     const response = {

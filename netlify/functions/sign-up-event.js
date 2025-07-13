@@ -1,5 +1,6 @@
   // netlify/functions/sign-up-event.js
   const { getStore } = require('@netlify/blobs');
+const { validateAuthHeader, requireRole } = require('./jwt-auth');
 
   exports.handler = async (event, context) => {
     // 1. HTTP method validation
@@ -11,19 +12,20 @@
     }
 
     // 2. Authentication check: Requires a valid member token
-    const authHeader = event.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const authResult = validateAuthHeader(event.headers.authorization);
+    if (!authResult.success) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: 'Unauthorized: No token provided' })
+        body: JSON.stringify({ error: authResult.error })
       };
     }
 
-    const token = authHeader.split(' ')[1];
-    if (!token || token.length < 32) { // Simplified token validation
+    // Require member role (includes admins)
+    const roleCheck = requireRole(['member', 'admin', 'super-admin'])(authResult.payload);
+    if (!roleCheck.success) {
       return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Unauthorized: Invalid token format' })
+        statusCode: 403,
+        body: JSON.stringify({ error: roleCheck.error })
       };
     }
 

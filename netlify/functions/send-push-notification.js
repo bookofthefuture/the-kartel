@@ -1,5 +1,6 @@
 const webpush = require('web-push');
 const { getStore } = require('@netlify/blobs');
+const { validateAuthHeader, requireRole } = require('./jwt-auth');
 
 // Configure web-push with VAPID keys (these should be in environment variables)
 webpush.setVapidDetails(
@@ -18,20 +19,21 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Verify admin authentication
-  const authHeader = event.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Validate JWT token and require admin role
+  const authResult = validateAuthHeader(event.headers.authorization);
+  if (!authResult.success) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Missing or invalid authorization header' })
+      body: JSON.stringify({ error: authResult.error })
     };
   }
 
-  const token = authHeader.substring(7);
-  if (token !== process.env.ADMIN_TOKEN) {
+  // Check if user has admin role
+  const roleCheck = requireRole(['admin', 'super-admin'])(authResult.payload);
+  if (!roleCheck.success) {
     return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Invalid admin token' })
+      statusCode: 403,
+      body: JSON.stringify({ error: roleCheck.error })
     };
   }
 
