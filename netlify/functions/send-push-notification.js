@@ -3,7 +3,7 @@ const { getStore } = require('@netlify/blobs');
 
 // Configure web-push with VAPID keys (these should be in environment variables)
 webpush.setVapidDetails(
-  `mailto:${process.env.ADMIN_EMAIL}`,
+  `mailto:${process.env.ADMIN_CONTACT_EMAIL}`,
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );

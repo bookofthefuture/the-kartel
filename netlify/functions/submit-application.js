@@ -5,7 +5,7 @@ const webpush = require('web-push');
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  `mailto:${process.env.ADMIN_EMAIL}`,
+  `mailto:${process.env.ADMIN_CONTACT_EMAIL}`,
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
@@ -153,7 +153,7 @@ exports.handler = async (event, context) => {
 };
 
 async function sendAdminNotification(application) {
-  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminEmail = process.env.ADMIN_CONTACT_EMAIL;
   if (!adminEmail) {
     console.log('No admin email configured, skipping notification');
     return;

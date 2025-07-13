@@ -26,14 +26,14 @@ exports.handler = async (event, context) => {
     const isPasswordAuth = password !== undefined;
 
     // Check for super admin credentials first
-    if (isPasswordAuth && process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD) {
-      if (email.toLowerCase() === process.env.SUPER_ADMIN_EMAIL.toLowerCase() && 
+    if (isPasswordAuth && process.env.SUPER_ADMIN_CONTACT_EMAIL && process.env.SUPER_ADMIN_PASSWORD) {
+      if (email.toLowerCase() === process.env.SUPER_ADMIN_CONTACT_EMAIL.toLowerCase() && 
           password === process.env.SUPER_ADMIN_PASSWORD) {
         console.log('✅ Super admin authenticated successfully');
         
         // Generate token for super admin
         const tokenData = {
-          email: process.env.SUPER_ADMIN_EMAIL,
+          email: process.env.SUPER_ADMIN_CONTACT_EMAIL,
           role: 'super-admin',
           timestamp: Date.now()
         };
@@ -52,7 +52,7 @@ exports.handler = async (event, context) => {
             success: true,
             token: token,
             memberId: 'super-admin',
-            memberEmail: process.env.SUPER_ADMIN_EMAIL,
+            memberEmail: process.env.SUPER_ADMIN_CONTACT_EMAIL,
             memberFullName: 'Super Administrator',
             memberProfile: {
               firstName: 'Super',
