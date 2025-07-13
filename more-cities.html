@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-V4HX7K4NX2"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-V4HX7K4NX2');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Kartel - Expand to Your City</title>
+    <style>
+        @font-face { font-family: 'League Spartan'; src: url('assets/League_Spartan/LeagueSpartan-VariableFont_wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'League Spartan', 'Arial', sans-serif; line-height: 1.6; color: #2c3e50; overflow-x: hidden; background: #f8f9fa; }
+        
+        /* Header Band */
+        .header-band { background: #1a252f; padding: 15px 0; position: relative; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+        .header-logo { display: flex; align-items: center; gap: 15px; }
+        .header-logo img { height: 50px; width: auto; }
+        .header-title { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #ffffff; font-family: 'League Spartan', sans-serif; margin: 0; }
+        .header-back-link { color: #ecf0f1; text-decoration: none; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; padding: 8px 20px; border: 1px solid rgba(236, 240, 241, 0.3); border-radius: 25px; transition: all 0.3s ease; background: rgba(44, 62, 80, 0.6); backdrop-filter: blur(10px); font-family: 'League Spartan', sans-serif; }
+        .header-back-link:hover { color: #e67e22; border-color: #e67e22; background: rgba(230, 126, 34, 0.15); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(230, 126, 34, 0.2); }
+        
+        .main-content { padding: 80px 0; background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%); min-height: calc(100vh - 80px); display: flex; align-items: center; }
+        .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+        
+        .content-card { background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 60px 50px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); border: 2px solid rgba(52, 152, 219, 0.3); backdrop-filter: blur(10px); }
+        
+        .page-title { font-size: 3rem; text-align: center; margin-bottom: 30px; color: #2c3e50; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; font-family: 'League Spartan', sans-serif; }
+        .page-subtitle { text-align: center; font-size: 1.4rem; color: #e74c3c; margin-bottom: 40px; font-weight: 600; font-family: 'League Spartan', sans-serif; }
+        
+        .intro-text { font-size: 1.2rem; color: #34495e; margin-bottom: 50px; line-height: 1.7; text-align: center; }
+        
+        .contact-form { max-width: 600px; margin: 0 auto; background: rgba(236, 240, 241, 0.05); padding: 40px; border-radius: 10px; border: 2px solid rgba(52, 152, 219, 0.2); }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; font-family: 'League Spartan', sans-serif; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 15px; background: rgba(255, 255, 255, 0.9); border: 2px solid rgba(52, 152, 219, 0.3); border-radius: 5px; color: #2c3e50; font-size: 1rem; transition: border-color 0.3s ease; font-family: 'League Spartan', sans-serif; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #e67e22; box-shadow: 0 0 15px rgba(230, 126, 34, 0.3); }
+        .form-group textarea { min-height: 120px; resize: vertical; }
+        
+        .submit-btn { width: 100%; padding: 18px; background: linear-gradient(45deg, #3498db, #2980b9); color: white; border: none; border-radius: 5px; font-size: 1.2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.3s ease; font-family: 'League Spartan', sans-serif; }
+        .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4); background: linear-gradient(45deg, #e67e22, #d35400); }
+        .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+        
+        .form-message { padding: 15px; margin: 20px 0; border-radius: 5px; font-weight: 600; text-align: center; }
+        .form-message-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .form-message-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; gap: 15px; }
+            .content-card { padding: 40px 30px; }
+            .page-title { font-size: 2.2rem; }
+            .page-subtitle { font-size: 1.2rem; }
+            .intro-text { font-size: 1.1rem; }
+            .contact-form { padding: 30px 20px; }
+        }
+        
+        @media (max-width: 480px) {
+            .content-card { padding: 30px 20px; }
+            .page-title { font-size: 1.8rem; }
+            .contact-form { padding: 20px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Band -->
+    <div class="header-band">
+        <div class="header-content">
+            <div class="header-logo">
+                <img src="assets/the-kartel-logo.png" alt="The Kartel Logo">
+                <h1 class="header-title">The Kartel</h1>
+            </div>
+            <a href="index.html" class="header-back-link">← Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container">
+            <div class="content-card">
+                <h1 class="page-title">Expand The Kartel</h1>
+                <p class="page-subtitle">Bring Premium Business Networking to Your City</p>
+                
+                <div class="intro-text">
+                    <p>Want The Kartel in your city? If you have a kart track nearby and feel like running your own Kartel then we're open to new group leaders. There's no money in it, but you get to turn a hobby into a brilliant business opportunity! Drop us a line if you would be interested in hosting Kartel events in your town or city.</p>
+                </div>
+
+                <form class="contact-form" id="cityExpansionForm" netlify name="city-expansion">
+                    <div class="form-group">
+                        <label for="name">Your Name *</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city">Your City/Town *</label>
+                        <input type="text" id="city" name="city" required placeholder="e.g. Birmingham, Leeds, Bristol">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="track">Local Kart Track</label>
+                        <input type="text" id="track" name="track" placeholder="Name of your local karting venue">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="experience">Business/Event Experience</label>
+                        <select id="experience" name="experience">
+                            <option value="">Select your background</option>
+                            <option value="business-owner">Business Owner</option>
+                            <option value="event-organizer">Event Organizer</option>
+                            <option value="marketing-professional">Marketing Professional</option>
+                            <option value="karting-enthusiast">Karting Enthusiast</option>
+                            <option value="networking-leader">Networking Group Leader</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Tell us about your vision *</label>
+                        <textarea id="message" name="message" required placeholder="What draws you to The Kartel concept? How would you make it work in your city?"></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        Launch The Kartel in My City
+                    </button>
+
+                    <div id="formMessage" class="form-message" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('cityExpansionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const formMessage = document.getElementById('formMessage');
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams(formData).toString()
+                });
+                
+                if (response.ok) {
+                    formMessage.className = 'form-message form-message-success';
+                    formMessage.textContent = 'Thank you! We\'ll be in touch soon to discuss bringing The Kartel to your city.';
+                    formMessage.style.display = 'block';
+                    this.reset();
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            } catch (error) {
+                formMessage.className = 'form-message form-message-error';
+                formMessage.textContent = 'Sorry, there was an error sending your message. Please try again.';
+                formMessage.style.display = 'block';
+            }
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Launch The Kartel in My City';
+        });
+    </script>
+</body>
+</html>
