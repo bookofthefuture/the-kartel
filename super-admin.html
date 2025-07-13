@@ -661,8 +661,8 @@
                     console.log('Could not load events count:', e);
                 }
                 
-                // Find the primary admin (you)
-                const primaryAdmin = adminMembers.find(a => a.email === 'tom@bookofthefuture.co.uk') || adminMembers[0];
+                // Find the primary admin
+                const primaryAdmin = adminMembers[0];
                 const adminName = primaryAdmin ? 
                     `${primaryAdmin.firstName || ''} ${primaryAdmin.lastName || ''}`.trim() || primaryAdmin.email :
                     'No Admin';
@@ -672,7 +672,7 @@
                         id: 'manchester',
                         name: 'Manchester',
                         region: 'Greater Manchester',
-                        adminEmail: primaryAdmin?.email || 'admin@the-kartel.com',
+                        adminEmail: primaryAdmin?.email || 'contact@the-kartel.com',
                         adminName: adminName,
                         memberCount: totalMembers,
                         eventCount: eventCount,
