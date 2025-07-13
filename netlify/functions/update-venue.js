@@ -74,9 +74,9 @@ exports.handler = async (event, context) => {
     });
 
     // Get the specific venue
-    const venueData = await venuesStore.get(venueId, { type: 'json' });
+    const existingVenue = await venuesStore.get(venueId, { type: 'json' });
     
-    if (!venueData) {
+    if (!existingVenue) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'Venue not found' })
@@ -96,8 +96,8 @@ exports.handler = async (event, context) => {
     }
 
     // Check for duplicate names (excluding current venue)
-    const existingVenue = venues.find(v => v.id !== venueId && v.name.toLowerCase() === venueData.name.toLowerCase());
-    if (existingVenue) {
+    const duplicateVenue = venues.find(v => v.id !== venueId && v.name.toLowerCase() === venueData.name.toLowerCase());
+    if (duplicateVenue) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'A venue with this name already exists' })
@@ -105,7 +105,7 @@ exports.handler = async (event, context) => {
     }
 
     // Handle track map upload if provided
-    let trackMapPath = venueData.trackMapPath; // Keep existing path
+    let trackMapPath = existingVenue.trackMapPath; // Keep existing path
     if (trackMap && trackMap.data) {
       try {
         // Extract base64 data
@@ -134,14 +134,8 @@ exports.handler = async (event, context) => {
 
     // Update venue with provided data
     const updatedVenue = {
+      ...existingVenue,
       ...venueData,
-      name: venueData.name,
-      address: venueData.address,
-      city: venueData.city,
-      postcode: venueData.postcode,
-      phone: venueData.phone,
-      website: venueData.website,
-      description: venueData.description,
       drivingTips: drivingTips,
       vimeoId: vimeoId,
       trackMapPath: trackMapPath,
