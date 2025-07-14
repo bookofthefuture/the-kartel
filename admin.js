@@ -88,15 +88,20 @@ async function loadVenues() {
 
 async function loadVenuesForDropdown() {
     try {
+        console.log('🏢 loadVenuesForDropdown() called, authToken:', authToken ? 'present' : 'missing');
         const response = await fetch('/.netlify/functions/get-venues', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        console.log('🏢 Venues API response status:', response.status);
         if (response.ok) {
             const data = await response.json();
             venues = data.venues || [];
+            console.log('🏢 Venues loaded:', venues.length, 'venues');
             populateVenueDropdown();
         }
-    } catch (error) { console.error('Error loading venues for dropdown:', error); }
+    } catch (error) { 
+        console.error('🏢 Error loading venues for dropdown:', error); 
+    }
 }
 
 function populateVenueDropdown() {
@@ -261,17 +266,34 @@ async function deleteVenue(venueId) {
 
 async function loadApplications() {
     try {
+        console.log('📋 loadApplications() called, authToken:', authToken ? 'present' : 'missing');
+        console.log('📋 Making API call to get-applications...');
+        
         const response = await fetch('/.netlify/functions/get-applications', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        if (response.status === 401) { authToken = null; localStorage.removeItem('kartel_admin_token'); showLogin(); return; }
+        
+        console.log('📋 API response status:', response.status);
+        
+        if (response.status === 401) { 
+            console.log('📋 401 Unauthorized - clearing token');
+            authToken = null; 
+            localStorage.removeItem('kartel_admin_token'); 
+            showLogin(); 
+            return; 
+        }
         if (!response.ok) throw new Error('Failed to load applications');
+        
         const data = await response.json();
+        console.log('📋 Applications data received:', data.applications ? data.applications.length : 0, 'applications');
+        
         applications = data.applications || [];
         updateStats();
         renderApplicationsTable();
+        
+        console.log('📋 loadApplications() completed successfully');
     } catch (error) {
-        console.error('Error loading applications:', error);
+        console.error('📋 Error loading applications:', error);
         showError('Failed to load applications. Please try again.');
     }
 }
@@ -889,8 +911,11 @@ function showLogin() {
 }
 
 function showDashboard() {
+    console.log('🏠 showDashboard() called');
+    console.log('🏠 Hiding login section, showing dashboard section');
     document.getElementById('loginSection').classList.add('hidden');
     document.getElementById('dashboardSection').classList.remove('hidden');
+    console.log('🏠 Calling loadApplications() from showDashboard()');
     loadApplications();
 }
 
