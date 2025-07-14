@@ -4,6 +4,7 @@ const { verifyPassword } = require('./password-utils');
 const { generateToken } = require('./jwt-auth');
 const { verifySuperAdminCredentials } = require('./timing-safe-utils');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { getApplicationsList, findItemByField } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -83,38 +84,20 @@ exports.handler = async (event, context) => {
     console.log('🔧 Environment check - Site ID:', process.env.NETLIFY_SITE_ID ? 'exists' : 'missing');
     console.log('🔧 Environment check - Access Token:', process.env.NETLIFY_ACCESS_TOKEN ? 'exists' : 'missing');
 
-    // 3. Create store with consistent config
-    const applicationsStore = getStore({
+    // 3. Store configuration for efficient operations
+    const storeConfig = {
       name: 'applications',
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
-    });
+    };
 
-    console.log('🏪 Applications store created successfully');
-
-    // 4. Business logic: Check for approved member
+    // 4. Business logic: Check for approved member using efficient search
     console.log(`🔒 Attempting member login for: ${email} (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
 
-    let applications = [];
-    try {
-      console.log('🔄 Attempting to load applications list...');
-      // Use the same method as reset function that works
-      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
-      if (applicationsList && Array.isArray(applicationsList)) {
-        applications = applicationsList;
-        console.log(`📋 Successfully loaded ${applications.length} applications`);
-      } else {
-        console.log('⚠️ Applications list exists but is not an array:', typeof applicationsList);
-      }
-    } catch (error) {
-      console.log('📝 Applications list corrupted or not found, will need data recovery');
-      console.log('❌ Error details:', error.message);
-      applications = [];
-    }
-
-    console.log(`🔍 Searching for member with email: ${email}`);
-    console.log(`📋 Total applications found: ${applications.length}`);
+    // Use efficient field search to find member by email and approved status
+    const applications = await getApplicationsList(storeConfig);
+    console.log(`📋 Loaded ${applications.length} applications efficiently`);
     
     const memberApplication = applications.find(
       app => app.email.toLowerCase() === email.toLowerCase() && app.status === 'approved'

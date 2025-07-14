@@ -1,7 +1,8 @@
-// netlify/functions/get-applications.js - Updated for new field structure
+// netlify/functions/get-applications.js - Updated for efficient list management
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { getApplicationsList } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -30,7 +31,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('📖 Getting applications with configured SDK...');
+    console.log('📖 Getting applications with efficient list management...');
     
     // Check environment variables first
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
@@ -50,10 +51,8 @@ exports.handler = async (event, context) => {
     }
     
     console.log('✅ Environment variables present');
-    console.log('🔧 Site ID prefix:', process.env.NETLIFY_SITE_ID.substring(0, 8) + '...');
-    console.log('🔧 Token length:', process.env.NETLIFY_ACCESS_TOKEN.length);
     
-    // Manual configuration with explicit credentials
+    // Store configuration for efficient list operations
     const storeConfig = {
       name: 'applications',
       siteID: process.env.NETLIFY_SITE_ID,
@@ -61,62 +60,8 @@ exports.handler = async (event, context) => {
       consistency: 'strong'
     };
     
-    console.log('🏗️ Creating store with config:', {
-      name: storeConfig.name,
-      siteID: storeConfig.siteID.substring(0, 8) + '...',
-      tokenLength: storeConfig.token.length,
-      consistency: storeConfig.consistency
-    });
-    
-    const applicationsStore = getStore(storeConfig);
-    
-    let applications = [];
-    
-    try {
-      // Try to get the applications list
-      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
-      
-      if (applicationsList && Array.isArray(applicationsList)) {
-        applications = applicationsList;
-        console.log(`✅ Retrieved ${applications.length} applications from list`);
-      } else {
-        console.log('📝 No applications list found, checking individual entries...');
-        
-        // Fallback: list all entries and filter
-        const allEntries = await applicationsStore.list();
-        console.log(`📋 Found ${allEntries.blobs.length} total entries`);
-        
-        for (const entry of allEntries.blobs) {
-          if (entry.key !== '_list' && entry.key.startsWith('app_')) {
-            try {
-              const application = await applicationsStore.get(entry.key, { type: 'json' });
-              if (application && application.id) {
-                applications.push(application);
-              }
-            } catch (error) {
-              console.log(`⚠️ Failed to load ${entry.key}:`, error.message);
-            }
-          }
-        }
-        
-        console.log(`📊 Retrieved ${applications.length} individual applications`);
-      }
-    } catch (error) {
-      console.error('❌ Error retrieving applications:', error.message);
-      applications = [];
-    }
-    
-    // Sort: admins first, then alphabetically by name
-    applications.sort((a, b) => {
-      // First, sort by admin status (admins first)
-      if (a.isAdmin && !b.isAdmin) return -1;
-      if (!a.isAdmin && b.isAdmin) return 1;
-      
-      // Then sort alphabetically by full name
-      const nameA = (a.fullName || `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.name || '').toLowerCase();
-      const nameB = (b.fullName || `${b.firstName || ''} ${b.lastName || ''}`.trim() || b.name || '').toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
+    // Use efficient list utility
+    const applications = await getApplicationsList(storeConfig);
     
     return {
       statusCode: 200,

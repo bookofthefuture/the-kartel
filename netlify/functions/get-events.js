@@ -2,6 +2,7 @@
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { getEventsList } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -39,49 +40,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Create events store
-    const eventsStore = getStore({
+    // Store configuration for efficient operations
+    const storeConfig = {
       name: 'events',
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
-    });
+    };
 
-    let events = [];
-
-    try {
-      // Try to get the events list
-      const eventsList = await eventsStore.get('_list', { type: 'json' });
-      
-      if (eventsList && Array.isArray(eventsList)) {
-        events = eventsList;
-        console.log(`✅ Retrieved ${events.length} events from list`);
-      } else {
-        console.log('📝 No events list found, checking individual entries...');
-        
-        // Fallback: list all entries and filter
-        const allEntries = await eventsStore.list();
-        console.log(`📋 Found ${allEntries.blobs.length} total entries`);
-        
-        for (const entry of allEntries.blobs) {
-          if (entry.key !== '_list' && entry.key.startsWith('evt_')) {
-            try {
-              const eventData = await eventsStore.get(entry.key, { type: 'json' });
-              if (eventData && eventData.id) {
-                events.push(eventData);
-              }
-            } catch (error) {
-              console.log(`⚠️ Failed to load ${entry.key}:`, error.message);
-            }
-          }
-        }
-        
-        console.log(`📊 Retrieved ${events.length} individual events`);
-      }
-    } catch (error) {
-      console.error('❌ Error retrieving events:', error.message);
-      events = [];
-    }
+    // Use efficient list utility
+    let events = await getEventsList(storeConfig);
 
     // --- NEW: Ensure attendees and photos arrays exist for each event ---
     events = events.map(event => {

@@ -2,6 +2,7 @@
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { getVenuesList } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -38,28 +39,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Create venues store
-    const venuesStore = getStore({
+    // Store configuration for efficient operations
+    const storeConfig = {
       name: 'venues',
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
-    });
+    };
     
-    // Get venues from blob storage
-    let venues = [];
-    try {
-      const venuesData = await venuesStore.get('_list', { type: 'json' });
-      if (venuesData && Array.isArray(venuesData)) {
-        venues = venuesData;
-      }
-    } catch (error) {
-      console.log('📝 No existing venues found, starting fresh');
-      venues = [];
-    }
-    
-    // Sort venues by creation date (newest first)
-    venues.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Use efficient list utility (already sorted)
+    const venues = await getVenuesList(storeConfig);
     
     return {
       statusCode: 200,

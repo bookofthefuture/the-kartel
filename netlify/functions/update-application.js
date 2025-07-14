@@ -1,7 +1,8 @@
-// netlify/functions/update-application.js - Updated for new field structure
+// netlify/functions/update-application.js - Updated for efficient list management
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { setItem, getItem } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -40,16 +41,16 @@ exports.handler = async (event, context) => {
     
     console.log(`🔄 Updating application ${applicationId} to ${status}`);
 
-    // Manual configuration with explicit credentials
-    const applicationsStore = getStore({
+    // Store configuration for efficient operations
+    const storeConfig = {
       name: 'applications',
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
-    });
+    };
     
-    // Get the specific application
-    const application = await applicationsStore.get(applicationId, { type: 'json' });
+    // Get the specific application using efficient utility
+    const application = await getItem(storeConfig, applicationId);
     
     if (!application) {
       return {
@@ -66,24 +67,17 @@ exports.handler = async (event, context) => {
       application.notes = notes;
     }
     
-    // Save updated application
-    await applicationsStore.setJSON(applicationId, application);
+    // Save updated application (no list management needed - race condition free!)
+    const success = await setItem(storeConfig, applicationId, application);
     
-    // Update the applications list
-    try {
-      const applicationsList = await applicationsStore.get('_list', { type: 'json' });
-      
-      if (applicationsList && Array.isArray(applicationsList)) {
-        const appIndex = applicationsList.findIndex(app => app.id === applicationId);
-        if (appIndex !== -1) {
-          applicationsList[appIndex] = application;
-          await applicationsStore.setJSON('_list', applicationsList);
-          console.log('✅ Applications list updated');
-        }
-      }
-    } catch (listError) {
-      console.log('⚠️ Failed to update applications list:', listError.message);
+    if (!success) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Failed to update application' })
+      };
     }
+    
+    console.log('✅ Application updated efficiently without race conditions');
 
     // Send email to applicant if requested
     if (shouldSendEmail) {

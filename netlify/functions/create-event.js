@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const { sanitizeEvent, sanitizeText, validateRequiredFields } = require('./input-sanitization');
+const { setItem } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -91,31 +92,23 @@ exports.handler = async (event, context) => {
 
     console.log('📋 Event created:', newEvent.id);
 
-    // Store individual event
-    await eventsStore.setJSON(newEvent.id, newEvent);
-    console.log('✅ Individual event stored');
-
-    // Get current events list and update it
-    let events = [];
-    try {
-      const existingEvents = await eventsStore.get('_list', { type: 'json' });
-      if (existingEvents && Array.isArray(existingEvents)) {
-        events = existingEvents;
-      }
-    } catch (error) {
-      console.log('📝 No existing events list, starting fresh');
-      events = [];
+    // Store individual event using efficient utility (no list management needed!)
+    const storeConfig = {
+      name: 'events',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_ACCESS_TOKEN,
+      consistency: 'strong'
+    };
+    
+    const success = await setItem(storeConfig, newEvent.id, newEvent);
+    if (!success) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Failed to create event' })
+      };
     }
-
-    // Add new event to list
-    events.push(newEvent);
-
-    // Sort events by date (newest first)
-    events.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // Store updated list
-    await eventsStore.setJSON('_list', events);
-    console.log(`✅ Events list updated (${events.length} total)`);
+    
+    console.log('✅ Event stored efficiently without race conditions');
 
     // Send announcement email if requested
     if (sendAnnouncement) {
