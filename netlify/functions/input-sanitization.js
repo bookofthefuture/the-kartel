@@ -221,9 +221,9 @@ function sanitizeUrl(url, options = {}) {
 }
 
 /**
- * Sanitize a LinkedIn profile URL
- * @param {string} linkedinUrl - LinkedIn URL to sanitize
- * @returns {string} Sanitized LinkedIn URL or empty string if invalid
+ * Sanitize a LinkedIn profile URL - extracts and returns just the username
+ * @param {string} linkedinUrl - LinkedIn URL or username to sanitize
+ * @returns {string} Just the LinkedIn username or empty string if invalid
  */
 function sanitizeLinkedinUrl(linkedinUrl) {
   if (typeof linkedinUrl !== 'string') {
@@ -236,32 +236,50 @@ function sanitizeLinkedinUrl(linkedinUrl) {
     return '';
   }
   
-  // If it doesn't start with http, assume it's a username/path
-  if (!linkedinUrl.startsWith('http')) {
-    // Remove leading slash or 'in/' if present
-    linkedinUrl = linkedinUrl.replace(/^(\/|in\/)?/, '');
-    
-    // Construct full LinkedIn URL
-    linkedinUrl = `https://www.linkedin.com/in/${linkedinUrl}`;
-  }
+  // Remove scripts first (but don't escape HTML as we need to parse URLs)
+  linkedinUrl = removeScripts(linkedinUrl);
   
-  // Sanitize as URL
-  const sanitized = sanitizeUrl(linkedinUrl);
+  let username = '';
   
-  // Validate it's actually a LinkedIn URL and extract hostname to ensure it's legitimate
-  if (sanitized) {
+  // If it's a full URL, extract the username
+  if (linkedinUrl.startsWith('http')) {
     try {
-      const urlObj = new URL(sanitized);
-      if ((urlObj.hostname === 'www.linkedin.com' || urlObj.hostname === 'linkedin.com') && 
+      const urlObj = new URL(linkedinUrl);
+      if ((urlObj.hostname === 'www.linkedin.com' || 
+           urlObj.hostname === 'linkedin.com' ||
+           urlObj.hostname === 'uk.linkedin.com' ||
+           urlObj.hostname === 'www.uk.linkedin.com') && 
           (urlObj.pathname.startsWith('/in/') || urlObj.pathname.startsWith('/pub/'))) {
-        return sanitized;
+        // Extract username from path (e.g., '/in/username' -> 'username')
+        const pathParts = urlObj.pathname.split('/');
+        if (pathParts.length >= 3 && pathParts[2]) {
+          username = pathParts[2];
+        }
       }
     } catch (error) {
-      // Invalid URL structure
+      // Invalid URL, try to parse as username
+      username = linkedinUrl;
     }
+  } else {
+    // Not a URL, treat as username and clean it up
+    username = linkedinUrl;
   }
   
-  return '';
+  // Clean up the username
+  username = username.trim();
+  
+  // Remove common prefixes that users might include (case insensitive)
+  username = username.replace(/^(linkedin\.com\/in\/|www\.linkedin\.com\/in\/|https?:\/\/(www\.)?linkedin\.com\/in\/|in\/|LinkedIn\.com\/in\/)/i, '');
+  
+  // Remove trailing slashes and query parameters
+  username = username.replace(/[\/\?#].*$/, '');
+  
+  // Validate username format (LinkedIn usernames are alphanumeric with hyphens and underscores)
+  if (!/^[a-zA-Z0-9\-_]+$/.test(username) || username.length === 0 || username.length > 50) {
+    return '';
+  }
+  
+  return username;
 }
 
 /**

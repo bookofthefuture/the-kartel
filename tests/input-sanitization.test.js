@@ -186,24 +186,43 @@ describe('Input Sanitization and Validation', () => {
   });
 
   describe('sanitizeLinkedinUrl', () => {
-    test('should handle full LinkedIn URLs', () => {
-      expect(sanitizeLinkedinUrl('https://www.linkedin.com/in/john-doe')).toBe('https://www.linkedin.com/in/john-doe');
-      expect(sanitizeLinkedinUrl('https://linkedin.com/in/jane-smith')).toBe('https://linkedin.com/in/jane-smith');
+    test('should extract username from full LinkedIn URLs', () => {
+      expect(sanitizeLinkedinUrl('https://www.linkedin.com/in/john-doe')).toBe('john-doe');
+      expect(sanitizeLinkedinUrl('https://linkedin.com/in/jane-smith')).toBe('jane-smith');
+      expect(sanitizeLinkedinUrl('https://uk.linkedin.com/in/uk-user')).toBe('uk-user');
     });
 
-    test('should convert usernames to full URLs', () => {
-      expect(sanitizeLinkedinUrl('john-doe')).toBe('https://www.linkedin.com/in/john-doe');
-      expect(sanitizeLinkedinUrl('/john-doe')).toBe('https://www.linkedin.com/in/john-doe');
-      expect(sanitizeLinkedinUrl('in/john-doe')).toBe('https://www.linkedin.com/in/john-doe');
+    test('should handle LinkedIn usernames directly', () => {
+      expect(sanitizeLinkedinUrl('john-doe')).toBe('john-doe');
+      expect(sanitizeLinkedinUrl('jane_smith')).toBe('jane_smith');
+      expect(sanitizeLinkedinUrl('user123')).toBe('user123');
+    });
+
+    test('should clean up common prefixes users might include', () => {
+      expect(sanitizeLinkedinUrl('linkedin.com/in/john-doe')).toBe('john-doe');
+      expect(sanitizeLinkedinUrl('www.linkedin.com/in/jane-smith')).toBe('jane-smith');
+      expect(sanitizeLinkedinUrl('LinkedIn.com/in/user')).toBe('user');
+      expect(sanitizeLinkedinUrl('in/john-doe')).toBe('john-doe');
     });
 
     test('should handle pub URLs', () => {
-      expect(sanitizeLinkedinUrl('https://www.linkedin.com/pub/john-doe/1/2/3')).toBe('https://www.linkedin.com/pub/john-doe/1/2/3');
+      expect(sanitizeLinkedinUrl('https://www.linkedin.com/pub/john-doe/1/2/3')).toBe('john-doe');
+    });
+
+    test('should handle trailing slashes and parameters', () => {
+      expect(sanitizeLinkedinUrl('john-doe/')).toBe('john-doe');
+      expect(sanitizeLinkedinUrl('john-doe?ref=123')).toBe('john-doe');
+      expect(sanitizeLinkedinUrl('https://linkedin.com/in/john-doe/?utm_source=share')).toBe('john-doe');
     });
 
     test('should reject non-LinkedIn URLs', () => {
       expect(sanitizeLinkedinUrl('https://facebook.com/profile')).toBe('');
       expect(sanitizeLinkedinUrl('https://evil.com/linkedin.com/in/fake')).toBe('');
+    });
+
+    test('should reject invalid usernames', () => {
+      expect(sanitizeLinkedinUrl('user@with@symbols')).toBe('');
+      expect(sanitizeLinkedinUrl('user with spaces')).toBe('');
     });
 
     test('should handle empty input', () => {
@@ -213,9 +232,9 @@ describe('Input Sanitization and Validation', () => {
     });
 
     test('should prevent XSS in LinkedIn URLs', () => {
-      // Script content gets cleaned and becomes valid path, but we should validate better
-      expect(sanitizeLinkedinUrl('<script>alert("xss")</script>')).toBe('https://www.linkedin.com/in/');
-      expect(sanitizeLinkedinUrl('javascript:alert("xss")')).toBe('https://www.linkedin.com/in/%22xss%22)'); // URL-encoded, safe
+      // Script content should be rejected as invalid username
+      expect(sanitizeLinkedinUrl('<script>alert("xss")</script>')).toBe('');
+      expect(sanitizeLinkedinUrl('javascript:alert("xss")')).toBe('');
     });
   });
 
@@ -242,7 +261,7 @@ describe('Input Sanitization and Validation', () => {
       expect(sanitized.company).toBe('Evil Corp &amp; Associates');
       expect(sanitized.position).toBe('CEO &gt; Manager');
       expect(sanitized.phone).toBe('+44 123 456 7890');
-      expect(sanitized.linkedin).toBe('https://www.linkedin.com/in/john-doe');
+      expect(sanitized.linkedin).toBe('john-doe');
       expect(sanitized.experience).toBe('I have experience\nMultiple lines');
       expect(sanitized.interests).toBe('Security &amp; &quot;Testing&quot;');
       expect(sanitized.referral).toBe('Friend referred me');
