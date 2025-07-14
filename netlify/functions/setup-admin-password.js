@@ -1,13 +1,7 @@
 // netlify/functions/setup-admin-password.js
 const { getStore } = require('@netlify/blobs');
-const crypto = require('crypto');
+const { hashPasswordAsync } = require('./password-utils');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
-
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-  return { salt, hash };
-}
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -79,8 +73,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Hash the password
-    const { salt, hash } = hashPassword(password);
+    // Hash the password using modern Argon2id
+    const { hash, algorithm, salt } = await hashPasswordAsync(password);
 
     // Get the applicant's data
     const applicationsStore = getStore({
@@ -103,8 +97,9 @@ exports.handler = async (event, context) => {
     const updatedApplication = {
       ...application,
       isAdmin: true,
-      adminPasswordSalt: salt,
+      adminPasswordSalt: salt, // Will be undefined for Argon2id
       adminPasswordHash: hash,
+      adminPasswordAlgorithm: algorithm,
       adminSetupCompletedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       updatedBy: 'System'

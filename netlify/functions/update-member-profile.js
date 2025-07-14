@@ -1,6 +1,6 @@
 // netlify/functions/update-member-profile.js
 const { getStore } = require('@netlify/blobs');
-const { hashPassword } = require('./password-utils');
+const { hashPasswordAsync } = require('./password-utils');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const { sanitizeMemberProfile, sanitizeText, validateRequiredFields } = require('./input-sanitization');
@@ -95,10 +95,11 @@ exports.handler = async (event, context) => {
     let passwordFields = {};
     if (newPassword) {
       console.log(`🔑 Setting password for member ${memberId}`);
-      const { salt, hash } = hashPassword(newPassword);
+      const { hash, algorithm, salt } = await hashPasswordAsync(newPassword);
       passwordFields = {
         memberPasswordHash: hash,
-        memberPasswordSalt: salt,
+        memberPasswordAlgorithm: algorithm,
+        memberPasswordSalt: salt, // Will be undefined for Argon2id
         passwordSetAt: new Date().toISOString()
       };
     }

@@ -1,6 +1,6 @@
 // netlify/functions/member-login.js
 const { getStore } = require('@netlify/blobs');
-const { verifyPassword } = require('./password-utils');
+const { verifyPasswordAsync, shouldUpgradeHash, hashPasswordAsync } = require('./password-utils');
 const { generateToken } = require('./jwt-auth');
 const { verifySuperAdminCredentials } = require('./timing-safe-utils');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
@@ -153,8 +153,16 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Verify password
-      if (!verifyPassword(password, memberApplication.memberPasswordSalt, memberApplication.memberPasswordHash)) {
+      // Verify password with auto-detection of algorithm
+      const algorithm = memberApplication.memberPasswordAlgorithm || 'pbkdf2';
+      const isValid = await verifyPasswordAsync(
+        password, 
+        memberApplication.memberPasswordHash, 
+        memberApplication.memberPasswordSalt, 
+        algorithm
+      );
+
+      if (!isValid) {
         console.log(`❌ Invalid password for member: ${email.split('@')[1]} domain`);
         return {
           statusCode: 401,
@@ -163,7 +171,38 @@ exports.handler = async (event, context) => {
         };
       }
 
-      console.log(`✅ Member password login successful for: ${email.split('@')[1]} domain`);
+      // Check if password hash should be upgraded to Argon2id
+      let shouldUpgrade = false;
+      if (shouldUpgradeHash(algorithm)) {
+        console.log(`🔄 Password hash upgrade recommended for: ${email.split('@')[1]} domain (${algorithm} -> argon2id)`);
+        
+        try {
+          // Upgrade password hash to Argon2id
+          const { hash: newHash, algorithm: newAlgorithm } = await hashPasswordAsync(password);
+          
+          // Update member record with new hash
+          const applicationsStore = getStore(storeConfig);
+          const memberKey = `member_${memberApplication.id}`;
+          const updatedMember = {
+            ...memberApplication,
+            memberPasswordHash: newHash,
+            memberPasswordAlgorithm: newAlgorithm,
+            // Remove salt for Argon2id (not needed)
+            memberPasswordSalt: newAlgorithm === 'argon2id' ? undefined : memberApplication.memberPasswordSalt,
+            passwordUpgradedAt: new Date().toISOString()
+          };
+          
+          await applicationsStore.set(memberKey, JSON.stringify(updatedMember));
+          console.log(`✅ Password hash upgraded successfully for: ${email.split('@')[1]} domain`);
+          shouldUpgrade = true;
+        } catch (upgradeError) {
+          console.error(`❌ Failed to upgrade password hash for ${email.split('@')[1]} domain:`, upgradeError);
+          // Continue with login even if upgrade fails
+        }
+      }
+
+      console.log(`✅ Member password login successful for: ${email.split('@')[1]} domain${shouldUpgrade ? ' (hash upgraded)' : ''}`);
+      
     } else {
       // Magic link only authentication (existing behavior)
       console.log(`✅ Member magic link login successful for: ${email.split('@')[1]} domain`);

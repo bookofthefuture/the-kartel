@@ -1,7 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const sgMail = require('@sendgrid/mail');
-const { hashPassword } = require('./password-utils');
+const { hashPasswordAsync } = require('./password-utils');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const { sanitizeEmail, sanitizeText } = require('./input-sanitization');
 
@@ -196,14 +196,15 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Hash new password
-      const { salt, hash } = hashPassword(newPassword);
+      // Hash new password using modern Argon2id
+      const { hash, algorithm, salt } = await hashPasswordAsync(newPassword);
 
       // Update member with new password
       const updatedMember = {
         ...memberApplication,
         memberPasswordHash: hash,
-        memberPasswordSalt: salt,
+        memberPasswordAlgorithm: algorithm,
+        memberPasswordSalt: salt, // Will be undefined for Argon2id
         passwordSetAt: new Date().toISOString()
       };
 

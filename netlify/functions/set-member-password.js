@@ -1,5 +1,5 @@
 const { getStore } = require('@netlify/blobs');
-const { hashPassword } = require('./password-utils');
+const { hashPasswordAsync } = require('./password-utils');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const { sanitizeText } = require('./input-sanitization');
 
@@ -77,14 +77,15 @@ exports.handler = async (event, context) => {
 
     console.log(`🔑 Setting password for member: ${memberApplication.email}`);
 
-    // Hash password
-    const { salt, hash } = hashPassword(password);
+    // Hash password using modern Argon2id
+    const { hash, algorithm, salt } = await hashPasswordAsync(password);
 
     // Update member with password
     const updatedMember = {
       ...memberApplication,
       memberPasswordHash: hash,
-      memberPasswordSalt: salt,
+      memberPasswordAlgorithm: algorithm,
+      memberPasswordSalt: salt, // Will be undefined for Argon2id
       passwordSetAt: new Date().toISOString()
     };
 

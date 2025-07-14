@@ -4,6 +4,7 @@
   "description": "The Kartel website with Netlify Functions",
   "dependencies": {
     "@netlify/blobs": "^8.2.0",
+    "@node-rs/argon2": "^2.0.2",
     "@sendgrid/mail": "^8.1.5",
     "@vimeo/vimeo": "^2.3.2",
     "jsonwebtoken": "^9.0.2",
