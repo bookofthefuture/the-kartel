@@ -14,10 +14,10 @@ async function signUpEventHandler(event, context) {
     
     const eventId = sanitizeText(requestBody.eventId, { maxLength: 100 });
     const memberId = sanitizeText(requestBody.memberId, { maxLength: 100 });
-    const memberName = sanitizeText(requestBody.memberName, { maxLength: 100 });
-    const memberEmail = sanitizeEmail(requestBody.memberEmail);
-    const memberCompany = sanitizeText(requestBody.memberCompany, { maxLength: 100 });
-    const memberLinkedin = sanitizeLinkedinUrl(requestBody.memberLinkedin);
+    let memberName = sanitizeText(requestBody.memberName, { maxLength: 100 });
+    let memberEmail = sanitizeEmail(requestBody.memberEmail);
+    let memberCompany = sanitizeText(requestBody.memberCompany, { maxLength: 100 });
+    let memberLinkedin = sanitizeLinkedinUrl(requestBody.memberLinkedin);
 
     console.log('🎯 Processing sign-up for event:', eventId, 'by member:', memberId);
 
