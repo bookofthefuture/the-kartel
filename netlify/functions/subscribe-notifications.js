@@ -11,6 +11,15 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // Check environment variables
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing environment variables for Blob storage.');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server configuration error' })
+      };
+    }
+
     const { subscription, userType, userId } = JSON.parse(event.body);
     
     if (!subscription || !userType) {
@@ -20,8 +29,13 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Get push subscriptions store
-    const subscriptionsStore = getStore('push-subscriptions');
+    // Get push subscriptions store with proper configuration
+    const subscriptionsStore = getStore({
+      name: 'push-subscriptions',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_ACCESS_TOKEN,
+      consistency: 'strong'
+    });
     
     // Create subscription object
     const subscriptionData = {
