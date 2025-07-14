@@ -20,9 +20,10 @@
     
     <!-- Unified Modules -->
     <link rel="stylesheet" href="unified-styles.css">
-    <script src="auth-module.js"></script>
-    <script src="topbar-module.js"></script>
-    <script src="/notification-manager.js"></script>
+    <!-- Bundled JavaScript for members page -->
+    <script nomodule src="/dist/polyfills-legacy.min.js"></script>
+    <script nomodule src="/dist/js/members-bundle-legacy.min.js"></script>
+    <script type="module" src="/dist/js/members-bundle.min.js"></script>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">

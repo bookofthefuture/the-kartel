@@ -14,6 +14,10 @@ fi
 
 echo "📝 Deploy message: $DEPLOY_MSG"
 
+# Build frontend assets
+echo "🔨 Building frontend assets..."
+npm run build
+
 # Check if there are any changes to commit
 if [ -n "$(git status --porcelain)" ]; then
     echo "📦 Staging and committing changes..."

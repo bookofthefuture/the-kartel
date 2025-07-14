@@ -326,4 +326,14 @@ class NotificationManager {
 }
 
 // Export for use in both member and admin apps
+// Create global instance for immediate use
 window.NotificationManager = NotificationManager;
+
+// ES Module export
+export default NotificationManager;
+export { NotificationManager };
+
+// CommonJS compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = NotificationManager;
+}

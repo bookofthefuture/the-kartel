@@ -258,7 +258,11 @@ class KartelTopBar {
 // Create global instance
 window.kartelTopBar = new KartelTopBar();
 
-// Export for use in other modules
+// ES Module export
+export default KartelTopBar;
+export { KartelTopBar };
+
+// CommonJS compatibility
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = KartelTopBar;
 }

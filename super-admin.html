@@ -8,8 +8,10 @@
     
     <!-- Unified Modules -->
     <link rel="stylesheet" href="unified-styles.css">
-    <script src="auth-module.js"></script>
-    <script src="topbar-module.js"></script>
+    <!-- Bundled JavaScript for super admin page -->
+    <script nomodule src="/dist/polyfills-legacy.min.js"></script>
+    <script nomodule src="/dist/js/members-bundle-legacy.min.js"></script>
+    <script type="module" src="/dist/js/members-bundle.min.js"></script>
     
     <style>
         @font-face { font-family: 'League Spartan'; src: url('assets/League_Spartan/LeagueSpartan-VariableFont_wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }

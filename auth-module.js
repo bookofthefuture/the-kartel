@@ -505,7 +505,11 @@ class KartelAuth {
 // Create global instance
 window.kartelAuth = new KartelAuth();
 
-// Export for use in other modules
+// ES Module export
+export default KartelAuth;
+export { KartelAuth };
+
+// CommonJS compatibility
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = KartelAuth;
 }

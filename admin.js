@@ -1723,51 +1723,9 @@ async function loadEventAttendees(eventId) {
     }
 }
 
-// Load and display event videos
-async function loadEventVideos(eventId) {
-    const event = events.find(e => e.id === eventId);
-    if (event && event.videos) {
-        displayEventVideos(event.videos);
-    } else {
-        displayEventVideos([]);
-    }
-}
+// Note: loadEventVideos function is defined earlier in the file (line 701)
 
-// Display event videos
-function displayEventVideos(videos) {
-    const videosGrid = document.getElementById('eventVideosGrid');
-    
-    if (!videos || videos.length === 0) {
-        videosGrid.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px; grid-column: 1 / -1;">No videos uploaded yet</p>';
-        return;
-    }
-    
-    const videosHTML = videos.map(video => `
-        <div class="video-item" style="border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="aspect-ratio: 16/9; background: #f8f9fa; position: relative;">
-                <iframe 
-                    src="https://player.vimeo.com/video/${video.vimeoId}?badge=0&autopause=0&quality_selector=1&player_id=0&app_id=58479" 
-                    width="100%" 
-                    height="100%" 
-                    frameborder="0" 
-                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                    title="${video.title || 'Event Video'}">
-                </iframe>
-            </div>
-            <div style="padding: 12px;">
-                <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px; font-size: 0.9rem;">${video.title || video.fileName}</div>
-                ${video.description ? `<div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 8px; line-height: 1.4;">${video.description}</div>` : ''}
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #7f8c8d;">
-                    <span>Uploaded: ${new Date(video.uploadedAt).toLocaleDateString()}</span>
-                    <a href="https://vimeo.com/${video.vimeoId}" target="_blank" style="color: #3498db; text-decoration: none;">View on Vimeo</a>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    
-    videosGrid.innerHTML = videosHTML;
-}
+// Note: displayEventVideos function is defined earlier in the file (line 722)
 
 // Global functions for onclick handlers
 window.switchTab = switchTab;

@@ -21,9 +21,10 @@
     <!-- Unified Modules -->
     <link rel="stylesheet" href="unified-styles.css">
     <link rel="stylesheet" href="admin.css">
-    <script src="auth-module.js"></script>
-    <script src="topbar-module.js"></script>
-    <script src="/notification-manager.js"></script>
+    <!-- Bundled JavaScript for admin page -->
+    <script nomodule src="/dist/polyfills-legacy.min.js"></script>
+    <script nomodule src="/dist/js/admin-bundle-legacy.min.js"></script>
+    <script type="module" src="/dist/js/admin-bundle.min.js"></script>
 </head>
 <body>
     <div id="loginSection" class="login-container">
@@ -713,7 +714,7 @@
         </div>
     </div>
 
-    <script src="admin.js"></script>
+    <!-- admin.js is now bundled in the admin-bundle above -->
     
     <script>
         // Unified Authentication Integration for Admin

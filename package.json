@@ -10,10 +10,13 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@vitejs/plugin-legacy": "^7.0.0",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
     "lint-staged": "^15.5.2",
-    "netlify-cli": "^22.2.2"
+    "netlify-cli": "^22.2.2",
+    "terser": "^5.43.1",
+    "vite": "^7.0.4"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -24,7 +27,8 @@
     "test:coverage": "jest --coverage",
     "dev": "netlify dev",
     "restart": "./restart-dev.sh",
-    "build": "echo 'No build step required for static site'",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
     "deploy:preview": "./scripts/deploy-preview.sh",
     "deploy:prod": "./scripts/deploy-prod.sh",
     "functions:serve": "netlify functions:serve",
