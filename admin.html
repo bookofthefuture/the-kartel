@@ -820,6 +820,19 @@
                     window.location.href = '/members.html';
                 }
             };
+            
+            // Initialize dashboard if user is already authenticated
+            // This handles cases where session is restored but onAuthSuccess isn't called
+            setTimeout(() => {
+                if (kartelAuth.isAuthenticated() && kartelAuth.isUserAdmin()) {
+                    console.log('🔄 User already authenticated, initializing dashboard...');
+                    showDashboard();
+                    loadApplications();
+                    loadVenuesForDropdown();
+                } else {
+                    console.log('⏳ User not authenticated or not admin, waiting for auth...');
+                }
+            }, 200);
         }
 
         // Start waiting for modules to load
