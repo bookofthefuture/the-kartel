@@ -466,7 +466,8 @@ class KartelAuth {
     showMessage(message, type = 'info') {
         const messageContainer = document.getElementById('loginMessage');
         if (messageContainer) {
-            messageContainer.className = type;
+            // Clear previous type classes and add new type
+            messageContainer.className = `message ${type}`;
             messageContainer.textContent = message;
             messageContainer.classList.remove('hidden');
             
