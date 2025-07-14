@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Preview deployment script with automatic git sync
+# Preview deployment script - commit locally and deploy to Netlify preview
 set -e  # Exit on any error
 
-echo "🔍 Starting preview deployment with git sync..."
+echo "🔍 Starting preview deployment (local commit only)..."
 
 # Set deployment message
 if [ -n "$1" ]; then
@@ -20,16 +20,14 @@ npm run build
 
 # Check if there are any changes to commit
 if [ -n "$(git status --porcelain)" ]; then
-    echo "📦 Staging and committing changes..."
+    echo "📦 Staging and committing changes locally..."
     git add .
     git commit -m "$DEPLOY_MSG
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-    
-    echo "📤 Pushing to GitHub..."
-    git push
+    echo "✅ Changes committed locally (not pushed to GitHub)"
 else
     echo "✅ No changes to commit"
 fi
@@ -37,4 +35,4 @@ fi
 echo "🔍 Deploying to Netlify preview..."
 netlify deploy --message "$DEPLOY_MSG"
 
-echo "✅ Preview deployment complete!"
+echo "✅ Preview deployment complete! (GitHub push required separately)"

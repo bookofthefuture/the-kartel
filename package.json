@@ -32,6 +32,7 @@
     "build:dev": "vite build --mode development",
     "deploy:preview": "./scripts/deploy-preview.sh",
     "deploy:prod": "./scripts/deploy-prod.sh",
+    "push:github": "./scripts/push-to-github.sh",
     "functions:serve": "netlify functions:serve",
     "test:functions": "node scripts/test-functions.js",
     "security:check": "./scripts/security-check.sh",
