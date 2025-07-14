@@ -2,6 +2,7 @@
 const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { deleteItem } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests

@@ -3,6 +3,7 @@ const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const { sanitizeVenue, sanitizeText, validateRequiredFields } = require('./input-sanitization');
+const { getVenuesList, setItem } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -57,25 +58,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Create venues store
-    const venuesStore = getStore({
+    // Store configuration for efficient operations
+    const storeConfig = {
       name: 'venues',
       siteID: process.env.NETLIFY_SITE_ID,
       token: process.env.NETLIFY_ACCESS_TOKEN,
       consistency: 'strong'
-    });
+    };
 
-    // Get existing venues to check for duplicates
-    let venues = [];
-    try {
-      const existingVenues = await venuesStore.get('_list', { type: 'json' });
-      if (existingVenues && Array.isArray(existingVenues)) {
-        venues = existingVenues;
-      }
-    } catch (error) {
-      console.log('📝 No existing venues found, starting fresh');
-      venues = [];
-    }
+    // Get existing venues to check for duplicates using efficient utilities
+    const venues = await getVenuesList(storeConfig);
 
     // Check for duplicate venue names
     const existingVenue = venues.find(v => v.name.toLowerCase() === venueData.name.toLowerCase());
@@ -86,8 +78,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Generate venue ID first
-    const venueId = `venue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate venue ID with ven_ prefix for blob-list-utils compatibility
+    const venueId = `ven_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Handle track map upload if provided
     let trackMapPath = null;
@@ -137,19 +129,15 @@ exports.handler = async (event, context) => {
 
     console.log('📋 Venue created:', newVenue.id);
 
-    // Store individual venue
-    await venuesStore.setJSON(newVenue.id, newVenue);
-    console.log('✅ Individual venue stored');
-
-    // Add new venue to list
-    venues.push(newVenue);
-
-    // Sort venues by date (newest first)
-    venues.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    // Store updated list
-    await venuesStore.setJSON('_list', venues);
-    console.log(`✅ Venues list updated (${venues.length} total)`);
+    // Store venue using efficient utilities (no list management needed)
+    const success = await setItem(storeConfig, newVenue.id, newVenue);
+    if (!success) {
+      return {
+        statusCode: 500,
+        headers: createSecureHeaders(event),
+        body: JSON.stringify({ error: 'Failed to store venue' })
+      };
+    }
 
     return {
       statusCode: 200,

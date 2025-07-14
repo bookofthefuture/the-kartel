@@ -22,10 +22,21 @@ async function getItemList(storeConfig, keyPrefix, sortFunction = null) {
     const allEntries = await store.list();
     console.log(`📊 Found ${allEntries.blobs.length} total entries in store: ${storeConfig.name}`);
     
-    // Filter entries by prefix
-    const filteredEntries = allEntries.blobs.filter(entry => 
+    // Filter entries by prefix (with backward compatibility for venue_ prefix)
+    let filteredEntries = allEntries.blobs.filter(entry => 
       entry.key.startsWith(keyPrefix) && entry.key !== '_list'
     );
+    
+    // Legacy support: if looking for ven_ prefix and no entries found, also look for venue_ prefix
+    if (keyPrefix === 'ven_' && filteredEntries.length === 0) {
+      console.log('🔄 No ven_ venues found, checking for legacy venue_ entries...');
+      filteredEntries = allEntries.blobs.filter(entry => 
+        entry.key.startsWith('venue_') && entry.key !== '_list'
+      );
+      if (filteredEntries.length > 0) {
+        console.log(`✅ Found ${filteredEntries.length} legacy venue_ entries`);
+      }
+    }
     console.log(`🔍 Found ${filteredEntries.length} entries with prefix: ${keyPrefix}`);
     
     // Fetch all items in parallel for better performance

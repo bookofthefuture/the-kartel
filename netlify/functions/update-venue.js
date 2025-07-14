@@ -3,6 +3,7 @@ const { getStore } = require('@netlify/blobs');
 const { validateAuthHeader, requireRole } = require('./jwt-auth');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 const { sanitizeVenue, sanitizeText, validateRequiredFields } = require('./input-sanitization');
+const { getVenuesList, setItem, getItem } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'PUT') {
