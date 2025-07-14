@@ -172,6 +172,60 @@ describe('Blob List Utils', () => {
     });
   });
 
+  describe('getVenuesList', () => {
+    it('should prioritize home venue first', async () => {
+      const mockBlobs = [
+        { key: 'ven_1' },
+        { key: 'ven_2' },
+        { key: 'ven_3' }
+      ];
+      
+      const mockVenues = [
+        { id: 'ven_1', name: 'Regular Venue', createdAt: '2024-01-03T00:00:00Z' },
+        { id: 'ven_2', name: 'TeamSport Victoria', createdAt: '2024-01-01T00:00:00Z' }, // Home venue (older)
+        { id: 'ven_3', name: 'Another Venue', createdAt: '2024-01-02T00:00:00Z' }
+      ];
+
+      mockStore.list.mockResolvedValue({ blobs: mockBlobs });
+      mockStore.get.mockImplementation((key) => {
+        const index = parseInt(key.split('_')[1]) - 1;
+        return Promise.resolve(mockVenues[index]);
+      });
+
+      const result = await getVenuesList(storeConfig);
+
+      // Home venue should be first, regardless of creation date
+      expect(result[0].name).toBe('TeamSport Victoria');
+      // Other venues sorted by creation date (newest first)
+      expect(result[1].name).toBe('Regular Venue'); // Newest
+      expect(result[2].name).toBe('Another Venue'); // Older
+    });
+
+    it('should handle venues without home venue', async () => {
+      const mockBlobs = [
+        { key: 'ven_1' },
+        { key: 'ven_2' }
+      ];
+      
+      const mockVenues = [
+        { id: 'ven_1', name: 'Venue A', createdAt: '2024-01-01T00:00:00Z' },
+        { id: 'ven_2', name: 'Venue B', createdAt: '2024-01-02T00:00:00Z' }
+      ];
+
+      mockStore.list.mockResolvedValue({ blobs: mockBlobs });
+      mockStore.get.mockImplementation((key) => {
+        const index = parseInt(key.split('_')[1]) - 1;
+        return Promise.resolve(mockVenues[index]);
+      });
+
+      const result = await getVenuesList(storeConfig);
+
+      // Should be sorted by creation date (newest first) when no home venue
+      expect(result[0].name).toBe('Venue B'); // Newer
+      expect(result[1].name).toBe('Venue A'); // Older
+    });
+  });
+
   describe('setItem', () => {
     it('should successfully store an item', async () => {
       const itemId = 'test_1';
