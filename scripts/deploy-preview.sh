@@ -14,6 +14,10 @@ fi
 
 echo "📝 Deploy message: $DEPLOY_MSG"
 
+# Run tests
+echo "🧪 Running tests..."
+npm run test
+
 # Build frontend assets
 echo "🔨 Building frontend assets..."
 npm run build
