@@ -717,8 +717,22 @@
     <!-- admin.js is now bundled in the admin-bundle above -->
     
     <script>
-        // Unified Authentication Integration for Admin
-        window.onAuthSuccess = function(user, isAdmin) {
+        // Wait for bundled modules to load before setting up admin functionality
+        function waitForModules() {
+            if (typeof kartelAuth !== 'undefined') {
+                setupAdminAuthentication();
+            } else {
+                console.log('⏳ Waiting for kartelAuth to load...');
+                setTimeout(waitForModules, 100);
+            }
+        }
+
+        // Set up admin authentication once modules are loaded
+        function setupAdminAuthentication() {
+            console.log('✅ Setting up admin authentication');
+            
+            // Unified Authentication Integration for Admin
+            window.onAuthSuccess = function(user, isAdmin) {
             console.log('🎉 Admin auth success:', user, isAdmin);
             
             // Verify admin access
@@ -798,10 +812,18 @@
         };
         
         window.switchToMemberView = function() {
-            if (kartelAuth.isUserAdmin()) {
-                window.location.href = '/members.html';
-            }
-        };
+                if (kartelAuth.isUserAdmin()) {
+                    window.location.href = '/members.html';
+                }
+            };
+        }
+
+        // Start waiting for modules to load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitForModules);
+        } else {
+            waitForModules();
+        }
     </script>
     
     <script>

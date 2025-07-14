@@ -26,8 +26,12 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console: false, // Keep console.logs for debugging bundling issues
         drop_debugger: true
+      },
+      mangle: {
+        // Preserve global variable names
+        reserved: ['kartelAuth', 'kartelTopBar', 'NotificationManager']
       }
     },
     // Source maps for debugging
