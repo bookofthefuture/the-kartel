@@ -93,7 +93,7 @@ exports.handler = async (event, context) => {
     };
 
     // 4. Business logic: Check for approved member using efficient search
-    console.log(`🔒 Attempting member login for: ${email} (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
+    console.log(`🔒 Attempting member login for: ${email.split('@')[1]} domain (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
 
     // Use efficient field search to find member by email and approved status
     let applications = await getApplicationsList(storeConfig);
@@ -117,7 +117,7 @@ exports.handler = async (event, context) => {
     // Debug: Log some application details (without sensitive info)
     if (applications.length > 0) {
       console.log(`📊 Sample applications:`, applications.slice(0, 3).map(app => ({
-        email: app.email,
+        emailDomain: app.email ? app.email.split('@')[1] : 'unknown',
         status: app.status,
         hasPasswordHash: !!app.memberPasswordHash
       })));
@@ -130,8 +130,8 @@ exports.handler = async (event, context) => {
     );
 
     if (!memberApplication) {
-      console.log(`❌ Failed login attempt for: ${email} (Not found or not approved)`);
-      console.log(`📧 Available emails:`, applications.slice(0, 5).map(app => `${app.email} (${app.status})`));
+      console.log(`❌ Failed login attempt for: ${email.split('@')[1]} domain (Not found or not approved)`);
+      console.log(`📧 Available domains:`, applications.slice(0, 5).map(app => `${app.email?.split('@')[1] || 'unknown'} (${app.status})`));
       return {
         statusCode: 401,
         headers: createSecureHeaders(event),
@@ -141,11 +141,11 @@ exports.handler = async (event, context) => {
 
     // Handle password authentication
     if (isPasswordAuth) {
-      console.log(`🔑 Password auth for ${email}, has hash: ${!!memberApplication.memberPasswordHash}, has salt: ${!!memberApplication.memberPasswordSalt}`);
+      console.log(`🔑 Password auth for ${email.split('@')[1]} domain, has hash: ${!!memberApplication.memberPasswordHash}, has salt: ${!!memberApplication.memberPasswordSalt}`);
       
       // Check if member has password set
       if (!memberApplication.memberPasswordHash || !memberApplication.memberPasswordSalt) {
-        console.log(`❌ Password login attempted for ${email} but no password set`);
+        console.log(`❌ Password login attempted for ${email.split('@')[1]} domain but no password set`);
         return {
           statusCode: 401,
           headers: createSecureHeaders(event),
@@ -155,7 +155,7 @@ exports.handler = async (event, context) => {
 
       // Verify password
       if (!verifyPassword(password, memberApplication.memberPasswordSalt, memberApplication.memberPasswordHash)) {
-        console.log(`❌ Invalid password for member: ${email}`);
+        console.log(`❌ Invalid password for member: ${email.split('@')[1]} domain`);
         return {
           statusCode: 401,
           headers: createSecureHeaders(event),
@@ -163,10 +163,10 @@ exports.handler = async (event, context) => {
         };
       }
 
-      console.log(`✅ Member password login successful for: ${email}`);
+      console.log(`✅ Member password login successful for: ${email.split('@')[1]} domain`);
     } else {
       // Magic link only authentication (existing behavior)
-      console.log(`✅ Member magic link login successful for: ${email}`);
+      console.log(`✅ Member magic link login successful for: ${email.split('@')[1]} domain`);
     }
 
     // Generate JWT token
@@ -208,7 +208,7 @@ exports.handler = async (event, context) => {
 
     // Add admin-specific data if user is an admin
     if (memberApplication.isAdmin) {
-      console.log(`👑 Admin login detected for: ${memberApplication.email}`);
+      console.log(`👑 Admin login detected for: ${memberApplication.email.split('@')[1]} domain`);
       response.adminUser = {
         id: memberApplication.id,
         email: memberApplication.email,
