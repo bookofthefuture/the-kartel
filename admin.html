@@ -824,7 +824,7 @@
             // Initialize dashboard if user is already authenticated
             // This handles cases where session is restored but onAuthSuccess isn't called
             setTimeout(() => {
-                if (kartelAuth.isAuthenticated() && kartelAuth.isUserAdmin()) {
+                if (kartelAuth.isUserLoggedIn() && kartelAuth.isUserAdmin()) {
                     console.log('🔄 User already authenticated, initializing dashboard...');
                     showDashboard();
                     loadApplications();
