@@ -826,6 +826,11 @@
             setTimeout(() => {
                 if (kartelAuth.isUserLoggedIn() && kartelAuth.isUserAdmin()) {
                     console.log('🔄 User already authenticated, initializing dashboard...');
+                    
+                    // Set authToken for admin functions
+                    authToken = kartelAuth.getToken();
+                    console.log('🔑 authToken set for fallback initialization');
+                    
                     showDashboard();
                     loadApplications();
                     loadVenuesForDropdown();
