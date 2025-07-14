@@ -37,10 +37,12 @@ The Kartel is a static website for an exclusive business networking group based 
 - `npm run test:watch` - Run tests in watch mode
 
 **Deployment:**
-- `npm run deploy:preview` - Deploy to Netlify preview URL for testing (with deploy message)
-- `npm run deploy:prod` - Deploy to production (with deploy message)
+- `npm run deploy:preview` - Deploy to Netlify preview (commits locally, NO GitHub push)
+- `npm run deploy:prod` - Deploy to production (commits locally + pushes to GitHub)
+- `npm run push:github` - Push committed changes to GitHub with confirmation
 - `./scripts/deploy-preview.sh "Custom message"` - Deploy to preview with custom message
 - `./scripts/deploy-prod.sh "Custom message"` - Deploy to production with custom message
+- `./scripts/push-to-github.sh` - Manually push to GitHub with confirmation
 - `npm run functions:serve` - Serve functions only
 
 **Setup:**
@@ -162,8 +164,9 @@ The Kartel is a static website for an exclusive business networking group based 
 │   └── the-kartel-logo.png # Logo asset
 ├── scripts/
 │   ├── test-functions.js   # Local function testing utility
-│   ├── deploy-preview.sh   # Preview deployment with custom messages
-│   ├── deploy-prod.sh      # Production deployment with custom messages
+│   ├── deploy-preview.sh   # Preview deployment (commits locally, no GitHub push)
+│   ├── deploy-prod.sh      # Production deployment (commits + pushes to GitHub)
+│   ├── push-to-github.sh   # Manual GitHub push with confirmation
 │   └── generate-icons.js   # PWA icon generation script
 ├── tests/                  # Jest test suite
 │   ├── setup.js
@@ -241,22 +244,27 @@ The Kartel is a static website for an exclusive business networking group based 
 
 ### Member Authentication
 - **Magic Link**: Email-based secure login with 30-minute expiry tokens
-- **Password Login**: Traditional email/password authentication with PBKDF2 hashing
+- **Password Login**: Traditional email/password authentication with Argon2id hashing
 - **Dual Support**: Members can use either method or both
 - **Password Reset**: Secure email-based password reset with token validation
 - **Profile Setup**: Members can set/change passwords through profile interface
+- **Auto-Upgrade**: Legacy PBKDF2 passwords transparently upgraded to Argon2id on login
 
 ### Admin Authentication  
-- **Password Login**: Email/password authentication with PBKDF2 hashing
+- **Password Login**: Email/password authentication with Argon2id hashing
 - **Legacy Fallback**: Environment variable-based credentials for emergency access
 - **Token-based Sessions**: Persistent authentication across page reloads
+- **Progressive Security**: Existing admin passwords upgraded to Argon2id automatically
 
-### Security Features
-- **PBKDF2 Hashing**: 10,000 iterations with 64-byte keys and SHA-512
+### Security Features (2025 Standards)
+- **Argon2id Hashing**: OWASP 2025 recommended parameters (19 MiB memory, 2 iterations, parallelism 1)
+- **Legacy Support**: Backward compatible PBKDF2 verification with transparent upgrades
+- **Memory-Hard Algorithm**: Resistant to GPU-based and ASIC cracking attempts
 - **Secure Tokens**: Cryptographically strong random tokens for all authentication
 - **Session Management**: localStorage-based token persistence for PWA compatibility
 - **Password Validation**: Minimum 8 characters with confirmation matching
 - **Email Security**: Reset tokens expire in 30 minutes with one-time use validation
+- **Algorithm Detection**: Automatic detection of hash type for seamless migration
 
 ### CRITICAL SECURITY RULES
 - **NEVER HARDCODE SECRETS**: NEVER hardcode email addresses, API keys, passwords, usernames, or any sensitive values directly in code. Always use environment variables (process.env.VARIABLE_NAME). Hardcoding secrets will trigger secret scanning failures and security vulnerabilities.
@@ -274,11 +282,12 @@ The Kartel is a static website for an exclusive business networking group based 
 
 1. **Local Development**: Use `npm run dev` for local testing with function simulation
 2. **Testing**: Run `npm run test` and `npm run test:functions` before deployment
-3. **Preview Deploy**: Use `npm run deploy:preview` for staging environment testing
+3. **Preview Deploy**: Use `npm run deploy:preview` for staging environment testing (commits locally, no GitHub push)
 4. **Email Testing**: Use admin test email functionality before mass announcements
-5. **Production**: Deploy with `npm run deploy:prod` after thorough testing
-6. **Environment Variables**: Configure via `.env` file using `.env.example` template
-7. **Data Recovery**: Use admin recovery button if applications list becomes corrupted
+5. **GitHub Push**: Use `npm run push:github` when ready to push commits to GitHub (with confirmation)
+6. **Production**: Deploy with `npm run deploy:prod` after thorough testing (commits + pushes to GitHub)
+7. **Environment Variables**: Configure via `.env` file using `.env.example` template
+8. **Data Recovery**: Use admin recovery button if applications list becomes corrupted
 
 ## Progressive Web App (PWA) Features
 
@@ -326,6 +335,7 @@ The Kartel is a static website for an exclusive business networking group based 
 ### Enhanced Dependencies
 - **web-push**: Server-side push notification delivery
 - **@netlify/blobs**: Push subscription storage and management
+- **@node-rs/argon2**: Modern Argon2id password hashing with OWASP 2025 standards
 - **notification-manager.js**: Client-side notification permission and subscription handling
 
 ### PWA Environment Variables

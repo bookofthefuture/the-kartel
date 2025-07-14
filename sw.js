@@ -1,16 +1,17 @@
 // Service Worker for The Kartel PWA
 // Handles caching, offline functionality, and push notifications
 
-const CACHE_NAME = 'kartel-v1.0.0';
-const ADMIN_CACHE_NAME = 'kartel-admin-v1.0.0';
+const CACHE_NAME = 'kartel-v1.1.0';
+const ADMIN_CACHE_NAME = 'kartel-admin-v1.1.0';
 
 // Files to cache for members app
 const MEMBER_CACHE_FILES = [
   '/members.html',
   '/manifest.json',
+  '/unified-styles.css',
   '/favicon.svg',
   '/assets/League_Spartan/LeagueSpartan-VariableFont_wght.ttf',
-  '/assets/the-kartel-logo.png',
+  '/assets/the-kartel-logo-crop.png',
   '/icons/icon-192x192.svg',
   '/icons/icon-512x512.svg'
 ];
@@ -60,6 +61,9 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   console.log('Service Worker: Activating...');
   
+  // Force immediate control of all pages
+  self.clients.claim();
+  
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -106,6 +110,7 @@ self.addEventListener('fetch', event => {
       return fetch(event.request).then(response => {
         // Don't cache if not successful
         if (!response || response.status !== 200 || response.type !== 'basic') {
+          console.log('Service Worker: Non-cacheable response:', response?.status, event.request.url);
           return response;
         }
 
@@ -120,12 +125,15 @@ self.addEventListener('fetch', event => {
         }
 
         return response;
-      }).catch(() => {
+      }).catch(error => {
+        console.error('Service Worker: Network fetch failed:', error, event.request.url);
         // If network fails, try to serve offline fallback
         if (event.request.headers.get('accept').includes('text/html')) {
           const fallbackPage = isAdmin ? '/admin.html' : '/members.html';
+          console.log('Service Worker: Serving offline fallback:', fallbackPage);
           return caches.match(fallbackPage);
         }
+        throw error;
       });
     })
   );

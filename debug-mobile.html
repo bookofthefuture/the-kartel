@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Mobile Issues</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px 0; background: #e74c3c; color: white; border: none; border-radius: 5px; }
+        .log { background: #f4f4f4; padding: 10px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Mobile Debug Helper</h1>
+    
+    <h2>Clear Everything</h2>
+    <button onclick="clearAll()">Clear All Caches & Storage</button>
+    <button onclick="unregisterSW()">Unregister Service Worker</button>
+    <button onclick="checkBundles()">Check Bundle Loading</button>
+    
+    <h2>Debug Info</h2>
+    <div id="log" class="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function logMessage(msg) {
+            log.textContent += new Date().toISOString() + ': ' + msg + '\n';
+            console.log(msg);
+        }
+        
+        async function clearAll() {
+            try {
+                // Clear all caches
+                const cacheNames = await caches.keys();
+                logMessage(`Found ${cacheNames.length} caches: ${cacheNames.join(', ')}`);
+                
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                logMessage('All caches cleared');
+                
+                // Clear localStorage
+                localStorage.clear();
+                logMessage('localStorage cleared');
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                logMessage('sessionStorage cleared');
+                
+                logMessage('✅ All cleared! Refresh the page and try again.');
+            } catch (error) {
+                logMessage('❌ Error clearing: ' + error.message);
+            }
+        }
+        
+        async function unregisterSW() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    logMessage(`Found ${registrations.length} service workers`);
+                    
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        logMessage('Service worker unregistered');
+                    }
+                    
+                    logMessage('✅ All service workers unregistered');
+                } else {
+                    logMessage('Service workers not supported');
+                }
+            } catch (error) {
+                logMessage('❌ Error unregistering SW: ' + error.message);
+            }
+        }
+        
+        async function checkBundles() {
+            logMessage('Checking bundle availability...');
+            
+            const bundles = [
+                '/dist/js/members-bundle.min.js',
+                '/dist/notification-manager-Dl7NSo5A.min.js',
+                '/unified-styles.css'
+            ];
+            
+            for (const bundle of bundles) {
+                try {
+                    const response = await fetch(bundle);
+                    logMessage(`${bundle}: ${response.status} ${response.statusText}`);
+                } catch (error) {
+                    logMessage(`${bundle}: FAILED - ${error.message}`);
+                }
+            }
+        }
+        
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            logMessage('Debug helper loaded');
+            logMessage('User Agent: ' + navigator.userAgent);
+            logMessage('Screen: ' + screen.width + 'x' + screen.height);
+            logMessage('Viewport: ' + window.innerWidth + 'x' + window.innerHeight);
+            
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    logMessage(`Active service workers: ${regs.length}`);
+                    regs.forEach((reg, i) => {
+                        logMessage(`SW ${i}: ${reg.scope} - ${reg.active?.state || 'inactive'}`);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
