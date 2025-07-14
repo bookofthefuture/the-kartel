@@ -264,8 +264,17 @@ async function deleteVenue(venueId) {
     }
 }
 
+let loadApplicationsInProgress = false;
+
 async function loadApplications() {
+    // Prevent concurrent calls
+    if (loadApplicationsInProgress) {
+        console.log('📋 loadApplications() already in progress, skipping...');
+        return;
+    }
+    
     try {
+        loadApplicationsInProgress = true;
         console.log('📋 loadApplications() called, authToken:', authToken ? 'present' : 'missing');
         console.log('📋 Making API call to get-applications...');
         
@@ -295,6 +304,9 @@ async function loadApplications() {
     } catch (error) {
         console.error('📋 Error loading applications:', error);
         showError('Failed to load applications. Please try again.');
+    } finally {
+        loadApplicationsInProgress = false;
+        console.log('📋 loadApplications() flag reset');
     }
 }
 
