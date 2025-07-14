@@ -719,10 +719,14 @@
     <script>
         // Wait for bundled modules to load before setting up admin functionality
         function waitForModules() {
-            if (typeof kartelAuth !== 'undefined') {
+            if (typeof kartelAuth !== 'undefined' && typeof showDashboard !== 'undefined' && typeof loadApplications !== 'undefined') {
                 setupAdminAuthentication();
             } else {
-                console.log('⏳ Waiting for kartelAuth to load...');
+                console.log('⏳ Waiting for admin modules to load...', {
+                    kartelAuth: typeof kartelAuth !== 'undefined',
+                    showDashboard: typeof showDashboard !== 'undefined', 
+                    loadApplications: typeof loadApplications !== 'undefined'
+                });
                 setTimeout(waitForModules, 100);
             }
         }
