@@ -2612,3 +2612,8 @@ function switchToMemberView() {
 }
 
 window.switchToMemberView = switchToMemberView;
+
+// Export functions needed by inline admin.html scripts
+window.showDashboard = showDashboard;
+window.loadApplications = loadApplications;
+window.loadVenuesForDropdown = loadVenuesForDropdown;
