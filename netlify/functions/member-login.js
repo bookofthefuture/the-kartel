@@ -96,8 +96,34 @@ exports.handler = async (event, context) => {
     console.log(`🔒 Attempting member login for: ${email} (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
 
     // Use efficient field search to find member by email and approved status
-    const applications = await getApplicationsList(storeConfig);
+    let applications = await getApplicationsList(storeConfig);
     console.log(`📋 Loaded ${applications.length} applications efficiently`);
+    
+    // Fallback to legacy method if new method returns empty results
+    if (applications.length === 0) {
+      console.log(`🔄 Fallback: Trying legacy applications list method...`);
+      try {
+        const applicationsStore = getStore(storeConfig);
+        const applicationsList = await applicationsStore.get('_list', { type: 'json' });
+        if (applicationsList && Array.isArray(applicationsList)) {
+          applications = applicationsList;
+          console.log(`✅ Fallback successful: Loaded ${applications.length} applications from legacy list`);
+        }
+      } catch (fallbackError) {
+        console.error(`❌ Fallback failed:`, fallbackError.message);
+      }
+    }
+    
+    // Debug: Log some application details (without sensitive info)
+    if (applications.length > 0) {
+      console.log(`📊 Sample applications:`, applications.slice(0, 3).map(app => ({
+        email: app.email,
+        status: app.status,
+        hasPasswordHash: !!app.memberPasswordHash
+      })));
+    } else {
+      console.warn(`⚠️ Still no applications found after fallback! This indicates a serious blob storage issue.`);
+    }
     
     const memberApplication = applications.find(
       app => app.email.toLowerCase() === email.toLowerCase() && app.status === 'approved'
