@@ -832,12 +832,14 @@
         // PWA Install Prompt for Admin
         let adminDeferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('Admin beforeinstallprompt event fired');
             e.preventDefault();
             adminDeferredPrompt = e;
             
             // Show install prompt after admin has been on the site for a few seconds
             setTimeout(() => {
                 if (adminDeferredPrompt && !localStorage.getItem('kartel_admin_install_dismissed')) {
+                    console.log('Showing admin install prompt');
                     showAdminInstallPrompt();
                 }
             }, 8000); // Longer delay for admin to avoid interrupting work
@@ -865,12 +867,15 @@
         }
 
         window.installAdminApp = function() {
+            console.log('Admin install app clicked, deferredPrompt:', !!adminDeferredPrompt);
             if (adminDeferredPrompt) {
                 adminDeferredPrompt.prompt();
                 adminDeferredPrompt.userChoice.then((choiceResult) => {
                     console.log('Admin install prompt result:', choiceResult.outcome);
                     adminDeferredPrompt = null;
                 });
+            } else {
+                console.warn('No admin deferred prompt available');
             }
             const prompt = document.getElementById('adminInstallPrompt');
             if (prompt) prompt.remove();
