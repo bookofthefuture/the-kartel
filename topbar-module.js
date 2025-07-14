@@ -255,8 +255,8 @@ class KartelTopBar {
     }
 }
 
-// Create global instance
-window.kartelTopBar = new KartelTopBar();
+// ES Module export - no global instance creation here
+// Global instances are created in bundle entry points (src/*.js)
 
 // ES Module export
 export default KartelTopBar;

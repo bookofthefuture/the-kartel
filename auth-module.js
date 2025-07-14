@@ -502,10 +502,8 @@ class KartelAuth {
     isUserLoggedIn() { return this.isLoggedIn; }
 }
 
-// Create global instance
-window.kartelAuth = new KartelAuth();
-
-// ES Module export
+// ES Module export - no global instance creation here
+// Global instances are created in bundle entry points (src/*.js)
 export default KartelAuth;
 export { KartelAuth };
 
