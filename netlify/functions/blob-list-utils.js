@@ -99,21 +99,38 @@ async function getEventsList(storeConfig) {
 /**
  * Get venues list efficiently
  * @param {Object} storeConfig - Netlify Blobs store configuration
- * @returns {Array} Array of venues sorted with home venue first, then by creation date
+ * @param {string} [homeVenueId] - Optional home venue ID to prioritize first
+ * @returns {Array} Array of venues sorted with home venue first, then alphabetically or by date
  */
-async function getVenuesList(storeConfig) {
+async function getVenuesList(storeConfig, homeVenueId = null) {
   const sortFunction = (a, b) => {
-    // Prioritize home venue (TeamSport Victoria) at the top
-    const isAHomeVenue = a.name && a.name.toLowerCase().includes('teamsport victoria');
-    const isBHomeVenue = b.name && b.name.toLowerCase().includes('teamsport victoria');
+    // If homeVenueId is specified, prioritize that venue
+    if (homeVenueId) {
+      const isAHomeVenue = a.id === homeVenueId;
+      const isBHomeVenue = b.id === homeVenueId;
+      
+      if (isAHomeVenue && !isBHomeVenue) return -1;
+      if (!isAHomeVenue && isBHomeVenue) return 1;
+    } else {
+      // Legacy: For Manchester, prioritize TeamSport Victoria if no homeVenueId specified
+      const isAHomeVenue = a.name && a.name.toLowerCase().includes('teamsport victoria');
+      const isBHomeVenue = b.name && b.name.toLowerCase().includes('teamsport victoria');
+      
+      if (isAHomeVenue && !isBHomeVenue) return -1;
+      if (!isAHomeVenue && isBHomeVenue) return 1;
+    }
     
-    if (isAHomeVenue && !isBHomeVenue) return -1;
-    if (!isAHomeVenue && isBHomeVenue) return 1;
-    
-    // If both or neither are home venue, sort by creation date (newest first)
-    const dateA = new Date(a.createdAt || a.date || 0);
-    const dateB = new Date(b.createdAt || b.date || 0);
-    return dateB - dateA;
+    // For venues that aren't home venue, sort alphabetically if no homeVenueId specified
+    // Otherwise sort by creation date (newest first)
+    if (!homeVenueId) {
+      // Alphabetical sorting for better UX when no home venue configured
+      return (a.name || '').localeCompare(b.name || '');
+    } else {
+      // Date sorting when home venue is configured
+      const dateA = new Date(a.createdAt || a.date || 0);
+      const dateB = new Date(b.createdAt || b.date || 0);
+      return dateB - dateA;
+    }
   };
   
   return await getItemList(storeConfig, 'ven_', sortFunction);

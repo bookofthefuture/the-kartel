@@ -173,7 +173,7 @@ describe('Blob List Utils', () => {
   });
 
   describe('getVenuesList', () => {
-    it('should prioritize home venue first', async () => {
+    it('should prioritize specified home venue first', async () => {
       const mockBlobs = [
         { key: 'ven_1' },
         { key: 'ven_2' },
@@ -182,7 +182,7 @@ describe('Blob List Utils', () => {
       
       const mockVenues = [
         { id: 'ven_1', name: 'Regular Venue', createdAt: '2024-01-03T00:00:00Z' },
-        { id: 'ven_2', name: 'TeamSport Victoria', createdAt: '2024-01-01T00:00:00Z' }, // Home venue (older)
+        { id: 'ven_2', name: 'Home Venue', createdAt: '2024-01-01T00:00:00Z' }, // Home venue (older)
         { id: 'ven_3', name: 'Another Venue', createdAt: '2024-01-02T00:00:00Z' }
       ];
 
@@ -192,24 +192,27 @@ describe('Blob List Utils', () => {
         return Promise.resolve(mockVenues[index]);
       });
 
-      const result = await getVenuesList(storeConfig);
+      const result = await getVenuesList(storeConfig, 'ven_2'); // Specify ven_2 as home venue
 
       // Home venue should be first, regardless of creation date
-      expect(result[0].name).toBe('TeamSport Victoria');
+      expect(result[0].id).toBe('ven_2');
+      expect(result[0].name).toBe('Home Venue');
       // Other venues sorted by creation date (newest first)
       expect(result[1].name).toBe('Regular Venue'); // Newest
       expect(result[2].name).toBe('Another Venue'); // Older
     });
 
-    it('should handle venues without home venue', async () => {
+    it('should fallback to TeamSport Victoria for legacy support', async () => {
       const mockBlobs = [
         { key: 'ven_1' },
-        { key: 'ven_2' }
+        { key: 'ven_2' },
+        { key: 'ven_3' }
       ];
       
       const mockVenues = [
-        { id: 'ven_1', name: 'Venue A', createdAt: '2024-01-01T00:00:00Z' },
-        { id: 'ven_2', name: 'Venue B', createdAt: '2024-01-02T00:00:00Z' }
+        { id: 'ven_1', name: 'Regular Venue', createdAt: '2024-01-03T00:00:00Z' },
+        { id: 'ven_2', name: 'TeamSport Victoria', createdAt: '2024-01-01T00:00:00Z' }, // Legacy home venue
+        { id: 'ven_3', name: 'Another Venue', createdAt: '2024-01-02T00:00:00Z' }
       ];
 
       mockStore.list.mockResolvedValue({ blobs: mockBlobs });
@@ -218,11 +221,67 @@ describe('Blob List Utils', () => {
         return Promise.resolve(mockVenues[index]);
       });
 
-      const result = await getVenuesList(storeConfig);
+      const result = await getVenuesList(storeConfig); // No homeVenueId specified
 
-      // Should be sorted by creation date (newest first) when no home venue
-      expect(result[0].name).toBe('Venue B'); // Newer
-      expect(result[1].name).toBe('Venue A'); // Older
+      // TeamSport Victoria should be first for legacy support
+      expect(result[0].name).toBe('TeamSport Victoria');
+      // Other venues sorted alphabetically when no homeVenueId
+      expect(result[1].name).toBe('Another Venue'); // 'A' comes before 'R'
+      expect(result[2].name).toBe('Regular Venue');
+    });
+
+    it('should sort alphabetically when no home venue configured', async () => {
+      const mockBlobs = [
+        { key: 'ven_1' },
+        { key: 'ven_2' },
+        { key: 'ven_3' }
+      ];
+      
+      const mockVenues = [
+        { id: 'ven_1', name: 'Zebra Venue', createdAt: '2024-01-03T00:00:00Z' },
+        { id: 'ven_2', name: 'Alpha Venue', createdAt: '2024-01-01T00:00:00Z' },
+        { id: 'ven_3', name: 'Beta Venue', createdAt: '2024-01-02T00:00:00Z' }
+      ];
+
+      mockStore.list.mockResolvedValue({ blobs: mockBlobs });
+      mockStore.get.mockImplementation((key) => {
+        const index = parseInt(key.split('_')[1]) - 1;
+        return Promise.resolve(mockVenues[index]);
+      });
+
+      const result = await getVenuesList(storeConfig); // No homeVenueId, no TeamSport Victoria
+
+      // Should be sorted alphabetically
+      expect(result[0].name).toBe('Alpha Venue');
+      expect(result[1].name).toBe('Beta Venue');
+      expect(result[2].name).toBe('Zebra Venue');
+    });
+
+    it('should sort by date when homeVenueId is specified for non-home venues', async () => {
+      const mockBlobs = [
+        { key: 'ven_1' },
+        { key: 'ven_2' },
+        { key: 'ven_3' }
+      ];
+      
+      const mockVenues = [
+        { id: 'ven_1', name: 'Newer Venue', createdAt: '2024-01-03T00:00:00Z' },
+        { id: 'ven_2', name: 'Home Venue', createdAt: '2024-01-01T00:00:00Z' },
+        { id: 'ven_3', name: 'Older Venue', createdAt: '2024-01-02T00:00:00Z' }
+      ];
+
+      mockStore.list.mockResolvedValue({ blobs: mockBlobs });
+      mockStore.get.mockImplementation((key) => {
+        const index = parseInt(key.split('_')[1]) - 1;
+        return Promise.resolve(mockVenues[index]);
+      });
+
+      const result = await getVenuesList(storeConfig, 'ven_2');
+
+      // Home venue first, then by creation date (newest first)
+      expect(result[0].name).toBe('Home Venue');
+      expect(result[1].name).toBe('Newer Venue'); // Newest non-home
+      expect(result[2].name).toBe('Older Venue'); // Older non-home
     });
   });
 
