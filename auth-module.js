@@ -235,6 +235,29 @@ class KartelAuth {
         }
     }
 
+    async requestPasswordReset(email) {
+        console.log(`🔄 Requesting password reset for: ${email}`);
+        
+        try {
+            const response = await fetch('/.netlify/functions/reset-member-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                return { success: true, message: data.message };
+            } else {
+                return { success: false, error: data.error || 'Password reset failed' };
+            }
+        } catch (error) {
+            console.error('💥 Password reset error:', error);
+            return { success: false, error: 'Network error. Please try again.' };
+        }
+    }
+
 
     logout() {
         console.log('👋 User logging out');
@@ -440,8 +463,19 @@ class KartelAuth {
             magicLinkForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = document.getElementById('magicLinkEmail').value;
-                const result = await this.login(email);
-                this.showMessage(result.message, result.success ? 'success' : 'error');
+                
+                // Check if this is a password reset request
+                const isResetMode = magicLinkForm.getAttribute('data-reset-mode') === 'true';
+                
+                if (isResetMode) {
+                    // Call password reset function
+                    const result = await this.requestPasswordReset(email);
+                    this.showMessage(result.message, result.success ? 'success' : 'error');
+                } else {
+                    // Normal magic link login
+                    const result = await this.login(email);
+                    this.showMessage(result.message, result.success ? 'success' : 'error');
+                }
             });
         }
 
