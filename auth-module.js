@@ -26,8 +26,17 @@ class KartelAuth {
     async init() {
         console.log('🚀 Initializing Kartel Authentication System v2.0');
         
-        // Check for magic link token in URL first (but not if it's a registration token)
+        // Check for password reset token first
         const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('reset');
+        
+        if (resetToken) {
+            console.log('🔑 Password reset token found, showing reset form...');
+            this.showPasswordResetForm(resetToken);
+            return;
+        }
+        
+        // Check for magic link token in URL (but not if it's a registration token)
         const magicToken = urlParams.get('token');
         const isRegistrationLink = urlParams.has('register') && urlParams.has('email');
         
@@ -258,6 +267,29 @@ class KartelAuth {
         }
     }
 
+    async completePasswordReset(email, resetToken, newPassword) {
+        console.log(`🔄 Completing password reset for: ${email}`);
+        
+        try {
+            const response = await fetch('/.netlify/functions/reset-member-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, resetToken, newPassword })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                return { success: true, message: data.message };
+            } else {
+                return { success: false, error: data.error || 'Password reset failed' };
+            }
+        } catch (error) {
+            console.error('💥 Password reset completion error:', error);
+            return { success: false, error: 'Network error. Please try again.' };
+        }
+    }
+
 
     logout() {
         console.log('👋 User logging out');
@@ -318,6 +350,25 @@ class KartelAuth {
         if (loadingSection) loadingSection.classList.add('hidden');
         
         this.renderLoginForm();
+    }
+
+    showPasswordResetForm(resetToken) {
+        console.log('🔑 Showing password reset form...');
+        
+        // Clear URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show login section
+        const loginSection = document.getElementById('loginSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const loadingSection = document.getElementById('loadingSection');
+        
+        if (loginSection) loginSection.classList.remove('hidden');
+        if (dashboardSection) dashboardSection.classList.add('hidden');
+        if (loadingSection) loadingSection.classList.add('hidden');
+        
+        // Render password reset form
+        this.renderPasswordResetForm(resetToken);
     }
 
     showCheckEmail(email) {
@@ -421,6 +472,43 @@ class KartelAuth {
         this.attachLoginEventListeners();
     }
 
+    renderPasswordResetForm(resetToken) {
+        const loginContainer = document.getElementById('loginContainer');
+        if (!loginContainer) {
+            console.error('❌ loginContainer element not found - cannot render password reset form');
+            return;
+        }
+        
+        console.log('📝 Rendering password reset form in container:', loginContainer);
+        
+        loginContainer.innerHTML = `
+            <div class="login-card">
+                <h1 class="login-title">Reset Your Password</h1>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">Enter your email and new password</p>
+                
+                <form id="passwordResetForm" data-reset-token="${resetToken}">
+                    <div class="form-group">
+                        <label for="resetEmail">Email Address</label>
+                        <input type="email" id="resetEmail" name="resetEmail" required placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" name="newPassword" required placeholder="Enter new password" minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirm new password" minlength="8">
+                    </div>
+                    <button type="submit" id="resetPasswordBtn" class="login-btn">Reset Password</button>
+                </form>
+                
+                <div id="resetMessage" class="hidden"></div>
+            </div>
+        `;
+        
+        this.attachPasswordResetEventListeners();
+    }
+
     showMagicLinkTab() {
         document.querySelectorAll('.login-tab').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.login-form').forEach(form => form.classList.add('hidden'));
@@ -497,8 +585,59 @@ class KartelAuth {
         }
     }
 
+    attachPasswordResetEventListeners() {
+        const passwordResetForm = document.getElementById('passwordResetForm');
+        if (passwordResetForm) {
+            passwordResetForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('resetEmail').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const resetToken = passwordResetForm.getAttribute('data-reset-token');
+                
+                // Validate passwords match
+                if (newPassword !== confirmPassword) {
+                    this.showResetMessage('Passwords do not match. Please try again.', 'error');
+                    return;
+                }
+                
+                // Validate password length
+                if (newPassword.length < 8) {
+                    this.showResetMessage('Password must be at least 8 characters long.', 'error');
+                    return;
+                }
+                
+                // Call password reset completion
+                const result = await this.completePasswordReset(email, resetToken, newPassword);
+                this.showResetMessage(result.message, result.success ? 'success' : 'error');
+                
+                // If successful, redirect to login after 3 seconds
+                if (result.success) {
+                    setTimeout(() => {
+                        window.location.href = '/members.html';
+                    }, 3000);
+                }
+            });
+        }
+    }
+
     showMessage(message, type = 'info') {
         const messageContainer = document.getElementById('loginMessage');
+        if (messageContainer) {
+            // Clear previous type classes and add new type
+            messageContainer.className = `message ${type}`;
+            messageContainer.textContent = message;
+            messageContainer.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageContainer.classList.add('hidden');
+            }, 5000);
+        }
+    }
+
+    showResetMessage(message, type = 'info') {
+        const messageContainer = document.getElementById('resetMessage');
         if (messageContainer) {
             // Clear previous type classes and add new type
             messageContainer.className = `message ${type}`;
