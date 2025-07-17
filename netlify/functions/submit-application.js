@@ -35,9 +35,23 @@ exports.handler = async (event, context) => {
     
     const validation = validateRequiredFields(data, ['firstName', 'lastName', 'email', 'company', 'position', 'phone', 'message']);
     if (!validation.isValid) {
+      // Create user-friendly field names for error messages
+      const fieldNames = {
+        firstName: 'First Name',
+        lastName: 'Last Name', 
+        email: 'Email',
+        company: 'Company',
+        position: 'Position',
+        phone: 'Phone',
+        message: 'Why The Kartel?'
+      };
+      
+      const missingFieldNames = validation.missing.map(field => fieldNames[field] || field);
+      
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: `Missing required fields: ${validation.missing.join(', ')}` })
+        ...createSecureHeaders(),
+        body: JSON.stringify({ error: `Please fill in the following required fields: ${missingFieldNames.join(', ')}` })
       };
     }
 

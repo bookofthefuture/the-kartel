@@ -279,6 +279,7 @@ describe('Input Sanitization and Validation', () => {
         position: '',
         phone: '',
         linkedin: '',
+        message: '',
         experience: '',
         interests: '',
         referral: ''
