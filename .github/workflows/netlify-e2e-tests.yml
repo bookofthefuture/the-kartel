@@ -15,7 +15,7 @@ jobs:
         uses: JakePartusch/wait-for-netlify-action@v1
         id: netlify
         with:
-          site_name: "the-kartel"
+          site_name: "effortless-crumble-9e3c92"
           max_timeout: 300
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
