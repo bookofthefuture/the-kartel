@@ -1,0 +1,54 @@
+name: E2E Tests on Netlify Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-e2e-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Wait for Netlify Preview
+        uses: JakePartusch/wait-for-netlify-action@v1
+        id: netlify
+        with:
+          site_name: "effortless-crumble-9e3c92"
+          max_timeout: 300
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.netlify.outputs.url }}
+
+      - name: Create Issue on Failure
+        if: failure()
+        run: |
+          gh issue create \
+            --title "E2E Test Failure in PR #${{ github.event.pull_request.number }}" \
+            --body "Automated tests failed on Netlify deploy preview: ${{ steps.netlify.outputs.url }}. Please review the workflow run logs for details." \
+            --label "bug,automated-test-failure" \
+            --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
