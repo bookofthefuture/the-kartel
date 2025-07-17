@@ -30,6 +30,9 @@ class KartelAuth {
         const urlParams = new URLSearchParams(window.location.search);
         const resetToken = urlParams.get('reset');
         
+        console.log('🔍 URL search params:', window.location.search);
+        console.log('🔍 Reset token from URL:', resetToken);
+        
         if (resetToken) {
             console.log('🔑 Password reset token found, showing reset form...');
             this.showPasswordResetForm(resetToken);

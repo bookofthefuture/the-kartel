@@ -107,6 +107,8 @@ exports.handler = async (event, context) => {
       // Send reset email
       if (process.env.SENDGRID_API_KEY) {
         const resetLink = `${process.env.URL || 'https://thekartel.co.uk'}/members.html?reset=${token}`;
+        console.log(`🔗 Reset link generated: ${resetLink}`);
+        console.log(`🔑 Reset token: ${token}`);
         
         const msg = {
           to: email,
