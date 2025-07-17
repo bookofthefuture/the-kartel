@@ -36,13 +36,19 @@ The Kartel is a static website for an exclusive business networking group based 
 - `npm run test:functions` - Test local Netlify functions
 - `npm run test:watch` - Run tests in watch mode
 
+**Git Workflow (IMPORTANT - ALWAYS FOLLOW):**
+- **NEVER commit directly to main branch**
+- For every new feature/fix, create a new branch: `git checkout -b feature/description`
+- Work on the feature branch, commit changes locally
+- Push branch to GitHub: `git push origin branch-name`
+- Create Pull Request to merge branch to main
+- All PRs must pass test suite before merging
+- Use GitHub CLI: `gh pr create --title "Title" --body "Description"`
+
 **Deployment:**
 - `npm run deploy:preview` - Deploy to Netlify preview (commits locally, NO GitHub push)
-- `npm run deploy:prod` - Deploy to production (commits locally + pushes to GitHub)
-- `npm run push:github` - Push committed changes to GitHub with confirmation
+- Work should be done on feature branches, NOT main
 - `./scripts/deploy-preview.sh "Custom message"` - Deploy to preview with custom message
-- `./scripts/deploy-prod.sh "Custom message"` - Deploy to production with custom message
-- `./scripts/push-to-github.sh` - Manually push to GitHub with confirmation
 - `npm run functions:serve` - Serve functions only
 
 **Setup:**
@@ -280,14 +286,19 @@ The Kartel is a static website for an exclusive business networking group based 
 
 ## Development Workflow
 
-1. **Local Development**: Use `npm run dev` for local testing with function simulation
-2. **Testing**: Run `npm run test` and `npm run test:functions` before deployment
-3. **Preview Deploy**: Use `npm run deploy:preview` for staging environment testing (commits locally, no GitHub push)
-4. **Email Testing**: Use admin test email functionality before mass announcements
-5. **GitHub Push**: Use `npm run push:github` when ready to push commits to GitHub (with confirmation)
-6. **Production**: Deploy with `npm run deploy:prod` after thorough testing (commits + pushes to GitHub)
-7. **Environment Variables**: Configure via `.env` file using `.env.example` template
-8. **Data Recovery**: Use admin recovery button if applications list becomes corrupted
+**CRITICAL: All development must follow feature branch workflow - NEVER commit directly to main**
+
+1. **Create Feature Branch**: `git checkout -b feature/description-of-work` for each new task
+2. **Local Development**: Use `npm run dev` for local testing with function simulation
+3. **Testing**: Run `npm run test` and `npm run test:functions` before any commits
+4. **Commit to Feature Branch**: Make commits locally on the feature branch
+5. **Preview Deploy**: Use `npm run deploy:preview` for staging environment testing (commits locally, no GitHub push)
+6. **Push Feature Branch**: `git push origin feature/branch-name` to push branch to GitHub
+7. **Create Pull Request**: Use `gh pr create` to create PR for merging to main
+8. **PR Review & Tests**: All PRs must pass automated test suite before merging
+9. **Merge to Main**: Only merge via approved PR - production deployment happens automatically
+10. **Environment Variables**: Configure via `.env` file using `.env.example` template
+11. **Data Recovery**: Use admin recovery button if applications list becomes corrupted
 
 ## Progressive Web App (PWA) Features
 
