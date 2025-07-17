@@ -722,19 +722,9 @@
         };
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Members page DOMContentLoaded - unified auth will handle initialization');
+            console.log('🔧 Members page DOMContentLoaded - unified auth will handle all initialization');
             
-            const urlParams = new URLSearchParams(window.location.search);
-            const resetToken = urlParams.get('reset');
-            
-            // Handle password reset separately since it doesn't require auth
-            if (resetToken) {
-                console.log('✅ Reset token found, showing password reset form...');
-                showPasswordResetForm(resetToken);
-                return;
-            }
-            
-            // Let unified auth system handle all other initialization
+            // Let unified auth system handle all initialization including password reset
             // URL parameter handling will be triggered by onAuthSuccess callback
             console.log('🔄 Allowing unified auth system to handle initialization...');
         });
