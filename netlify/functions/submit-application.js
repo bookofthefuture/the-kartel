@@ -33,7 +33,7 @@ exports.handler = async (event, context) => {
     const data = sanitizeApplication(rawData);
     const timestamp = new Date().toISOString();
     
-    const validation = validateRequiredFields(data, ['firstName', 'lastName', 'email', 'company', 'position', 'phone']);
+    const validation = validateRequiredFields(data, ['firstName', 'lastName', 'email', 'company', 'position', 'phone', 'message']);
     if (!validation.isValid) {
       return {
         statusCode: 400,
@@ -54,6 +54,7 @@ exports.handler = async (event, context) => {
       position: data.position,
       phone: data.phone,
       linkedin: data.linkedin,
+      message: data.message,
       experience: data.experience,
       interests: data.interests,
       referral: data.referral,
@@ -202,6 +203,7 @@ async function sendAdminNotification(application) {
           <p><strong>Company:</strong> ${application.company}</p>
           <p><strong>Position:</strong> ${application.position}</p>
           ${application.linkedin ? `<p><strong>LinkedIn:</strong> <a href="${application.linkedin}" target="_blank">${application.linkedin}</a></p>` : ''}
+          ${application.message ? `<p><strong>Why The Kartel?</strong> ${application.message}</p>` : ''}
           ${application.experience ? `<p><strong>Experience:</strong> ${application.experience}</p>` : ''}
           ${application.interests ? `<p><strong>Interests:</strong> ${application.interests}</p>` : ''}
           ${application.referral ? `<p><strong>Referral:</strong> ${application.referral}</p>` : ''}
