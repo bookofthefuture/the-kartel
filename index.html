@@ -723,9 +723,6 @@
                 submitBtn.disabled = true;
                 submitBtn.classList.add('btn-loading');
                 
-                // Add artificial delay to show loading state (DEMO ONLY)
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
                 // Clear any existing messages
                 const existingMessage = document.querySelector('.form-message');
                 if (existingMessage) {
