@@ -561,11 +561,11 @@ class KartelAuth {
                 if (isResetMode) {
                     // Call password reset function
                     const result = await this.requestPasswordReset(email);
-                    this.showMessage(result.message, result.success ? 'success' : 'error');
+                    this.showMessage(result.error || result.message, result.success ? 'success' : 'error');
                 } else {
                     // Normal magic link login
                     const result = await this.login(email);
-                    this.showMessage(result.message, result.success ? 'success' : 'error');
+                    this.showMessage(result.error || result.message, result.success ? 'success' : 'error');
                 }
             });
         }
@@ -581,7 +581,7 @@ class KartelAuth {
                 
                 // Only show message for errors or magic link requests
                 if (!result.success || result.checkEmail) {
-                    this.showMessage(result.message, result.success ? 'success' : 'error');
+                    this.showMessage(result.error || result.message, result.success ? 'success' : 'error');
                 }
                 // For successful password login, onAuthSuccess() already handles the transition
             });
