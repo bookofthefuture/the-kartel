@@ -12,11 +12,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Wait for Netlify Preview
-        uses: JakeJarvis/wait-for-netlify-deploys-action@v1
+        uses: JakePartusch/wait-for-netlify-action@v1
         id: netlify
         with:
+          site-name: "the-kartel"
           netlify-token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          netlify-site-name: "the-kartel"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -32,14 +33,14 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
         env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.netlify.outputs.deployment_url }}
+          PLAYWRIGHT_BASE_URL: ${{ steps.netlify.outputs.url }}
 
       - name: Create Issue on Failure
         if: failure()
         run: |
           gh issue create \
             --title "E2E Test Failure in PR #${{ github.event.pull_request.number }}" \
-            --body "Automated tests failed on Netlify deploy preview: ${{ steps.netlify.outputs.deployment_url }}. Please review the workflow run logs for details." \
+            --body "Automated tests failed on Netlify deploy preview: ${{ steps.netlify.outputs.url }}. Please review the workflow run logs for details." \
             --label "bug,automated-test-failure" \
             --repo ${{ github.repository }}
         env:
