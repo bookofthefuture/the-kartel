@@ -11,16 +11,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Wait for Netlify Preview
-        uses: UnlyEd/find-netlify-deployment-url-action@v1
+      - name: Get Netlify deployment URL
+        uses: nwtgck/actions-netlify@v3.0
         id: netlify
         with:
-          # The personal access token is required to get the deployment list
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # The Netlify site "API ID"
-          netlify-site-api-id: ${{ secrets.NETLIFY_SITE_ID }}
-          # The maximum time to wait for a deployment to be available
-          timeout: 120 # in seconds
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
