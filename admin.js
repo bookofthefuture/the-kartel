@@ -2,6 +2,15 @@ let authToken = localStorage.getItem('kartel_admin_token');
 let applications = [], events = [], venues = [], csvData = [];
 let currentTab = 'applications', editingVenueId = null;
 
+// Helper function to refresh token from various sources
+function refreshAuthToken() {
+    authToken = localStorage.getItem('kartel_admin_token') || 
+                localStorage.getItem('kartel_auth_token') || 
+                localStorage.getItem('kartel_member_token') ||
+                (window.kartelAuth && window.kartelAuth.getToken());
+    return authToken;
+}
+
 // LinkedIn URL parsing function
 function parseLinkedInProfile(input) {
     if (!input) return '';
@@ -88,6 +97,9 @@ async function loadVenues() {
 
 async function loadVenuesForDropdown() {
     try {
+        // Refresh token from localStorage and kartelAuth
+        refreshAuthToken();
+                    
         console.log('🏢 loadVenuesForDropdown() called, authToken:', authToken ? 'present' : 'missing');
         const response = await fetch('/.netlify/functions/get-venues', {
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -275,6 +287,10 @@ async function loadApplications() {
     
     try {
         loadApplicationsInProgress = true;
+        
+        // Refresh token from localStorage and kartelAuth
+        refreshAuthToken();
+                    
         console.log('📋 loadApplications() called, authToken:', authToken ? 'present' : 'missing');
         console.log('📋 Making API call to get-applications...');
         
