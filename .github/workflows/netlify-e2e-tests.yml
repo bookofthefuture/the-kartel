@@ -11,15 +11,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get Netlify deployment URL
-        uses: nwtgck/actions-netlify@v3.0
+      - name: Wait for Netlify Preview
+        uses: ashley-taylor/wait-for-netlify-action@v1.2.0
         id: netlify
         with:
-          enable-commit-comment: false
+          site-name: "the-kartel" # Replace with your Netlify site name
+          max-timeout: 120 # in seconds
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 1
+          NETLIFY_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,14 +34,14 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
         env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.netlify.outputs.deployment-url }}
+          PLAYWRIGHT_BASE_URL: ${{ steps.netlify.outputs.url }}
 
       - name: Create Issue on Failure
         if: failure()
         run: |
           gh issue create \
             --title "E2E Test Failure in PR #${{ github.event.pull_request.number }}" \
-            --body "Automated tests failed on Netlify deploy preview: ${{ steps.netlify.outputs.deployment-url }}. Please review the workflow run logs for details." \
+            --body "Automated tests failed on Netlify deploy preview: ${{ steps.netlify.outputs.url }}. Please review the workflow run logs for details." \
             --label "bug,automated-test-failure" \
             --repo ${{ github.repository }}
         env:
