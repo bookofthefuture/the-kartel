@@ -14,6 +14,38 @@
     <title>The Kartel - Where Business Meets the Track</title>
     <style>
         @font-face { font-family: 'League Spartan'; src: url('assets/League_Spartan/LeagueSpartan-VariableFont_wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+        
+        /* Universal Loading System */
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #e74c3c; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; }
+        .spinner-large { width: 32px; height: 32px; border-width: 3px; }
+        .spinner-white { border-color: rgba(255,255,255,0.3); border-top-color: white; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; }
+        @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        
+        .skeleton-text { height: 16px; margin: 8px 0; }
+        .skeleton-text.large { height: 24px; }
+        .skeleton-text.small { height: 12px; width: 60%; }
+        .skeleton-card { height: 120px; margin: 16px 0; }
+        .skeleton-avatar { width: 48px; height: 48px; border-radius: 50%; }
+        
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .loading-overlay.active { opacity: 1; visibility: visible; }
+        .loading-content { text-align: center; color: white; }
+        .loading-content h3 { margin: 16px 0 8px; font-size: 1.2rem; }
+        .loading-content p { margin: 0; opacity: 0.8; }
+        
+        .form-success-state { background: #d4edda; border: 2px solid #c3e6cb; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; }
+        .form-success-state h3 { color: #155724; margin: 0 0 16px; font-size: 1.4rem; }
+        .form-success-state p { color: #155724; margin: 0 0 24px; }
+        .form-success-state .btn { background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        /* Button loading states */
+        .btn-loading { position: relative; }
+        .btn-loading .btn-text { opacity: 0.7; }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'League Spartan', 'Arial', sans-serif; line-height: 1.6; color: #2c3e50; overflow-x: hidden; background: #f8f9fa; }
         /* Header Band */
@@ -686,9 +718,10 @@
                 const submitBtn = contactForm.querySelector('.submit-btn');
                 const originalText = submitBtn.textContent;
                 
-                // Show loading state
-                submitBtn.textContent = 'Submitting...';
+                // Show loading state with spinner
+                submitBtn.innerHTML = '<span class="btn-text">Submitting...</span><span class="spinner spinner-white"></span>';
                 submitBtn.disabled = true;
+                submitBtn.classList.add('btn-loading');
                 
                 // Clear any existing messages
                 const existingMessage = document.querySelector('.form-message');
@@ -747,8 +780,7 @@
                     
                     if (response.ok && result.success) {
                         console.log('✅ Submission successful!');
-                        showFormMessage('Application submitted successfully! We will review your application and get back to you soon.', 'success');
-                        contactForm.reset();
+                        showFormSuccessState();
                     } else {
                         console.error('❌ Submission failed:', result);
                         throw new Error(result.error || `Server error: ${response.status}`);
@@ -772,10 +804,11 @@
                     }
                     
                     showFormMessage(errorMessage, 'error');
-                } finally {
-                    // Reset button state
-                    submitBtn.textContent = originalText;
+                    
+                    // Reset button state on error
+                    submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
+                    submitBtn.classList.remove('btn-loading');
                 }
             });
         });
@@ -804,6 +837,44 @@
                     }
                 }, 10000);
             }
+        }
+
+        function showFormSuccessState() {
+            const contactForm = document.getElementById('contactForm');
+            const formContainer = contactForm.parentNode;
+            
+            // Create success state HTML
+            const successHTML = `
+                <div class="form-success-state">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">🎯</div>
+                    <h3>Application Submitted Successfully!</h3>
+                    <p>Thank you for your interest in The Kartel. We will review your application and get back to you soon.</p>
+                    <p style="margin-bottom: 32px;"><strong>Successful applicants</strong> receive exclusive access to our private WhatsApp community.</p>
+                    <button class="btn" onclick="resetApplicationForm()">Submit Another Application</button>
+                </div>
+            `;
+            
+            // Replace form with success state
+            contactForm.style.display = 'none';
+            contactForm.insertAdjacentHTML('afterend', successHTML);
+        }
+
+        function resetApplicationForm() {
+            const contactForm = document.getElementById('contactForm');
+            const successState = document.querySelector('.form-success-state');
+            
+            // Remove success state and show form
+            if (successState) {
+                successState.remove();
+            }
+            contactForm.style.display = 'block';
+            contactForm.reset();
+            
+            // Reset submit button
+            const submitBtn = contactForm.querySelector('.submit-btn');
+            submitBtn.innerHTML = 'Submit Application';
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-loading');
         }
 
         // City Selection Functionality

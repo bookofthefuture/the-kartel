@@ -300,6 +300,7 @@ function sanitizeApplication(application) {
     position: sanitizeText(application.position, { maxLength: 100 }),
     phone: sanitizePhone(application.phone),
     linkedin: sanitizeLinkedinUrl(application.linkedin),
+    message: sanitizeText(application.message, { maxLength: 1000, allowNewlines: true }),
     experience: sanitizeText(application.experience, { maxLength: 500, allowNewlines: true }),
     interests: sanitizeText(application.interests, { maxLength: 500, allowNewlines: true }),
     referral: sanitizeText(application.referral, { maxLength: 200 })
