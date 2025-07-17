@@ -207,9 +207,10 @@
     <div id="loadingSection" class="login-container">
         <div class="login-card">
             <h1 class="login-title">The Kartel Members</h1>
-            <div style="text-align: center; padding: 40px;">
-                <div style="font-size: 2rem; margin-bottom: 20px;">⏳</div>
-                <p style="color: #7f8c8d;">Loading...</p>
+            <div class="loading-content">
+                <div class="spinner spinner-large" style="margin: 20px auto;"></div>
+                <h3>Loading Your Dashboard</h3>
+                <p>Preparing your member experience...</p>
             </div>
         </div>
     </div>
@@ -239,19 +240,31 @@
 
             <div id="upcomingEventsTab" class="tab-content active">
                 <div id="upcomingEventsContainer">
-                    <div class="loading">Loading upcoming events...</div>
+                    <div class="events-skeleton">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
                 </div>
             </div>
 
             <div id="myEventsTab" class="tab-content">
                 <div id="myEventsContainer">
-                    <div class="loading">Loading your events...</div>
+                    <div class="events-skeleton">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
                 </div>
             </div>
 
             <div id="venuesTab" class="tab-content">
                 <div id="venuesContainer">
-                    <div class="loading">Loading venues...</div>
+                    <div class="venues-skeleton">
+                        <div class="skeleton-row"></div>
+                        <div class="skeleton-row"></div>
+                        <div class="skeleton-row"></div>
+                        <div class="skeleton-row"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -828,7 +841,13 @@
                 return;
             }
             
-            container.innerHTML = '<div class="loading">Loading events...</div>';
+            container.innerHTML = `
+                <div class="events-skeleton">
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+            `;
 
             try {
                 console.log('📡 Making API request to get-events-member...');
@@ -947,7 +966,8 @@
             const btn = buttonElement;
             btn.disabled = true;
             const originalText = btn.textContent;
-            btn.textContent = 'Signing up...';
+            btn.innerHTML = '<span class="btn-text">Signing up...</span><span class="spinner spinner-white"></span>';
+            btn.classList.add('btn-loading');
 
             console.log('Sending sign-up request...');
 
@@ -1003,8 +1023,9 @@
                 console.error('Sign-up error:', error);
                 showMessage('Failed to sign up for event due to network error. Please try again.', 'error');
             } finally {
-                btn.textContent = originalText;
+                btn.innerHTML = originalText;
                 btn.disabled = false;
+                btn.classList.remove('btn-loading');
             }
         }
 
@@ -1259,7 +1280,8 @@
             const btn = buttonElement;
             btn.disabled = true;
             const originalText = btn.textContent;
-            btn.textContent = 'Cancelling...';
+            btn.innerHTML = '<span class="btn-text">Cancelling...</span><span class="spinner spinner-white"></span>';
+            btn.classList.add('btn-loading');
 
             try {
                 const response = await fetch('/.netlify/functions/cancel-sign-up', {
@@ -1307,8 +1329,9 @@
                 console.error('Cancel sign-up error:', error);
                 showMessage('Failed to cancel sign-up due to network error. Please try again.', 'error');
             } finally {
-                btn.textContent = originalText;
+                btn.innerHTML = originalText;
                 btn.disabled = false;
+                btn.classList.remove('btn-loading');
             }
         }
 
@@ -1331,7 +1354,14 @@
 
         async function loadVenues() {
             const container = document.getElementById('venuesContainer');
-            container.innerHTML = '<div class="loading">Loading venues...</div>';
+            container.innerHTML = `
+                <div class="venues-skeleton">
+                    <div class="skeleton-row"></div>
+                    <div class="skeleton-row"></div>
+                    <div class="skeleton-row"></div>
+                    <div class="skeleton-row"></div>
+                </div>
+            `;
 
             try {
                 const response = await fetch('/.netlify/functions/get-venues-member', {
