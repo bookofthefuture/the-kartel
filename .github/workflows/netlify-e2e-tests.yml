@@ -15,9 +15,11 @@ jobs:
         uses: JakePartusch/wait-for-netlify-action@v1
         id: netlify
         with:
-          site-name: "the-kartel"
-          netlify-token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          site_name: "the-kartel"
+          max_timeout: 300
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
