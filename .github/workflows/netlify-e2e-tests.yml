@@ -1,0 +1,44 @@
+name: E2E Tests on Netlify Preview
+
+on:
+  deployment_status
+
+jobs:
+  run-e2e-tests:
+    # Run only when a Netlify deployment has finished successfully
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment == 'preview'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        # The target_url from the deployment status is the Netlify Preview URL
+        run: npx playwright test
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url }}
+
+      - name: Create Issue on Failure
+        # This step runs only if the previous 'Run Playwright tests' step failed
+        if: failure()
+        run: |
+          gh issue create \
+            --title "E2E Test Failure in PR #${{ github.event.deployment.payload.pull_request.number }}" \
+            --body "Automated tests failed on Netlify deploy preview: ${{ github.event.deployment_status.target_url }}. Please review the workflow run logs for details." \
+            --label "bug,automated-test-failure" \
+            --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
