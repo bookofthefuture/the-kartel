@@ -851,6 +851,10 @@
 
             try {
                 console.log('📡 Making API request to get-events-member...');
+                
+                // Add artificial delay to show skeleton loading (DEMO ONLY)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
                 // Add cache busting parameter to ensure fresh data
                 const cacheBuster = `?t=${Date.now()}`;
                 const response = await fetch(`/.netlify/functions/get-events-member${cacheBuster}`, {
@@ -970,6 +974,9 @@
             btn.classList.add('btn-loading');
 
             console.log('Sending sign-up request...');
+            
+            // Add artificial delay to show button loading state (DEMO ONLY)
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             try {
                 const requestBody = { 
