@@ -82,13 +82,13 @@ test.describe('Admin Page - Minimal Tests', () => {
     // Check applications tab content is visible
     await expect(page.locator('#applicationsTab')).toBeVisible();
     
-    // Check stats grid exists
-    await expect(page.locator('.stats-grid')).toBeVisible();
+    // Check stats grid exists in applications tab
+    await expect(page.locator('#applicationsTab .stats-grid')).toBeVisible();
     await expect(page.locator('#totalApplications')).toBeVisible();
     await expect(page.locator('#pendingApplications')).toBeVisible();
     
-    // Check applications table exists
-    await expect(page.locator('.applications-table')).toBeVisible();
+    // Check applications table exists in applications tab
+    await expect(page.locator('#applicationsTab .applications-table')).toBeVisible();
   });
 
   test('should show admin info in header when authenticated', async ({ page }) => {
