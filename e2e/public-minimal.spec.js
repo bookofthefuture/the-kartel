@@ -16,11 +16,11 @@ test.describe('Public Page - Minimal Tests', () => {
     // Check that the page has a body
     await expect(page.locator('body')).toBeVisible();
     
-    // Check that sections are present (this page uses sections, not main)
-    await expect(page.locator('section')).toBeVisible();
-    
-    // Check that hero section is present
+    // Check that hero section is present (main content area)
     await expect(page.locator('.hero')).toBeVisible();
+    
+    // Check that header content is present
+    await expect(page.locator('.header-content')).toBeVisible();
   });
 
   test('should have contact form', async ({ page }) => {
