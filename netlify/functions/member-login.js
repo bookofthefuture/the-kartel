@@ -178,16 +178,38 @@ exports.handler = async (event, context) => {
 
       console.log(`✅ Magic link token validated for: ${email.split('@')[1]} domain`);
       
-      // For magic link, we trust the token validation and don't need to check applications
-      // The token was created only for approved members
-      const memberApplication = {
-        id: tokenData.memberId,
-        email: tokenData.email,
-        // We'll fetch the full member data later if needed
-      };
+      // Fetch the complete member data from applications store
+      const applicationsStore = getStore(storeConfig);
+      const memberKey = `member_${tokenData.memberId}`;
+      
+      let memberApplication;
+      try {
+        memberApplication = await applicationsStore.get(memberKey, { type: 'json' });
+        console.log(`✅ Retrieved full member data for: ${email.split('@')[1]} domain`);
+      } catch (error) {
+        console.error(`❌ Failed to retrieve member data for ${email.split('@')[1]} domain:`, error);
+        return {
+          statusCode: 500,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Failed to retrieve member data' })
+        };
+      }
 
-      // Generate JWT token
-      const roles = ['member'];
+      if (!memberApplication || memberApplication.status !== 'approved') {
+        console.log(`❌ Member not found or not approved for: ${email.split('@')[1]} domain`);
+        return {
+          statusCode: 401,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Member account not found or not active' })
+        };
+      }
+
+      // Generate JWT token with proper roles
+      const roles = [];
+      if (memberApplication.isAdmin) roles.push('admin');
+      if (memberApplication.isSuperAdmin) roles.push('super-admin');
+      roles.push('member');
+
       const tokenPayload = {
         userId: memberApplication.id,
         email: memberApplication.email,
@@ -205,9 +227,19 @@ exports.handler = async (event, context) => {
           token: jwtToken,
           memberId: memberApplication.id,
           memberEmail: memberApplication.email,
-          memberFullName: memberApplication.email, // Will be updated with full data later
-          isAdmin: false,
-          isSuperAdmin: false,
+          memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
+          isAdmin: !!memberApplication.isAdmin,
+          isSuperAdmin: !!memberApplication.isSuperAdmin,
+          // Complete member profile data
+          memberProfile: {
+            firstName: memberApplication.firstName,
+            lastName: memberApplication.lastName,
+            company: memberApplication.company,
+            position: memberApplication.position,
+            phone: memberApplication.phone,
+            linkedin: memberApplication.linkedin,
+            hasPassword: !!(memberApplication.memberPasswordHash && memberApplication.memberPasswordSalt)
+          },
           message: 'Magic link login successful'
         })
       };
