@@ -26,6 +26,8 @@
   "scripts": {
     "test": "jest --testPathIgnorePatterns=/e2e/",
     "test:e2e": "playwright test",
+    "test:e2e:quick": "playwright test --config=playwright.quick.config.js e2e/public-quick.spec.js",
+    "test:e2e:minimal": "playwright test --config=playwright.quick.config.js e2e/public-minimal.spec.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "dev": "netlify dev",
