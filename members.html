@@ -748,7 +748,7 @@
             
             try {
                 console.log('📡 Making API request to verify-login-token...');
-                const response = await fetch('/.netlify/functions/verify-login-token', {
+                const response = await fetch('/.netlify/functions/member-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })

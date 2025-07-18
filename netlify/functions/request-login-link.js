@@ -2,22 +2,48 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const { sanitizeEmail } = require('./input-sanitization');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
   try {
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Request body is required' })
+      };
+    }
+
     const rawData = JSON.parse(event.body);
     const email = sanitizeEmail(rawData.email);
 
     if (!email) {
       return {
         statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ error: 'Email is required or invalid' })
       };
     }
@@ -25,9 +51,17 @@ exports.handler = async (event, context) => {
     console.log(`🔗 Magic link requested for: ${email}`);
 
     // Check environment variables
+    console.log('🔧 Environment check - Site ID:', process.env.NETLIFY_SITE_ID ? 'exists' : 'missing');
+    console.log('🔧 Environment check - Access Token:', process.env.NETLIFY_ACCESS_TOKEN ? 'exists' : 'missing');
+    
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing environment variables for Blob storage.');
       return {
         statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ error: 'Server configuration error' })
       };
     }
@@ -59,7 +93,12 @@ exports.handler = async (event, context) => {
     // Always return success to prevent email enumeration
     const successResponse = {
       statusCode: 200,
-      headers: createSecureHeaders(event),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
       body: JSON.stringify({
         success: true,
         message: 'If your email is registered, you will receive a login link shortly.'
@@ -106,6 +145,10 @@ exports.handler = async (event, context) => {
     console.error('💥 Error sending magic link:', error);
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({
         error: 'Internal server error'
       })
@@ -163,7 +206,6 @@ async function sendMagicLinkEmail(member, loginToken) {
 
   try {
     const sgMail = require('@sendgrid/mail');
-const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     await sgMail.send({

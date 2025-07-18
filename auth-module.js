@@ -107,7 +107,7 @@ class KartelAuth {
                 return;
             }
             
-            const response = await fetch('/.netlify/functions/verify-login-token', {
+            const response = await fetch('/.netlify/functions/member-login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -137,7 +137,7 @@ class KartelAuth {
     async verifyMagicToken(magicToken) {
         try {
             console.log('🔐 Verifying magic link token...');
-            const response = await fetch('/.netlify/functions/verify-login-token', {
+            const response = await fetch('/.netlify/functions/member-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: magicToken })
@@ -217,7 +217,12 @@ class KartelAuth {
         console.log(`🔐 Attempting login for: ${email} (method: ${password ? 'password' : 'magic link'})`);
         
         try {
-            const response = await fetch('/.netlify/functions/member-login', {
+            // Use different endpoints based on authentication method
+            const endpoint = password ? 
+                '/.netlify/functions/member-login' : 
+                '/.netlify/functions/request-login-link';
+            
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
