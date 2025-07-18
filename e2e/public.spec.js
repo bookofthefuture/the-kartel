@@ -17,9 +17,10 @@ test.describe('Public Page', () => {
   test('should have navigation elements', async ({ page }) => {
     await page.goto(baseURL);
     // Wait for page to load
-    await page.waitForTimeout(2000);
-    // Check for basic navigation structure
-    await expect(page.locator('nav, .nav, .navigation')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    // Check for basic navigation structure (hero navigation)
+    await expect(page.locator('.hero-nav')).toBeVisible();
   });
 
 });

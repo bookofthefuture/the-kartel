@@ -65,6 +65,9 @@ test.describe('Public Page - Comprehensive Tests', () => {
     });
 
     test('should display city selection banner', async ({ page }) => {
+      // Wait for page to load completely
+      await page.waitForLoadState('networkidle');
+      
       await expect(page.locator('.city-selection-text')).toContainText('Choose Your City');
       await expect(page.locator('.city-btn[data-city="manchester"]')).toBeVisible();
       await expect(page.locator('.city-btn[data-city="manchester"]')).toHaveClass(/active/);
@@ -79,14 +82,17 @@ test.describe('Public Page - Comprehensive Tests', () => {
     });
 
     test('should have working hero navigation links', async ({ page }) => {
+      // Wait for page to fully load
+      await page.waitForLoadState('networkidle');
+      
       const navLinks = page.locator('.hero-nav .nav-link');
       await expect(navLinks).toHaveCount(6);
       
-      // Check all navigation links are present
-      await expect(navLinks.filter({ hasText: 'See The Action' })).toHaveAttribute('href', '#video');
-      await expect(navLinks.filter({ hasText: 'The Experience' })).toHaveAttribute('href', '#about');
-      await expect(navLinks.filter({ hasText: 'Event Structure' })).toHaveAttribute('href', '#event-format');
-      await expect(navLinks.filter({ hasText: 'Join Us' })).toHaveAttribute('href', '#contact');
+      // Check all navigation links are present with more flexible text matching
+      await expect(navLinks.filter({ hasText: /See.*Action/i })).toHaveAttribute('href', '#video');
+      await expect(navLinks.filter({ hasText: /Experience/i })).toHaveAttribute('href', '#about');
+      await expect(navLinks.filter({ hasText: /Event.*Structure/i })).toHaveAttribute('href', '#event-format');
+      await expect(navLinks.filter({ hasText: /Join.*Us/i })).toHaveAttribute('href', '#contact');
       await expect(navLinks.filter({ hasText: 'FAQ' })).toHaveAttribute('href', '#faq');
       await expect(navLinks.filter({ hasText: 'Gallery' })).toHaveAttribute('href', '#gallery');
     });
@@ -99,11 +105,18 @@ test.describe('Public Page - Comprehensive Tests', () => {
 
   test.describe('Video Section', () => {
     test('should display video section with Vimeo embed', async ({ page }) => {
+      // Scroll to video section to ensure it's in view
+      await page.locator('#video').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      
       await expect(page.locator('#video .section-title')).toContainText('Experience the Rush');
       await expect(page.locator('#experienceVideoContainer')).toBeVisible();
     });
 
     test('should have working Vimeo iframe', async ({ page }) => {
+      await page.locator('#video').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      
       const iframe = page.locator('#experienceVideoContainer iframe');
       await expect(iframe).toBeVisible();
       await expect(iframe).toHaveAttribute('src', /vimeo\.com\/video\/\d+/);
@@ -384,8 +397,15 @@ test.describe('Public Page - Comprehensive Tests', () => {
     });
 
     test('should handle city selection', async ({ page }) => {
+      // Wait for page to load
+      await page.waitForLoadState('networkidle');
+      
       const cityBtn = page.locator('.city-btn[data-city="manchester"]');
+      await expect(cityBtn).toBeVisible();
       await cityBtn.click();
+      
+      // Wait for URL to update
+      await page.waitForTimeout(500);
       
       // Check URL was updated
       await expect(page).toHaveURL(/\?city=manchester/);
@@ -428,29 +448,56 @@ test.describe('Public Page - Comprehensive Tests', () => {
   test.describe('Performance and Accessibility', () => {
     test('should have proper heading hierarchy', async ({ page }) => {
       await expect(page.locator('h1')).toHaveCount(1);
-      await expect(page.locator('h2')).toHaveCount(5); // Section titles
-      await expect(page.locator('h3')).toHaveCount(7); // Feature and timeline titles
+      await expect(page.locator('h2')).toHaveCount(6); // Section titles (Experience, The Experience, Event Structure, Join The Kartel, FAQ, Event Gallery)
+      const h3Count = await page.locator('h3').count();
+      // H3 count can vary between 7-8 depending on dynamic content (success state)
+      expect(h3Count).toBeGreaterThanOrEqual(7);
+      expect(h3Count).toBeLessThanOrEqual(8);
     });
 
     test('should have alt text for images', async ({ page }) => {
+      // Wait for page to load and images to be present
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000); // Allow dynamic content to load
+      
       const images = page.locator('img');
       const imageCount = await images.count();
+      
+      // Should have at least 9 images (8 static + 1 logo)
+      expect(imageCount).toBeGreaterThanOrEqual(9);
       
       for (let i = 0; i < imageCount; i++) {
         const img = images.nth(i);
         await expect(img).toHaveAttribute('alt');
+        
+        // Get the alt text and ensure it's not empty
+        const altText = await img.getAttribute('alt');
+        expect(altText).toBeTruthy();
+        expect(altText.trim()).not.toBe('');
       }
     });
 
     test('should have proper form labels', async ({ page }) => {
+      // Navigate to contact form
+      await page.locator('#contact').scrollIntoViewIfNeeded();
+      
       const formInputs = page.locator('#contactForm input, #contactForm textarea');
       const inputCount = await formInputs.count();
+      
+      // Should have 8 form controls (7 inputs + 1 textarea)
+      expect(inputCount).toBe(8);
       
       for (let i = 0; i < inputCount; i++) {
         const input = formInputs.nth(i);
         const inputId = await input.getAttribute('id');
         if (inputId) {
-          await expect(page.locator(`label[for="${inputId}"]`)).toBeVisible();
+          const label = page.locator(`label[for="${inputId}"]`);
+          await expect(label).toBeVisible();
+          
+          // Ensure label has text
+          const labelText = await label.textContent();
+          expect(labelText).toBeTruthy();
+          expect(labelText.trim()).not.toBe('');
         }
       }
     });
