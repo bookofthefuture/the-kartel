@@ -96,12 +96,15 @@ test.describe('Admin Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
-    // Check user info appears in header
-    await expect(page.locator('.user-info')).toBeVisible();
-    await expect(page.locator('.logout-btn')).toBeVisible();
+    // Wait for dashboard to be visible (indicates auth success)
+    await expect(page.locator('#dashboardSection')).toBeVisible();
+    
+    // Check user info appears in visible header
+    await expect(page.locator('.header .user-info')).toBeVisible();
+    await expect(page.locator('.header .logout-btn')).toBeVisible();
     
     // Should show admin name
-    await expect(page.locator('.user-info')).toContainText('Test');
+    await expect(page.locator('.header .user-info')).toContainText('Test');
   });
 
 });
