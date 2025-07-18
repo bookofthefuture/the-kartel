@@ -2,6 +2,7 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const { sanitizeEmail } = require('./input-sanitization');
+const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
@@ -163,7 +164,6 @@ async function sendMagicLinkEmail(member, loginToken) {
 
   try {
     const sgMail = require('@sendgrid/mail');
-const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     await sgMail.send({
