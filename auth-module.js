@@ -217,7 +217,12 @@ class KartelAuth {
         console.log(`🔐 Attempting login for: ${email} (method: ${password ? 'password' : 'magic link'})`);
         
         try {
-            const response = await fetch('/.netlify/functions/member-login', {
+            // Use different endpoints based on authentication method
+            const endpoint = password ? 
+                '/.netlify/functions/member-login' : 
+                '/.netlify/functions/request-login-link';
+            
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
