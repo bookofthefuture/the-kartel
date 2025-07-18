@@ -1,7 +1,7 @@
 // netlify/functions/verify-login-token.js
 const { getStore } = require('@netlify/blobs');
-const crypto = require('crypto');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
+const { generateToken } = require('./jwt-auth');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -93,8 +93,17 @@ exports.handler = async (event, context) => {
     tokenData.usedAt = new Date().toISOString();
     await tokenStore.setJSON(token, tokenData);
 
-    // Generate session token
-    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const roles = ['member'];
+    if (member.isAdmin) {
+      roles.push('admin');
+    }
+
+    // Generate session token (JWT)
+    const sessionToken = generateToken({
+      memberId: member.id,
+      email: member.email,
+      roles: roles
+    });
 
     console.log(`✅ Login successful for: ${member.email}`);
 
@@ -108,6 +117,7 @@ exports.handler = async (event, context) => {
         memberEmail: member.email,
         memberFullName: member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email,
         isAdmin: !!member.isAdmin,
+        roles: roles,
         // Complete member profile data (consistent with member-login.js)
         memberProfile: {
           firstName: member.firstName,
