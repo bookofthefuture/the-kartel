@@ -60,7 +60,12 @@ exports.handler = async (event, context) => {
     // Always return success to prevent email enumeration
     const successResponse = {
       statusCode: 200,
-      headers: createSecureHeaders(event),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
       body: JSON.stringify({
         success: true,
         message: 'If your email is registered, you will receive a login link shortly.'
