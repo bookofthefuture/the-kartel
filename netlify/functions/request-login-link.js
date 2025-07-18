@@ -5,20 +5,45 @@ const { sanitizeEmail } = require('./input-sanitization');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
 
 exports.handler = async (event, context) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPreflightRequest(event);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
   try {
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Request body is required' })
+      };
+    }
+
     const rawData = JSON.parse(event.body);
     const email = sanitizeEmail(rawData.email);
 
     if (!email) {
       return {
         statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ error: 'Email is required or invalid' })
       };
     }
@@ -29,6 +54,10 @@ exports.handler = async (event, context) => {
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
       return {
         statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ error: 'Server configuration error' })
       };
     }
@@ -112,6 +141,10 @@ exports.handler = async (event, context) => {
     console.error('💥 Error sending magic link:', error);
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({
         error: 'Internal server error'
       })
