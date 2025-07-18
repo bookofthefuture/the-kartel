@@ -63,6 +63,9 @@ test.describe('Admin Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
+    // Wait for dashboard to be visible (indicates auth success)
+    await expect(page.locator('#dashboardSection')).toBeVisible();
+    
     // Check all admin tabs are present
     await expect(page.locator('.tab-button')).toHaveCount(4);
     await expect(page.getByText('👥 Applications')).toBeVisible();
@@ -78,6 +81,9 @@ test.describe('Admin Page - Minimal Tests', () => {
     await loginAsTestUser(page, 'admin');
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
+    
+    // Wait for dashboard to be visible (indicates auth success)
+    await expect(page.locator('#dashboardSection')).toBeVisible();
     
     // Check applications tab content is visible
     await expect(page.locator('#applicationsTab')).toBeVisible();
