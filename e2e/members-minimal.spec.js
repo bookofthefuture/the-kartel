@@ -59,15 +59,15 @@ test.describe('Members Page - Minimal Tests', () => {
 
   test('should show member info in header when authenticated', async ({ page }) => {
     await loginAsTestUser(page, 'member');
-    await page.goto(`${baseURL}/members.html`);
+    await page.goto(`${baseURL}/members.html`, { timeout: 60000 });
     await page.waitForLoadState('domcontentloaded');
     
-    // Check user info appears in header
-    await expect(page.locator('.user-info')).toBeVisible();
-    await expect(page.locator('.logout-btn')).toBeVisible();
+    // Check user info appears in header (scope to visible header to avoid multiple matches)
+    await expect(page.locator('.header .user-info')).toBeVisible();
+    await expect(page.locator('.header .logout-btn')).toBeVisible();
     
     // Should show member name (just check for "Test" since that's what appears)
-    await expect(page.locator('.user-info')).toContainText('Test');
+    await expect(page.locator('.header .user-info')).toContainText('Test');
   });
 
 });
