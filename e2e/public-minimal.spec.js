@@ -11,7 +11,7 @@ test.describe('Public Page - Minimal Tests', () => {
 
   test('should display basic page structure', async ({ page }) => {
     await page.goto(baseURL);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check that the page has a body
     await expect(page.locator('body')).toBeVisible();
@@ -32,7 +32,8 @@ test.describe('Public Page - Minimal Tests', () => {
     
     // Check that basic form inputs exist
     await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="text"], input[name="name"]')).toBeVisible();
+    await expect(page.locator('#firstName')).toBeVisible();
+    await expect(page.locator('#lastName')).toBeVisible();
   });
 
 });
