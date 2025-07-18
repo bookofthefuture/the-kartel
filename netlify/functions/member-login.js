@@ -22,7 +22,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email, password } = JSON.parse(event.body);
+    const { email, password, token } = JSON.parse(event.body);
 
     if (!email) {
       return {
@@ -31,8 +31,9 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Determine authentication method based on password presence
+    // Determine authentication method based on password/token presence
     const isPasswordAuth = password !== undefined;
+    const isMagicLinkAuth = token !== undefined;
 
     // Check for super admin credentials first using timing-safe comparison
     if (isPasswordAuth && process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD) {
@@ -92,8 +93,128 @@ exports.handler = async (event, context) => {
       consistency: 'strong'
     };
 
-    // 4. Business logic: Check for approved member using efficient search
-    console.log(`🔒 Attempting member login for: ${email.split('@')[1]} domain (method: ${isPasswordAuth ? 'password' : 'magic link only'})`);
+    // Validate authentication method
+    if (!isPasswordAuth && !isMagicLinkAuth) {
+      console.log(`❌ Login attempt without password or token for: ${email.split('@')[1]} domain`);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Password or magic link token required' })
+      };
+    }
+
+    // Handle magic link authentication first
+    if (isMagicLinkAuth) {
+      console.log(`🔗 Magic link authentication attempt for: ${email.split('@')[1]} domain`);
+      
+      // Validate magic link token
+      const tokenStore = getStore({
+        name: 'login-tokens',
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_ACCESS_TOKEN,
+        consistency: 'strong'
+      });
+
+      let tokenData;
+      try {
+        tokenData = await tokenStore.get(token, { type: 'json' });
+      } catch (error) {
+        console.log(`❌ Token not found for: ${email.split('@')[1]} domain`);
+        return {
+          statusCode: 401,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Invalid or expired magic link' })
+        };
+      }
+
+      if (!tokenData) {
+        console.log(`❌ Invalid token for: ${email.split('@')[1]} domain`);
+        return {
+          statusCode: 401,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Invalid or expired magic link' })
+        };
+      }
+
+      // Check if token has expired
+      const now = new Date();
+      const expiresAt = new Date(tokenData.expiresAt);
+      if (now > expiresAt) {
+        console.log(`❌ Expired token for: ${email.split('@')[1]} domain`);
+        // Clean up expired token
+        await tokenStore.delete(token);
+        return {
+          statusCode: 401,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Magic link has expired. Please request a new one.' })
+        };
+      }
+
+      // Check if token has been used
+      if (tokenData.used) {
+        console.log(`❌ Token already used for: ${email.split('@')[1]} domain`);
+        return {
+          statusCode: 401,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Magic link has already been used. Please request a new one.' })
+        };
+      }
+
+      // Check if token email matches request email
+      if (tokenData.email.toLowerCase() !== email.toLowerCase()) {
+        console.log(`❌ Token email mismatch for: ${email.split('@')[1]} domain`);
+        return {
+          statusCode: 401,
+          headers: createSecureHeaders(event),
+          body: JSON.stringify({ error: 'Invalid magic link' })
+        };
+      }
+
+      // Mark token as used
+      await tokenStore.setJSON(token, {
+        ...tokenData,
+        used: true,
+        usedAt: new Date().toISOString()
+      });
+
+      console.log(`✅ Magic link token validated for: ${email.split('@')[1]} domain`);
+      
+      // For magic link, we trust the token validation and don't need to check applications
+      // The token was created only for approved members
+      const memberApplication = {
+        id: tokenData.memberId,
+        email: tokenData.email,
+        // We'll fetch the full member data later if needed
+      };
+
+      // Generate JWT token
+      const roles = ['member'];
+      const tokenPayload = {
+        userId: memberApplication.id,
+        email: memberApplication.email,
+        roles: roles,
+        type: 'member'
+      };
+      
+      const jwtToken = generateToken(tokenPayload);
+
+      return {
+        statusCode: 200,
+        headers: createSecureHeaders(event),
+        body: JSON.stringify({
+          success: true,
+          token: jwtToken,
+          memberId: memberApplication.id,
+          memberEmail: memberApplication.email,
+          memberFullName: memberApplication.email, // Will be updated with full data later
+          isAdmin: false,
+          isSuperAdmin: false,
+          message: 'Magic link login successful'
+        })
+      };
+    }
+
+    // 4. Business logic: Check for approved member using efficient search (for password auth)
+    console.log(`🔒 Attempting member login for: ${email.split('@')[1]} domain (method: password)`);
 
     // Use efficient field search to find member by email and approved status
     let applications = await getApplicationsList(storeConfig);
