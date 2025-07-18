@@ -17,9 +17,12 @@ test.describe('Members Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/members.html`);
     await page.waitForLoadState('domcontentloaded');
     
-    // Check login form elements exist (use first() to avoid strict mode violation)
-    await expect(page.locator('.login-card').first()).toBeVisible();
-    await expect(page.locator('.login-title').first()).toBeVisible();
+    // Wait for the auth system to initialize and show login form
+    await expect(page.locator('#loginContainer')).toBeVisible();
+    
+    // Check login form elements exist within the login container
+    await expect(page.locator('#loginContainer .login-card')).toBeVisible();
+    await expect(page.locator('#loginContainer .login-title')).toBeVisible();
     
     // Check for authentication method tabs
     await expect(page.locator('.login-tabs')).toBeVisible();
