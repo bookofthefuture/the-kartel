@@ -48,8 +48,11 @@ test.describe('Admin Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
+    // Wait for authentication to initialize (admin might take longer)
+    await page.waitForTimeout(1000);
+    
     // Should show dashboard instead of login
-    await expect(page.locator('#dashboardSection')).toBeVisible();
+    await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#loginContainer')).not.toBeVisible();
     
     // Check admin dashboard has basic structure
@@ -63,8 +66,11 @@ test.describe('Admin Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
+    // Wait for authentication to initialize
+    await page.waitForTimeout(1000);
+    
     // Wait for dashboard to be visible (indicates auth success)
-    await expect(page.locator('#dashboardSection')).toBeVisible();
+    await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
     
     // Check all admin tabs are present
     await expect(page.locator('.tab-button')).toHaveCount(4);
@@ -82,8 +88,11 @@ test.describe('Admin Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
+    // Wait for authentication to initialize
+    await page.waitForTimeout(1000);
+    
     // Wait for dashboard to be visible (indicates auth success)
-    await expect(page.locator('#dashboardSection')).toBeVisible();
+    await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
     
     // Check applications tab content is visible
     await expect(page.locator('#applicationsTab')).toBeVisible();
@@ -102,8 +111,11 @@ test.describe('Admin Page - Minimal Tests', () => {
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
+    // Wait for authentication to initialize
+    await page.waitForTimeout(1000);
+    
     // Wait for dashboard to be visible (indicates auth success)
-    await expect(page.locator('#dashboardSection')).toBeVisible();
+    await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
     
     // Check user info appears in visible header
     await expect(page.locator('.header .user-info')).toBeVisible();
