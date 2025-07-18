@@ -51,7 +51,11 @@ exports.handler = async (event, context) => {
     console.log(`🔗 Magic link requested for: ${email}`);
 
     // Check environment variables
+    console.log('🔧 Environment check - Site ID:', process.env.NETLIFY_SITE_ID ? 'exists' : 'missing');
+    console.log('🔧 Environment check - Access Token:', process.env.NETLIFY_ACCESS_TOKEN ? 'exists' : 'missing');
+    
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
+      console.error('❌ Missing environment variables for Blob storage.');
       return {
         statusCode: 500,
         headers: {
