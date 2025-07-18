@@ -107,7 +107,7 @@ class KartelAuth {
                 return;
             }
             
-            const response = await fetch('/.netlify/functions/verify-login-token', {
+            const response = await fetch('/.netlify/functions/member-login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -137,7 +137,7 @@ class KartelAuth {
     async verifyMagicToken(magicToken) {
         try {
             console.log('🔐 Verifying magic link token...');
-            const response = await fetch('/.netlify/functions/verify-login-token', {
+            const response = await fetch('/.netlify/functions/member-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: magicToken })
