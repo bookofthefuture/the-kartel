@@ -4,7 +4,7 @@ const { verifyPasswordAsync, shouldUpgradeHash, hashPasswordAsync } = require('.
 const { generateToken } = require('./jwt-auth');
 const { verifySuperAdminCredentials } = require('./timing-safe-utils');
 const { createSecureHeaders, handleCorsPreflightRequest } = require('./cors-utils');
-const { getApplicationsList, findItemByField } = require('./blob-list-utils');
+const { findItemByField } = require('./blob-list-utils');
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
@@ -102,189 +102,14 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Handle magic link authentication first
-    if (isMagicLinkAuth) {
-      console.log(`🔗 Magic link authentication attempt for: ${email.split('@')[1]} domain`);
-      
-      // Validate magic link token
-      const tokenStore = getStore({
-        name: 'login-tokens',
-        siteID: process.env.NETLIFY_SITE_ID,
-        token: process.env.NETLIFY_ACCESS_TOKEN,
-        consistency: 'strong'
-      });
-
-      let tokenData;
-      try {
-        tokenData = await tokenStore.get(token, { type: 'json' });
-      } catch (error) {
-        console.log(`❌ Token not found for: ${email.split('@')[1]} domain`);
-        return {
-          statusCode: 401,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Invalid or expired magic link' })
-        };
-      }
-
-      if (!tokenData) {
-        console.log(`❌ Invalid token for: ${email.split('@')[1]} domain`);
-        return {
-          statusCode: 401,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Invalid or expired magic link' })
-        };
-      }
-
-      // Check if token has expired
-      const now = new Date();
-      const expiresAt = new Date(tokenData.expiresAt);
-      if (now > expiresAt) {
-        console.log(`❌ Expired token for: ${email.split('@')[1]} domain`);
-        // Clean up expired token
-        await tokenStore.delete(token);
-        return {
-          statusCode: 401,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Magic link has expired. Please request a new one.' })
-        };
-      }
-
-      // Check if token has been used
-      if (tokenData.used) {
-        console.log(`❌ Token already used for: ${email.split('@')[1]} domain`);
-        return {
-          statusCode: 401,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Magic link has already been used. Please request a new one.' })
-        };
-      }
-
-      // Check if token email matches request email
-      if (tokenData.email.toLowerCase() !== email.toLowerCase()) {
-        console.log(`❌ Token email mismatch for: ${email.split('@')[1]} domain`);
-        return {
-          statusCode: 401,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Invalid magic link' })
-        };
-      }
-
-      // Mark token as used
-      await tokenStore.setJSON(token, {
-        ...tokenData,
-        used: true,
-        usedAt: new Date().toISOString()
-      });
-
-      console.log(`✅ Magic link token validated for: ${email.split('@')[1]} domain`);
-      
-      // Fetch the complete member data from applications store
-      const applicationsStore = getStore(storeConfig);
-      const memberKey = `member_${tokenData.memberId}`;
-      
-      let memberApplication;
-      try {
-        memberApplication = await applicationsStore.get(memberKey, { type: 'json' });
-        console.log(`✅ Retrieved full member data for: ${email.split('@')[1]} domain`);
-      } catch (error) {
-        console.error(`❌ Failed to retrieve member data for ${email.split('@')[1]} domain:`, error);
-        return {
-          statusCode: 500,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Failed to retrieve member data' })
-        };
-      }
-
-      if (!memberApplication || memberApplication.status !== 'approved') {
-        console.log(`❌ Member not found or not approved for: ${email.split('@')[1]} domain`);
-        return {
-          statusCode: 401,
-          headers: createSecureHeaders(event),
-          body: JSON.stringify({ error: 'Member account not found or not active' })
-        };
-      }
-
-      // Generate JWT token with proper roles
-      const roles = [];
-      if (memberApplication.isAdmin) roles.push('admin');
-      if (memberApplication.isSuperAdmin) roles.push('super-admin');
-      roles.push('member');
-
-      const tokenPayload = {
-        userId: memberApplication.id,
-        email: memberApplication.email,
-        roles: roles,
-        type: 'member'
-      };
-      
-      const jwtToken = generateToken(tokenPayload);
-
-      return {
-        statusCode: 200,
-        headers: createSecureHeaders(event),
-        body: JSON.stringify({
-          success: true,
-          token: jwtToken,
-          memberId: memberApplication.id,
-          memberEmail: memberApplication.email,
-          memberFullName: memberApplication.fullName || `${memberApplication.firstName || ''} ${memberApplication.lastName || ''}`.trim() || memberApplication.email,
-          isAdmin: !!memberApplication.isAdmin,
-          isSuperAdmin: !!memberApplication.isSuperAdmin,
-          // Complete member profile data
-          memberProfile: {
-            firstName: memberApplication.firstName,
-            lastName: memberApplication.lastName,
-            company: memberApplication.company,
-            position: memberApplication.position,
-            phone: memberApplication.phone,
-            linkedin: memberApplication.linkedin,
-            hasPassword: !!(memberApplication.memberPasswordHash && memberApplication.memberPasswordSalt)
-          },
-          message: 'Magic link login successful'
-        })
-      };
-    }
-
     // 4. Business logic: Check for approved member using efficient search (for password auth)
     console.log(`🔒 Attempting member login for: ${email.split('@')[1]} domain (method: password)`);
 
-    // Use efficient field search to find member by email and approved status
-    let applications = await getApplicationsList(storeConfig);
-    console.log(`📋 Loaded ${applications.length} applications efficiently`);
-    
-    // Fallback to legacy method if new method returns empty results
-    if (applications.length === 0) {
-      console.log(`🔄 Fallback: Trying legacy applications list method...`);
-      try {
-        const applicationsStore = getStore(storeConfig);
-        const applicationsList = await applicationsStore.get('_list', { type: 'json' });
-        if (applicationsList && Array.isArray(applicationsList)) {
-          applications = applicationsList;
-          console.log(`✅ Fallback successful: Loaded ${applications.length} applications from legacy list`);
-        }
-      } catch (fallbackError) {
-        console.error(`❌ Fallback failed:`, fallbackError.message);
-      }
-    }
-    
-    // Debug: Log some application details (without sensitive info)
-    if (applications.length > 0) {
-      console.log(`📊 Sample applications:`, applications.slice(0, 3).map(app => ({
-        emailDomain: app.email ? app.email.split('@')[1] : 'unknown',
-        status: app.status,
-        hasPasswordHash: !!app.memberPasswordHash
-      })));
-    } else {
-      console.warn(`⚠️ Still no applications found after fallback! This indicates a serious blob storage issue.`);
-    }
-    
-    const memberApplication = applications.find(
-      app => app.email.toLowerCase() === email.toLowerCase() && app.status === 'approved'
-    );
+    // Use efficient field search to find member by email
+    const memberApplication = await findItemByField(storeConfig, 'app_', 'email', email.toLowerCase());
 
-    if (!memberApplication) {
+    if (!memberApplication || memberApplication.status !== 'approved') {
       console.log(`❌ Failed login attempt for: ${email.split('@')[1]} domain (Not found or not approved)`);
-      console.log(`📧 Available domains:`, applications.slice(0, 5).map(app => `${app.email?.split('@')[1] || 'unknown'} (${app.status})`));
       return {
         statusCode: 401,
         headers: createSecureHeaders(event),
