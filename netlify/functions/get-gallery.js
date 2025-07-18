@@ -6,11 +6,6 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const authHeader = event.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
-        }
-
         // Check environment variables
         if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_ACCESS_TOKEN) {
             return {
