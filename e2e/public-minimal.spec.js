@@ -16,16 +16,19 @@ test.describe('Public Page - Minimal Tests', () => {
     // Check that the page has a body
     await expect(page.locator('body')).toBeVisible();
     
-    // Check that main content is present
-    await expect(page.locator('main, .main, #main')).toBeVisible();
+    // Check that sections are present (this page uses sections, not main)
+    await expect(page.locator('section')).toBeVisible();
+    
+    // Check that hero section is present
+    await expect(page.locator('.hero')).toBeVisible();
   });
 
   test('should have contact form', async ({ page }) => {
     await page.goto(baseURL);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
-    // Check that a form exists on the page
-    await expect(page.locator('form')).toBeVisible();
+    // Check that the contact form exists
+    await expect(page.locator('#contactForm')).toBeVisible();
     
     // Check that basic form inputs exist
     await expect(page.locator('input[type="email"]')).toBeVisible();
