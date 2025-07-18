@@ -43,13 +43,19 @@ test.describe('Admin Page - Minimal Tests', () => {
   });
 
   test('should show admin dashboard when authenticated as admin', async ({ page }) => {
-    // Mock authentication before visiting page
-    await loginAsTestUser(page, 'admin');
+    // Navigate to page first, then inject auth
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
     
-    // Wait for authentication to initialize (admin might take longer)
-    await page.waitForTimeout(1000);
+    // Mock authentication after page load
+    await loginAsTestUser(page, 'admin');
+    
+    // Reload page to trigger authentication check
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    
+    // Wait for authentication to initialize
+    await page.waitForTimeout(2000);
     
     // Should show dashboard instead of login
     await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
@@ -62,12 +68,12 @@ test.describe('Admin Page - Minimal Tests', () => {
   });
 
   test('should show admin navigation tabs', async ({ page }) => {
-    await loginAsTestUser(page, 'admin');
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
-    
-    // Wait for authentication to initialize
-    await page.waitForTimeout(1000);
+    await loginAsTestUser(page, 'admin');
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(2000);
     
     // Wait for dashboard to be visible (indicates auth success)
     await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
@@ -84,12 +90,12 @@ test.describe('Admin Page - Minimal Tests', () => {
   });
 
   test('should show applications section by default', async ({ page }) => {
-    await loginAsTestUser(page, 'admin');
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
-    
-    // Wait for authentication to initialize
-    await page.waitForTimeout(1000);
+    await loginAsTestUser(page, 'admin');
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(2000);
     
     // Wait for dashboard to be visible (indicates auth success)
     await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
@@ -107,12 +113,12 @@ test.describe('Admin Page - Minimal Tests', () => {
   });
 
   test('should show admin info in header when authenticated', async ({ page }) => {
-    await loginAsTestUser(page, 'admin');
     await page.goto(`${baseURL}/admin.html`);
     await page.waitForLoadState('domcontentloaded');
-    
-    // Wait for authentication to initialize
-    await page.waitForTimeout(1000);
+    await loginAsTestUser(page, 'admin');
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(2000);
     
     // Wait for dashboard to be visible (indicates auth success)
     await expect(page.locator('#dashboardSection')).toBeVisible({ timeout: 10000 });
